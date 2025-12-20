@@ -43,6 +43,7 @@
 | **Phase 2: AI optimization** | [Booking Optimizer Architecture](./planning/architecture-booking-optimizer.md) |
 | **Run QA tests** | [Enrollments Test Checklist](./testing/enrollments-test-checklist.md) |
 | **Review page audit** | [Page Audit 2025-12-20](./testing/page-audit-2025-12-20.md) |
+| **PRD Compliance Audit** | [Comprehensive Audit 2025-12-20](./testing/audit-2025-12-20.md) |
 
 ---
 
