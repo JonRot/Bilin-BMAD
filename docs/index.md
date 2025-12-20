@@ -8,7 +8,7 @@
 
 **Status:** ✅ **MVP COMPLETE** - All 52 FRs Implemented, Data Model Hardened, Production-Ready
 
-**Latest Deployment:** <https://fa2fd7af.eduschedule-app.pages.dev>
+**Latest Deployment:** <https://64b0d940.eduschedule-app.pages.dev>
 
 **Implementation Stats (as of 2025-12-17):**
 - **26 pages** (17 admin, 4 teacher, 5 parent) - 9 beyond original PRD
