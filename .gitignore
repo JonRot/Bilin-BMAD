@@ -1,0 +1,27 @@
+# BMAD Workspace .gitignore
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules (if you add any tooling)
+node_modules/
+
+# Environment files (if you add any)
+.env
+.env.local
+
+# Build outputs (if you generate any)
+dist/
+build/

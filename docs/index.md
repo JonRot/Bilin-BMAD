@@ -1,0 +1,548 @@
+# EduSchedule Pro - Documentation Index
+
+## Project Overview
+
+**EduSchedule Pro** is a scheduling and enrollment management platform for BILIN Method language instruction in Florianópolis, Brazil.
+
+**Tech Stack:** Astro 5 SSR + Cloudflare Pages + D1 (SQLite) + Google Calendar API
+
+**Status:** ✅ **MVP COMPLETE** - All 52 FRs Implemented, Data Model Hardened, Production-Ready
+
+**Latest Deployment:** <https://fa2fd7af.eduschedule-app.pages.dev>
+
+**Implementation Stats (as of 2025-12-17):**
+- **26 pages** (17 admin, 4 teacher, 5 parent) - 9 beyond original PRD
+- **80+ API endpoints** across 12 categories
+- **31 reusable components** with full design system compliance
+- **24 business services** with repository pattern
+- **18 database tables** (9 added via migrations beyond original spec)
+
+---
+
+## Quick Navigation
+
+### Which Document Do I Use?
+
+| I want to... | Use this document |
+|-------------|-------------------|
+| Understand WHAT we're building | [PRD](./planning/prd.md) ✅ Complete |
+| Find a specific feature to implement | [Epics & Stories](./planning/epics.md) ✅ MVP Complete |
+| Understand HOW we build it | [Architecture](./architecture.md) ✅ Production-Ready |
+| **Understand system FLOWS (AI-optimized)** | [Application Flows v3](./reference/application-flows-v3.md) |
+| See all flows visually (Portuguese) | [/flows page](https://eduschedule-app.pages.dev/flows) |
+| Understand edge-first design principles | [Edge Architecture Spec](./claude-edge-architecture-system-prompt.md) |
+| Build the iOS/Android wrapper | [Native Shell](../native-shell/) |
+| Build/debug API endpoints | [API Contracts](./reference/api-contracts.md) |
+| Modify database schema | [Data Models](./reference/data-models.md) |
+| Build UI components | [Design System](./reference/design-system-architecture.md) |
+| Set up local dev | [Development Guide](./reference/development-guide.md) |
+| Understand BILIN business rules | [Business Context](./reference/business-context.md) |
+| **Understand enrollment rules deeply** | [Enrollment Rules Comprehensive](./planning/enrollment-rules-comprehensive.md) |
+| **See foundational business decisions** | [Brainstorming Session 2025-12-06](./reference/brainstorming-session-2025-12-06.md) |
+| **Plan Phase 2 features** | [Scheduling Improvements](./planning/brainstorm-scheduling-improvements.md) |
+| **Phase 2: AI optimization** | [Booking Optimizer Architecture](./planning/architecture-booking-optimizer.md) |
+| **Run QA tests** | [Enrollments Test Checklist](./testing/enrollments-test-checklist.md) |
+| **Review page audit** | [Page Audit 2025-12-20](./testing/page-audit-2025-12-20.md) |
+
+---
+
+## MANDATORY Design System Rules
+
+> **IMPORTANT:** These rules MUST be followed for ALL code changes in eduschedule-app. No exceptions.
+
+### Rule 1: Use CSS Custom Properties (NEVER Hardcode)
+
+```css
+/* ✅ CORRECT */
+color: var(--color-primary);
+padding: var(--spacing-md);
+font-size: var(--font-size-base);
+border-radius: var(--radius-md);
+box-shadow: var(--shadow-card);
+transition: all var(--transition-fast);
+
+/* ❌ WRONG - NEVER DO THIS */
+color: #F69897;
+padding: 1rem;
+font-size: 16px;
+border-radius: 8px;
+box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+transition: all 0.2s ease;
+```
+
+### Rule 2: Available CSS Variables
+
+All variables are defined in `src/constants/theme.ts` and injected via `BaseLayout.astro`:
+
+| Category | Variables | Example |
+|----------|-----------|---------|
+| **Colors** | `--color-primary`, `--color-secondary`, `--color-text`, `--color-text-light`, `--color-text-muted`, `--color-surface`, `--color-background`, `--color-border`, `--color-success`, `--color-danger`, `--color-warning`, `--color-info` | `color: var(--color-primary)` |
+| **Brand** | `--brand-coral`, `--brand-cream`, `--brand-tan`, `--brand-dark`, `--brand-white`, `--brand-yellow`, `--brand-olive`, `--brand-peach`, `--brand-sky-blue`, `--brand-lavender` | `background: var(--brand-coral)` |
+| **Spacing** | `--spacing-xs` (0.25rem), `--spacing-sm` (0.5rem), `--spacing-md` (1rem), `--spacing-lg` (1.5rem), `--spacing-xl` (2rem), `--spacing-2xl` (3rem), `--spacing-3xl` (4rem) | `padding: var(--spacing-md)` |
+| **Font Sizes** | `--font-size-xs`, `--font-size-sm`, `--font-size-base`, `--font-size-lg`, `--font-size-xl`, `--font-size-2xl`, `--font-size-3xl`, `--font-size-4xl` | `font-size: var(--font-size-lg)` |
+| **Radius** | `--radius-sm`, `--radius-base`, `--radius-md`, `--radius-lg`, `--radius-xl`, `--radius-full` | `border-radius: var(--radius-md)` |
+| **Shadows** | `--shadow-sm`, `--shadow-base`, `--shadow-md`, `--shadow-lg`, `--shadow-card` | `box-shadow: var(--shadow-card)` |
+| **Transitions** | `--transition-fast` (150ms), `--transition-base` (200ms), `--transition-slow` (300ms) | `transition: all var(--transition-fast)` |
+| **Status Colors** | `--status-ativo-bg`, `--status-inativo-bg`, `--status-pausado-bg`, `--status-novo-bg` + text variants | `background: var(--status-ativo-bg)` |
+| **Form Tokens** | `--form-input-padding`, `--form-input-border-color`, `--form-input-focus-shadow`, `--form-label-font-size` | `padding: var(--form-input-padding)` |
+| **Component Tokens** | `--btn-height-sm/md/lg`, `--input-height-sm/md/lg`, `--card-padding-sm/md/lg`, `--nav-height` | `height: var(--btn-height-md)` |
+
+### Rule 3: Use Reusable Components
+
+| Component | Use For | Import From |
+|-----------|---------|-------------|
+| `FormField` | ALL form inputs (text, email, select, textarea, etc.) | `@/components/FormField.astro` |
+| `Button` | ALL buttons (primary, secondary, danger, ghost, outline) | `@/components/Button.astro` |
+| `Card` | Content containers with shadow | `@/components/Card.astro` |
+| `Modal` | Dialogs and overlays | `@/components/Modal.astro` |
+| `StatusBadge` | Status indicators (ATIVO, INATIVO, etc.) | `@/components/StatusBadge.astro` |
+| `Nav` | Navigation bar | `@/components/Nav.astro` |
+| `EmptyState` | "No data" messages | `@/components/EmptyState.astro` |
+| `StatsCard` | Dashboard metrics | `@/components/StatsCard.astro` |
+
+```astro
+<!-- ✅ CORRECT -->
+<FormField type="email" name="email" label="Email" required />
+<Button variant="primary">Save</Button>
+<StatusBadge status="ATIVO" />
+
+<!-- ❌ WRONG - Don't use raw HTML -->
+<input type="email" name="email" />
+<button class="my-button">Save</button>
+<span class="status">ATIVO</span>
+```
+
+### Rule 4: Form Patterns
+
+```astro
+<!-- Standard form layout -->
+<form class="form-container">
+  <div class="form-grid">
+    <FormField type="text" name="name" label="Name" required />
+    <FormField type="email" name="email" label="Email" required />
+  </div>
+  <div class="form-actions">
+    <Button variant="ghost" type="button">Cancel</Button>
+    <Button variant="primary" type="submit">Save</Button>
+  </div>
+</form>
+
+<style>
+  .form-container { max-width: 600px; }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+  }
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+  }
+</style>
+```
+
+### Rule 5: Import Constants in TypeScript
+
+```typescript
+// ✅ CORRECT - Import from constants
+import { COLORS, SPACING, FORM_TOKENS } from '@/constants/theme';
+import { NAV_LINKS, MESSAGES, STATUS_LABELS } from '@/constants/ui';
+import { LOCALE } from '@/constants/config';
+
+// ❌ WRONG - Never hardcode values in TypeScript
+const primaryColor = '#F69897'; // BAD
+```
+
+### Rule 6: Brazil Locale
+
+All dates/times must use Brazilian format:
+- **Date format:** DD/MM/YYYY (e.g., 25/12/2025)
+- **Time format:** 24-hour (e.g., 14:30)
+- **Timezone:** America/Sao_Paulo
+- **Currency:** R$ (BRL)
+- Use `src/lib/format.ts` utilities: `formatDate()`, `formatTime()`, `formatCurrency()`
+
+### Checklist Before Any PR
+
+- [ ] No hardcoded colors (hex, rgb, hsl)
+- [ ] No hardcoded spacing (px, rem, em without var())
+- [ ] All form inputs use `FormField` component
+- [ ] All buttons use `Button` component
+- [ ] Status indicators use `StatusBadge` component
+- [ ] Dates formatted as DD/MM/YYYY
+- [ ] Times formatted as 24-hour
+
+---
+
+## Implementation Status (2025-12-17)
+
+### PRD Alignment by Role
+
+| Role | Coverage | Key Features |
+|------|----------|--------------|
+| **Admin** | 100% | Enrollments, leads, approvals, closures, edit modal, PAUSADO countdown, status history |
+| **Teacher** | 100% | Schedule, completions, notes, earnings display, availability grid |
+| **Parent** | 100% | Dashboard, history, invoice, notes view, class cancellation |
+
+### Feature Completion
+
+| Feature | PRD Ref | Status |
+|---------|---------|--------|
+| Enrollment CRUD | FR1-9 | ✅ Complete |
+| Class Completions | FR10, FR15-16 | ✅ Complete |
+| Status Lifecycle | FR42-46 | ✅ Complete + History Tracking |
+| Slot Management | FR37-41 | ✅ Complete (minute-based blocking) |
+| Lead Pipeline | FR30-36 | ✅ Complete |
+| Parent Invoice | FR29 | ✅ Complete |
+| Teacher Earnings | FR23 | ✅ Complete |
+| Teacher Availability | FR20 | ✅ Complete |
+| Exception Management | FR11-14, FR17-18 | ✅ Complete |
+| Security | NFR6-12 | ✅ Complete |
+| Data Integrity | Triggers, Indexes | ✅ Complete (21 hardening issues) |
+| Status History | Audit/Compliance | ✅ Complete |
+
+---
+
+## Folder Structure
+
+```text
+docs/                                 # PROJECT-LEVEL DOCUMENTATION
+├── index.md                          # This file - start here!
+├── README.md                         # Brief project overview
+├── architecture.md                   # System architecture (the "HOW")
+├── claude-edge-architecture-system-prompt.md  # Edge-first design principles
+│
+├── planning/                         # WHAT we're building + future roadmap
+│   ├── prd.md                        # Product Requirements Document ✅ MVP Complete
+│   ├── epics.md                      # Epics breakdown ✅ 1-5 Complete
+│   ├── enrollment-rules-comprehensive.md  # Detailed business rules reference
+│   ├── epic-6-advanced-enrollment.md      # Phase 2: Advanced features
+│   ├── epic-7-rock-solid-scheduling.md    # Phase 2: Notifications, reliability
+│   ├── architecture-booking-optimizer.md  # Phase 2: AI scheduling optimization
+│   ├── brainstorm-scheduling-improvements.md  # Phase 2+ roadmap (Cal.com analysis)
+│   └── tech-spec-scheduling-enhancements.md   # Buffer times + time-off spec
+│
+├── reference/                        # Technical specifications
+│   ├── application-flows-v3.md       # 🔑 AI-OPTIMIZED FLOWS (Mermaid + YAML)
+│   ├── api-contracts.md              # REST API documentation (80+ endpoints)
+│   ├── data-models.md                # Database schema (18 tables)
+│   ├── design-system-architecture.md # CSS variables, components ✅ Implemented
+│   ├── development-guide.md          # Setup instructions
+│   ├── business-context.md           # BILIN domain knowledge
+│   ├── brainstorming-session-2025-12-06.md  # Foundational business decisions
+│   ├── teacher-cancellation-workflow.md     # Cancellation approval flow
+│   └── makeup-class-tracking.md             # Makeup class system
+│
+├── testing/                          # Test plans and checklists
+│   ├── enrollments-test-checklist.md
+│   └── page-audit-2025-12-20.md      # Comprehensive page audit (92 issues)
+│
+└── archive/                          # Historical summary
+    └── ARCHIVE-HISTORY.md            # Master summary of project history
+
+eduschedule-app/docs/                 # APP OPERATIONAL DOCUMENTATION
+├── README.md                         # This folder's index
+├── TESTING-CHECKLIST.md              # Pre-deployment QA checklist
+├── admin-quick-guide-cancellations.md  # Admin user guide
+└── setup-guides/
+    └── GOOGLE_CALENDAR_OAUTH_SETUP.md  # OAuth setup reference
+
+eduschedule-app/                      # APP ROOT (non-docs operational files)
+├── CLAUDE.md                         # AI assistant instructions
+├── CLOUDFLARE_CODING_STANDARDS.md    # Critical Cloudflare patterns
+├── DEPLOYMENT.md                     # Cloudflare Pages deploy guide
+├── SECURITY.md                       # Security features
+└── .credentials-reference.md         # Secrets (gitignored)
+```
+
+---
+
+## Application Routes
+
+### Admin Routes (`/admin/*`) - 18 Pages
+
+| Route | Purpose | PRD Ref |
+|-------|---------|---------|
+| `/admin` | Dashboard with stats, pending approvals, recent leads | - |
+| `/admin/enrollments` | Enrollment management, edit modal, PAUSADO countdown | FR1-9, FR41 |
+| `/admin/leads` | Lead pipeline, matching, conversion | FR30-36 |
+| `/admin/approvals` | Change request approvals (email, phone, address, etc.) | FR14 |
+| `/admin/availability-approvals` | Teacher availability submissions + day zones | - |
+| `/admin/closures` | Holidays, FÉRIAS, weather, emergency closures | - |
+| `/admin/users` | Teacher/student management | FR50 |
+| `/admin/settings` | App settings (languages, cities, data maintenance) | - |
+| `/admin/theme-editor` | Design system customization with live preview | - |
+| `/admin/pending-cancellations` | Teacher cancellation approval workflow | FR13-14 |
+| `/admin/time-off-approvals` | Teacher vacation/sick/personal time-off requests | Extra |
+| `/admin/parent-links` | Link parent OAuth emails to students | Extra |
+| `/admin/teacher-links` | Link teacher OAuth emails to teacher records | Extra |
+| `/admin/account-links` | Combined parent/teacher link management | Extra |
+| `/admin/scheduling-analytics` | Hot times dashboard - demand vs supply analysis | Extra |
+| `/admin/travel-errors` | Geocoding/route calculation error resolution | Extra |
+| `/admin/re-encrypt` | Data re-encryption tool for key rotation | Extra |
+| `/admin/import-data` | Bulk student import from JSON | Extra |
+
+### Teacher Routes (`/teacher/*`) - 4 Pages
+
+| Route | Purpose | PRD Ref |
+|-------|---------|---------|
+| `/teacher` | Dashboard: stats, student list (up to 5), quick actions | - |
+| `/teacher/schedule` | Weekly schedule: start/complete class, cancellation requests, time-off, earnings | FR19, FR22-23 |
+| `/teacher/availability` | LIVRE/BLOCKED grid: day-zone selectors, potential earnings calculation | FR20-21 |
+| `/teacher/profile` | Profile info, banking (PIX/CPF), change requests | - |
+
+### Parent Routes (`/parent/*`) - 5 Pages
+
+| Route | Purpose | PRD Ref |
+|-------|---------|---------|
+| `/parent` | Dashboard: children cards, upcoming classes, quick actions | - |
+| `/parent/schedule` | Weekly schedule: cancel/reschedule 3-step modal with slot picker | FR28, FR12 |
+| `/parent/history` | Class history: teacher notes, makeup indicators, monthly navigation | FR26-27 |
+| `/parent/invoice` | Monthly billing: per-class breakdown, group rates, total due | FR29 |
+| `/parent/students` | Student details: profile, parent info, change requests | FR25 |
+
+### API Routes (`/api/*`) - 80+ Endpoints
+
+| Category | Count | Key Endpoints | Purpose |
+|----------|-------|---------------|---------|
+| Auth | 6 | `/login`, `/logout`, `/csrf`, `/microsoft/*` | OAuth login, logout, CSRF, Microsoft SSO |
+| Admin | 16 | `/cancellations`, `/time-off-approvals`, `/geocode-*`, `/travel-errors/*` | Cancellation approval, time-off, geocoding, analytics |
+| Enrollments | 11 | `/[id]`, `/[id]/status`, `/[id]/exceptions/*`, `/[id]/completions/*` | CRUD, status, exceptions, completions |
+| Leads | 5 | `/[id]`, `/[id]/matches`, `/[id]/convert`, `/[id]/status` | Pipeline, matching, conversion |
+| Schedule | 2 | `/[teacherId]`, `/student/[studentId]` | Generated schedules |
+| Slots | 3 | `/[teacherId]`, `/matches`, `/suggestions` | Availability queries, matching |
+| Availability | 2 | `/index`, `/approvals` | Teacher availability CRUD |
+| Teacher | 6 | `/availability`, `/time-off`, `/day-zones` | Teacher-specific operations |
+| Notifications | 2 | `/index`, `/[id]/read` | User notifications |
+| Travel | 2 | `/index`, `/matrix` | Travel time calculations |
+| Change Requests | 4 | `/index`, `/count`, `/[id]/approve`, `/[id]/reject` | Change request workflow |
+| System | 1 | `/closures` | System closure management |
+| Calendar | 1 | `/events` | Google Calendar sync |
+| Webhooks | 1 | `/jotform` | JotForm lead import |
+| Public | 1 | `/register` | Public registration (no auth) |
+
+---
+
+## Current Architecture Summary
+
+### Edge-First Principles
+
+All architecture decisions follow the [Edge Architecture Spec](./claude-edge-architecture-system-prompt.md):
+
+- **Edge-Driven Logic** - All workflows run on Cloudflare Workers (scheduling, matching, billing, notifications)
+- **Distributed State** - D1 for relational data, KV for config/cache, R2 for files
+- **Server-Driven UI** - JSON schema generation on the edge
+- **Minimal Native Shell** - WebView + push tokens + device permissions only
+
+### Enrollment-First Paradigm
+
+- **Enrollments** are persistent entities (student + teacher + weekly slot)
+- **Class Instances** are generated on-demand from enrollments
+- **Google Calendar** is display-only (one-way sync from database)
+
+### Key Design Decisions
+
+1. **Database as Source of Truth** - D1 SQLite, not Google Calendar
+2. **Hybrid Data Model** - Enrollments + Exceptions + Completions
+3. **Lazy PAUSADO Evaluation** - Auto-transition on access, no cron jobs
+4. **Computed Slots** - LIVRE/BLOCKED derived from enrollment status
+5. **Repository + Service Pattern** - Clean separation for future migration
+6. **No Centralized Servers** - Edge-only compute, no monolithic backends
+
+### Security Implementation
+
+| Feature | Status |
+|---------|--------|
+| Google OAuth 2.0 + PKCE | ✅ |
+| Microsoft OAuth (optional) | ✅ |
+| AES-256-GCM Session Encryption | ✅ |
+| CSRF Protection (all mutations) | ✅ |
+| Rate Limiting (100 reads/min, 20 writes/min) | ✅ |
+| Role-Based Access Control | ✅ |
+| PII Encryption at Rest | ✅ |
+| SQL Injection Prevention | ✅ |
+| XSS Prevention | ✅ |
+
+---
+
+## Database Tables (18 Total)
+
+### Core Tables (Originally Documented - 9)
+
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `users` | User accounts | email, name, role (admin/teacher/parent) |
+| `teachers` | Teacher profiles | nickname, full_name, languages, teaching_cities, home_lat/lon |
+| `students` | Student profiles | name, status, teacher_id, parent_*_encrypted, lat/lon |
+| `enrollments` | Recurring class commitments | student_id, teacher_id, day_of_week, start_time, status |
+| `enrollment_exceptions` | Cancellations, reschedules | enrollment_id, exception_date, exception_type, rescheduled_to_* |
+| `class_completions` | Proof of delivery | enrollment_id, class_date, status, notes, actual_rate |
+| `system_closures` | Holidays, FÉRIAS | closure_type, start_date, end_date, city_id |
+| `leads` | Pre-enrollment pipeline | parent_*, student_*, neighborhood, availability_windows |
+| `audit_log` | Security events | user_id, action, resource_type, metadata |
+
+### Support Tables (Added via Migrations - 9)
+
+| Table | Purpose | Migration |
+|-------|---------|-----------|
+| `sessions` | Server-side session storage | schema.sql |
+| `parent_links` | Link OAuth emails to students | schema.sql |
+| `teacher_availability` | Declared availability slots | schema.sql |
+| `teacher_day_zones` | City/zone per day for travel optimization | schema.sql |
+| `notifications` | User notification system | 001 |
+| `travel_time_cache` | Cached driving times (30-day expiry) | travel-cache.sql |
+| `travel_time_errors` | Travel calculation error tracking | 005 |
+| `teacher_time_off_requests` | Teacher vacation/sick requests | 008 |
+| `enrollment_status_history` | Status transition audit trail | 016 |
+
+### Key Status Values
+
+| Table | Field | Valid Values |
+|-------|-------|--------------|
+| `enrollments` | status | WAITLIST, ATIVO, PAUSADO, AVISO, INATIVO |
+| `students` | status | Ativo, Novo, Aula Teste, Aviso, Sem Contrato, Pausado, Inativo |
+| `enrollment_exceptions` | exception_type | CANCELLED_STUDENT, CANCELLED_TEACHER, RESCHEDULED, RESCHEDULED_BY_STUDENT, RESCHEDULED_BY_TEACHER, HOLIDAY |
+| `class_completions` | status | COMPLETED, NO_SHOW |
+| `leads` | status | AGUARDANDO, EM_ANALISE, WAITLIST, CONTRACTED, NOT_A_MATCH |
+
+---
+
+## Extra Features Implemented (Beyond PRD)
+
+These features were built during implementation but aren't in the original PRD. They enhance the core system.
+
+### Admin Tools
+
+| Feature | Page/API | Purpose |
+|---------|----------|---------|
+| **Time-Off System** | `/admin/time-off-approvals` | Teachers request vacation/sick days, admin approves, system auto-handles affected classes |
+| **Account Links** | `/admin/*-links` | Flexible OAuth - parents/teachers can use any Google/Microsoft email |
+| **Scheduling Analytics** | `/admin/scheduling-analytics` | Hot times dashboard - demand vs supply analysis for recruitment |
+| **Travel Error Resolution** | `/admin/travel-errors` | Diagnose/fix geocoding errors with inline editing |
+| **Data Re-encryption** | `/admin/re-encrypt` | Key rotation tool for security compliance |
+| **Bulk Import** | `/admin/import-data` | Import students from JSON with progress tracking |
+
+### Teacher Enhancements
+
+| Feature | Implementation | Purpose |
+|---------|----------------|---------|
+| **Start/Complete Class** | 2-step workflow | Teacher clicks "Start" → timer starts → "Complete" with notes |
+| **Early Completion Tracking** | `completion_type`, `early_completion_reason` | Track why classes ended early (sick, no answer, etc.) |
+| **Time-Off Requests** | Modal in schedule page | Request vacation/sick directly from schedule |
+| **Day Zones** | Per-day city assignment | Optimize travel by working same area on same days |
+
+### System Enhancements
+
+| Feature | Implementation | Purpose |
+|---------|----------------|---------|
+| **Notifications** | `notifications` table + bell UI | In-app notifications for cancellations, approvals |
+| **Group Billing** | `actual_rate`, `effective_group_size` | Variable pricing for group classes (2=R$110, 3+=R$90) |
+| **Travel Time Cache** | `travel_time_cache` table | 30-day cache for driving times (LocationIQ API) |
+| **City-Specific Closures** | `city_id` in closures | Different holidays for different cities |
+| **Makeup Tracking** | `makeup_for_exception_id` | Link makeup classes to original cancellation |
+
+---
+
+## Recent Changes (2025-12-17)
+
+### Comprehensive Documentation Audit
+
+**Findings from parallel agent audit (4 agents):**
+
+1. **Pages:** 26 implemented vs 17 documented (+53%)
+2. **API Endpoints:** 80+ implemented vs ~30 documented
+3. **Database Tables:** 18 total (9 added via migrations)
+4. **All 52 FRs:** Verified implemented ✅
+5. **PRD Alignment:** 95%+ (core innovation fully working)
+
+### Data Model Hardening Complete (21 Issues Resolved)
+
+**Phase 1-6 all completed:**
+- Cascade delete triggers (prevent orphaned records)
+- Unique index for reschedule conflict prevention
+- Status transition validation in service layer
+- Minute-based slot blocking (was hour-based)
+- Performance indexes for PAUSADO/AVISO queries
+- Status history table for compliance tracking
+
+### Database Enhancements
+
+- `enrollment_status_history` table with triggered_by tracking
+- 6 database triggers for data integrity
+- 4 performance indexes for auto-transition queries
+- Unique index prevents double-booking via reschedules
+
+### Service Layer Improvements
+
+- Status transition validation via VALID_STATUS_TRANSITIONS
+- PAUSADO cooldown enforcement with PausadoCooldownError
+- effective_group_size calculated from database (not client)
+- findByEnrollmentAndDate for improved validation
+
+See [Archive History](./archive/ARCHIVE-HISTORY.md) for complete project history and implementation details.
+
+---
+
+## Knowledge Registry
+
+Where to find and store different types of information:
+
+### Where to FIND Knowledge
+
+| Knowledge Type | Primary Source | Secondary |
+|----------------|----------------|-----------|
+| **What to build (requirements)** | `planning/prd.md` | `planning/epics.md` |
+| **How to build (architecture)** | `architecture.md` | `reference/api-contracts.md` |
+| **Business rules (enrollment)** | `planning/enrollment-rules-comprehensive.md` | `reference/business-context.md` |
+| **Database schema** | `reference/data-models.md` | Code: `database/migrations/` |
+| **API endpoints** | `reference/api-contracts.md` | Code: `src/pages/api/` |
+| **UI patterns** | `reference/design-system-architecture.md` | Code: `src/components/` |
+| **System flows** | `reference/application-flows-v3.md` | Code: `src/lib/services/` |
+| **Phase 2 roadmap** | `planning/epic-6-*.md`, `epic-7-*.md` | `planning/architecture-booking-optimizer.md` |
+| **Session context** | `../eduschedule-app/project-context.md` | This file |
+| **Cloudflare patterns** | `../eduschedule-app/CLOUDFLARE_CODING_STANDARDS.md` | - |
+| **Project history** | `archive/ARCHIVE-HISTORY.md` | - |
+
+### Where to REGISTER New Knowledge
+
+| When you... | Update this file |
+|-------------|------------------|
+| Add new feature/FR | `planning/prd.md` (add FR), then `planning/epics.md` (add story) |
+| Add new API endpoint | `reference/api-contracts.md` |
+| Add new database table | `reference/data-models.md` |
+| Add new page/route | This file (`index.md`) - Application Routes section |
+| Change architecture | `architecture.md` |
+| Add new component | `reference/design-system-architecture.md` |
+| Complete session work | `../eduschedule-app/project-context.md` (Recent Changes) |
+| Complete major milestone | This file (`index.md`) - Recent Changes section |
+
+### Document Hierarchy
+
+```text
+CLAUDE.md (AI instructions)
+    ↓ points to
+project-context.md (session context - SINGLE SOURCE OF TRUTH)
+    ↓ points to
+docs/index.md (documentation map - THIS FILE)
+    ↓ branches to
+├── planning/*.md (requirements, roadmap)
+├── reference/*.md (technical specs)
+├── testing/*.md (QA checklists)
+└── architecture.md (system design)
+```
+
+---
+
+## Quick Links
+
+- **App Code:** `../eduschedule-app/`
+- **Native Shell:** `../native-shell/` (iOS/Android wrapper)
+- **Production:** <https://eduschedule-app.pages.dev>
+- **Project Context:** `../eduschedule-app/project-context.md`
+- **BMAD Framework:** `../.bmad/`
+
+---
+
+**Last Updated:** 2025-12-17 (Knowledge registry added, archive consolidated)
