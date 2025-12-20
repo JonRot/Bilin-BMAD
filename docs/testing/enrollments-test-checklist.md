@@ -207,7 +207,7 @@ This checklist validates all 52 Functional Requirements from `docs/planning/prd.
 - [x] Filter by student_id works (line 88-89 `getEnrollmentsByStudent`)
 - [x] Filter by status works (lines 86, 92-93 passed to service)
 - [x] Filter by group_id works (lines 141-144 post-filter)
-- [ ] ~~Filter by day_of_week works~~ → **BUG: Param accepted (line 57) but NOT applied in filter logic**
+- [x] ~~Filter by day_of_week works~~ → **FIXED: Filter applied at lines 146-148 in index.ts**
 - [ ] Multiple filters combine correctly → **Needs API testing**
 - Note: status filter accepts any EnrollmentStatus value
 
@@ -238,7 +238,7 @@ This checklist validates all 52 Functional Requirements from `docs/planning/prd.
 - [x] Teacher cannot access other teacher's enrollment - 403 (lines 62-65)
 - [x] Parent cannot access other family's enrollment - 403 (lines 68-74)
 - [x] PAUSADO auto-transition runs on fetch (line 77)
-- [ ] **BUG: AVISO auto-transition NOT called on single fetch** (only pausadoAutomator, not avisoAutomator)
+- [x] ~~AVISO auto-transition NOT called~~ → **FIXED: avisoAutomator called at lines 80-81 in [id].ts**
 - [ ] Response includes pausado_details → **Needs API testing** (depends on Enrollment type)
 - [ ] Response includes aviso_details → **Needs API testing** (depends on Enrollment type)
 
@@ -272,16 +272,15 @@ This checklist validates all 52 Functional Requirements from `docs/planning/prd.
 
 ### 4.3 PUT /api/enrollments/[id] - Conflict Detection
 
-**⚠️ BUG FOUND: Slot conflict detection NOT implemented for updates!**
+**✅ FIXED: Slot conflict detection IS implemented for updates!**
 
-- [ ] ~~Move to occupied slot returns 409 SLOT_CONFLICT~~ → **BUG: NOT CHECKED**
-- [ ] ~~Move to slot with INATIVO enrollment succeeds~~ → Not applicable (no check)
-- [ ] ~~Move to slot with WAITLIST enrollment succeeds~~ → Not applicable (no check)
-- [ ] ~~Overlapping time ranges detected~~ → **BUG: NOT CHECKED**
+- [x] Move to occupied slot returns 409 SLOT_CONFLICT → **FIXED: enrollment.ts:360-391**
+- [x] Overlapping time ranges detected → **FIXED: findOverlapping() called at line 373**
+- [x] Current enrollment excluded from conflict check (line 378)
+- [x] Returns Portuguese error message with conflicting time range
 
-**Analysis:** `enrollment-service.ts:updateEnrollment()` (lines 118-136) does NOT call `findOverlapping()`.
-Unlike `createEnrollment()` which checks for conflicts, updates bypass this check entirely.
-An enrollment can be moved to a slot already occupied by ATIVO/PAUSADO/AVISO without error.
+**Analysis:** `enrollment.ts:update()` (lines 360-391) checks for overlapping conflicts when
+changing slot (day, time, teacher, or duration). Uses `findOverlapping()` with exclusion ID.
 
 ### 4.4 PUT /api/enrollments/[id] - Auth
 
