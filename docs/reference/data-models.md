@@ -1,6 +1,6 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2025-12-19
+**Last Updated:** 2025-12-20
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
 **Tables:** 18 total (9 core + 9 via migrations)
@@ -195,6 +195,7 @@ ATIVO <--> PAUSADO --> CANCELADO
 |--------|------|-------------|-------------|
 | id | TEXT | PRIMARY KEY | Format: `exc_xxx` |
 | enrollment_id | TEXT | NOT NULL, FK | References enrollments(id) |
+| teacher_id | TEXT | NOT NULL | Teacher ID (denormalized from enrollment for performance) |
 | exception_date | TEXT | NOT NULL | Date affected (YYYY-MM-DD) |
 | exception_type | TEXT | NOT NULL | See types below |
 | original_time | TEXT | | Original start time |
@@ -234,6 +235,8 @@ ATIVO <--> PAUSADO --> CANCELADO
 | status | TEXT | NOT NULL | COMPLETED, NO_SHOW |
 | notes | TEXT | | Teacher notes (visible to parents) |
 | marked_by | TEXT | NOT NULL | Teacher who marked |
+| actual_rate | REAL | NULL | Rate charged for this class (for group billing) |
+| effective_group_size | INTEGER | NULL | Number of active group members at completion time |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 
@@ -501,8 +504,9 @@ WHERE status = 'PAUSADO'
 | day_of_week | INTEGER | NOT NULL, CHECK 0-6 | 0=Sunday, etc. |
 | start_time | TEXT | NOT NULL | Start time HH:MM |
 | end_time | TEXT | NOT NULL | End time HH:MM |
-| is_active | INTEGER | DEFAULT 1 | Whether slot is active |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+
+**Note:** Availability slots are created/deleted, not toggled (no is_active flag).
 
 ---
 
@@ -516,8 +520,9 @@ WHERE status = 'PAUSADO'
 | teacher_id | TEXT | NOT NULL, FK | References teachers(id) |
 | day_of_week | INTEGER | NOT NULL, CHECK 0-6 | Day of week |
 | neighborhood | TEXT | NOT NULL | Zone/neighborhood name |
-| priority | INTEGER | DEFAULT 1 | Zone priority for day |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+
+**Note:** Single zone per day enforced (no priority needed).
 
 ---
 
@@ -639,4 +644,4 @@ WHERE status = 'PAUSADO'
 
 ---
 
-**Last Updated:** 2025-12-19
+**Last Updated:** 2025-12-20

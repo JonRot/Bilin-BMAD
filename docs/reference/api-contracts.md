@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2025-12-17
+**Last Updated:** 2025-12-20
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 80+ total
+**Endpoints:** 95+ total
 
 ## Overview
 
@@ -128,6 +128,72 @@ Change enrollment status.
 ```
 - **Response:** Updated enrollment with pausado_details
 - **Errors:** `422 PAUSADO_BLOCKED` if cooldown active
+
+### DELETE /api/enrollments/[id]
+Terminate an enrollment (soft delete).
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Response:** `{ "success": true, "message": "Enrollment terminated" }`
+
+---
+
+## Class Lifecycle APIs
+
+### POST /api/enrollments/[id]/start-class
+Mark when a teacher starts a class session.
+- **Auth:** Teacher (own) or Admin
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "class_date": "2025-12-15",
+  "class_time": "14:00"
+}
+```
+- **Response:**
+```json
+{
+  "success": true,
+  "completion": { "id": "cmp_xxx", "started_at": 1734278400, ... },
+  "message": "Class started successfully. Parents have been notified."
+}
+```
+- **Errors:**
+  - `400 CLASS_DATE_NOT_TODAY` - Can only start classes scheduled for today
+  - `400 CLASS_NOT_STARTED_YET` - Current time before scheduled time
+  - `400 CLASS_ALREADY_STARTED` - Completion record already exists
+  - `400 DUPLICATE_COMPLETION` - Already started
+- **Notes:** Creates completion record with `started_at` timestamp, notifies parents
+
+### POST /api/enrollments/[id]/complete-class
+Finalize a class that was previously started.
+- **Auth:** Teacher (own) or Admin
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "class_date": "2025-12-15",
+  "status": "COMPLETED",
+  "notes": "Worked on vocabulary",
+  "early_completion_reason": "STUDENT_SICK",
+  "early_completion_details": "Optional details"
+}
+```
+- **Response:**
+```json
+{
+  "success": true,
+  "completion": { "id": "cmp_xxx", "completion_type": "NORMAL", ... },
+  "message": "Aula concluída com sucesso (65 minutos)."
+}
+```
+- **Errors:**
+  - `400 CLASS_NOT_STARTED` - Must start class first
+  - `400 TOO_EARLY_TO_COMPLETE` - Must wait 15 minutes after start
+  - `400 EARLY_COMPLETION_REASON_REQUIRED` - If <60 min, needs reason
+  - `400 FEEDBACK_REQUIRED` - Normal completion needs notes
+- **Early Completion Reasons:** `PARENT_NO_ANSWER`, `STUDENT_SICK`, `TECHNICAL_ISSUES`, `STUDENT_NOT_READY`, `OTHER`
+- **Completion Types:** `NORMAL` (≥60 min), `EARLY` (<60 min), `NO_SHOW`
 
 ---
 
@@ -266,21 +332,110 @@ Get teacher slot availability grid.
 }
 ```
 
+### GET /api/slots/matches
+Get smart student matches for a free slot.
+- **Auth:** Admin only
+- **Query Params:**
+  - `teacherId` (required): Teacher ID
+  - `dayOfWeek`: Day of week (0-6)
+  - `startTime`: Slot start time (HH:MM)
+  - `endTime`: Slot end time (HH:MM)
+  - `prevLat`, `prevLon`, `prevNeighborhood`: Previous class location (optional)
+  - `nextLat`, `nextLon`, `nextNeighborhood`: Next class location (optional)
+  - `page`, `limit`: Pagination (default: page=1, limit=50, max=100)
+- **Response:**
+```json
+{
+  "waitlistMatches": [
+    {
+      "waitlist_id": "wl_xxx",
+      "student_name": "João",
+      "score": 85,
+      "neighborhood": "Centro",
+      "language": "English"
+    }
+  ],
+  "availableStudents": [
+    { "id": "stu_xxx", "name": "Maria", "neighborhood": "Jardins", "type": "existing_student" }
+  ],
+  "teacherLanguages": ["English", "Portuguese"],
+  "slotInfo": { "dayOfWeek": 1, "startTime": "14:00", "endTime": "15:00" },
+  "pagination": { "waitlist": { "total": 10, "page": 1, "hasMore": false }, ... }
+}
+```
+
+### GET /api/slots/suggestions
+Get ghosted waitlist suggestions for LIVRE slots.
+- **Auth:** Admin only
+- **Query Params:**
+  - `teacherId` (required): Teacher ID
+  - `dayOfWeek`: Day of week (optional, returns all days if omitted)
+  - `minScore`: Minimum match score (default: 60)
+- **Response:**
+```json
+{
+  "slotSuggestions": [
+    {
+      "slot_key": "1_14:00_16:00",
+      "day_of_week": 1,
+      "start_time": "14:00",
+      "end_time": "16:00",
+      "duration_minutes": 120,
+      "suggestions": [
+        {
+          "waitlist_id": "wl_xxx",
+          "student_name": "João",
+          "score": 85,
+          "suggested_start": "14:00",
+          "suggested_end": "15:00",
+          "travel_from_prev_minutes": 15,
+          "is_sequential_fit": true
+        }
+      ]
+    }
+  ],
+  "totalSlots": 5,
+  "totalSuggestions": 12
+}
+```
+- **Notes:** Returns top waitlist matches with travel time calculations for sequential scheduling
+
 ---
 
 ## System APIs
 
 ### GET /api/system/closures
-List system closures (holidays, FÉRIAS).
-- **Auth:** Required
+List all system closures (FÉRIAS, HOLIDAY, WEATHER, EMERGENCY, CUSTOM).
+- **Auth:** Admin only
+- **Response:** Array of closure objects
 
 ### POST /api/system/closures
 Create system closure.
 - **Auth:** Admin only
 - **CSRF:** Required
+- **Body:**
+```json
+{
+  "closure_type": "HOLIDAY",
+  "name": "Christmas",
+  "city_id": null,
+  "start_date": "2025-12-25",
+  "end_date": "2025-12-25"
+}
+```
+- **Closure Types:** `FERIAS`, `HOLIDAY`, `WEATHER`, `EMERGENCY`, `CUSTOM`
+- **Response:** `201 Created` with closure object
+
+### DELETE /api/system/closures
+Delete a system closure.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Query Params:** `id` (required) - Closure ID
+- **Response:** `{ "success": true }`
+- **Errors:** `404 NOT_FOUND` if closure doesn't exist
 
 ### GET /api/exceptions/pending
-List pending teacher cancellations.
+List pending teacher cancellations awaiting approval.
 - **Auth:** Admin only
 
 ---
@@ -311,6 +466,72 @@ Delete calendar event.
 ---
 
 ## Admin APIs
+
+### POST /api/admin/cancellations
+Approve or reject teacher cancellation requests.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "action": "approve",
+  "exception_id": "exc_xxx"
+}
+```
+- **Actions:**
+  - `approve` - Approve single cancellation (requires `exception_id`)
+  - `reject` - Reject and delete cancellation (requires `exception_id`)
+  - `approve_all_sick` - Bulk approve all cancellations with sick-related reasons
+- **Response:** `{ "success": true, "message": "Cancellation approved" }`
+- **Notes:** Sends notifications to both teacher and parent on approval/rejection
+
+### POST /api/admin/geocode-single
+Geocode a single address using Google Maps API.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Query Params:** `address` (required) - Address to geocode (min 3 chars)
+- **Response:**
+```json
+{
+  "formatted": "Rua Augusta, 1234 - Consolação, São Paulo - SP",
+  "street": "Rua Augusta",
+  "number": "1234",
+  "neighborhood": "Consolação",
+  "city": "São Paulo",
+  "state": "São Paulo",
+  "state_code": "SP",
+  "country": "Brazil",
+  "postal_code": "01310-100",
+  "lat": -23.5505,
+  "lon": -46.6333
+}
+```
+- **Errors:** `404` if no results found
+
+### POST /api/admin/geocode-locations
+Batch geocode multiple student/teacher locations.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Notes:** Processes locations missing lat/lon coordinates
+
+### POST /api/admin/stabilize-locations
+Stabilize location coordinates in the database.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Notes:** Normalizes and validates existing coordinate data
+
+### POST /api/admin/validate-locations
+Validate location data integrity.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Notes:** Checks for invalid or inconsistent location data
+
+### POST /api/admin/import-students
+Import students from CSV data.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** CSV data or file upload
+- **Notes:** Bulk import with validation and duplicate detection
 
 ### POST /api/admin/cleanup-data
 Clean up orphaned data.
@@ -484,6 +705,106 @@ Approve/reject availability change.
 - **Auth:** Admin only
 - **CSRF:** Required
 
+### GET /api/admin/time-off-approvals
+List pending teacher time-off requests.
+- **Auth:** Admin only
+- **Response:** Array of time-off requests with teacher info
+```json
+[{
+  "id": "tor_xxx",
+  "teacher_id": "tea_xxx",
+  "teacher_name": "John Smith",
+  "teacher_nickname": "John",
+  "start_date": "2025-01-15",
+  "end_date": "2025-01-20",
+  "reason": "Vacation",
+  "status": "PENDING",
+  "created_at": 1705320000
+}]
+```
+
+### POST /api/admin/time-off-approvals
+Approve or reject a teacher time-off request.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "request_id": "tor_xxx",
+  "action": "approve",
+  "admin_notes": "Approved for vacation"
+}
+```
+- **Actions:** `approve` or `reject` (rejection requires `admin_notes`)
+- **Response:** `{ "success": true, "message": "Time-off request approved" }`
+
+### GET /api/admin/availability-approvals
+List pending teacher availability submissions with comparison data.
+- **Auth:** Admin only
+- **Response:** Grouped by teacher with current/pending slots
+```json
+[{
+  "teacher_id": "tea_xxx",
+  "teacher_nickname": "John",
+  "teacher_full_name": "John Smith",
+  "pending_slots": [{ "day_of_week": 1, "start_time": "09:00", "end_time": "12:00" }],
+  "pending_removals": [],
+  "current_slots": [{ "day_of_week": 2, "start_time": "14:00", "end_time": "18:00" }],
+  "booked_slots": [{ "day_of_week": 2, "time": "14:00" }]
+}]
+```
+
+### POST /api/admin/availability-approvals
+Approve or reject a teacher's availability changes.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "teacher_id": "tea_xxx",
+  "action": "approve",
+  "reason": "Rejection reason (required for reject)"
+}
+```
+- **Actions:** `approve` or `reject` (rejection requires `reason`)
+- **Response:** `{ "success": true, "message": "Availability approved" }`
+
+### GET /api/admin/conflicts
+Scan for scheduling conflicts (overlapping enrollments).
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "conflicts": [{
+    "teacher_id": "tea_xxx",
+    "teacher_name": "John",
+    "day_of_week": 1,
+    "day_label": "Segunda-feira",
+    "enrollments": [
+      { "id": "enr_1", "student_name": "Alice", "start_time": "14:00", "end_time": "15:00" },
+      { "id": "enr_2", "student_name": "Bob", "start_time": "14:30", "end_time": "15:30" }
+    ],
+    "overlap_description": "Alice (14:00-15:00) overlaps with Bob (14:30-15:30)"
+  }],
+  "totalConflicts": 1,
+  "scannedEnrollments": 150
+}
+```
+
+### PATCH /api/admin/travel-errors/[id]/status
+Update the status of a travel time error.
+- **Auth:** Admin only
+- **Body:**
+```json
+{
+  "status": "RESOLVED",
+  "resolution_notes": "Fixed address formatting"
+}
+```
+- **Statuses:** `PENDING`, `REVIEWED`, `RESOLVED`, `IGNORED`
+- **Response:** `{ "success": true, "id": "...", "status": "RESOLVED" }`
+- **Errors:** `404 NOT_FOUND` if error doesn't exist
+
 ---
 
 ## Parent APIs
@@ -502,11 +823,38 @@ Get student schedule.
 - **Auth:** Parent (must be linked)
 - **Query Params:** `start_date`, `end_date`
 
-### POST /api/parent/cancellations
-Cancel class for linked student.
-- **Auth:** Parent
+### POST /api/parent/cancel-class
+Cancel or reschedule a class for linked student.
+- **Auth:** Parent only
 - **CSRF:** Required
-- **Body:** `{ "enrollment_id", "date", "reason" }`
+- **Body:**
+```json
+{
+  "enrollment_id": "enr_xxx",
+  "class_date": "2025-12-15",
+  "reason": "Student is sick",
+  "reschedule_to_date": "2025-12-17",
+  "reschedule_to_time": "14:00"
+}
+```
+- **Notes:**
+  - `reschedule_to_date` and `reschedule_to_time` are optional (for cancellation only)
+  - If rescheduling, both date and time must be provided
+  - Cannot cancel classes in the past
+  - IDOR protection: Parent can only cancel for their own students
+- **Response:**
+```json
+{
+  "success": true,
+  "exception": { "id": "exc_xxx", "exception_type": "CANCELLED_STUDENT", ... },
+  "message": "Class on 2025-12-15 has been cancelled"
+}
+```
+- **Errors:**
+  - `403 FORBIDDEN` - Not parent role or doesn't own student
+  - `404 NOT_FOUND` - Enrollment not found
+  - `409 DUPLICATE_EXCEPTION` - Exception already exists for this date
+  - `400 VALIDATION_ERROR` - Invalid input or past date
 
 ---
 
@@ -517,20 +865,12 @@ List user's notifications.
 - **Auth:** Required
 - **Query Params:** `unread_only`, `limit`
 
-### PUT /api/notifications/[id]/read
+### POST /api/notifications/[id]/read
 Mark notification as read.
 - **Auth:** Required
 - **CSRF:** Required
-
-### PUT /api/notifications/read-all
-Mark all notifications as read.
-- **Auth:** Required
-- **CSRF:** Required
-
-### DELETE /api/notifications/[id]
-Delete notification.
-- **Auth:** Required
-- **CSRF:** Required
+- **Response:** `{ "success": true }` or `{ "success": true, "alreadyRead": true }`
+- **Errors:** `404 NOT_FOUND` if notification doesn't exist or doesn't belong to user
 
 ---
 
@@ -610,4 +950,4 @@ Reject cancellation.
 
 ---
 
-**Last Updated:** 2025-12-17
+**Last Updated:** 2025-12-20
