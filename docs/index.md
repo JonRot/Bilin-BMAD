@@ -8,14 +8,15 @@
 
 **Status:** ✅ **MVP COMPLETE** - All 52 FRs Implemented, Data Model Hardened, Production-Ready
 
-**Latest Deployment:** <https://64b0d940.eduschedule-app.pages.dev>
+**Latest Deployment:** <https://eduschedule-app.pages.dev>
 
-**Implementation Stats (as of 2025-12-17):**
+**Implementation Stats (as of 2025-12-21):**
 - **26 pages** (17 admin, 4 teacher, 5 parent) - 9 beyond original PRD
 - **80+ API endpoints** across 12 categories
 - **31 reusable components** with full design system compliance
 - **24 business services** with repository pattern
 - **18 database tables** (9 added via migrations beyond original spec)
+- **17 client-side TypeScript modules** in `src/scripts/` (~13,900 lines)
 
 ---
 
@@ -446,9 +447,49 @@ These features were built during implementation but aren't in the original PRD. 
 
 ---
 
-## Recent Changes (2025-12-17)
+## Recent Changes
 
-### Comprehensive Documentation Audit
+### 2025-12-21: Page Optimization & Code Quality
+
+**Client-Side Script Extractions (14 TypeScript modules created):**
+
+Extracted inline JavaScript from Astro pages to typed TypeScript modules in `src/scripts/`:
+
+| Page/Component | Before | After | Reduction |
+|----------------|--------|-------|-----------|
+| leads.astro | 5,216 | 3,650 | 30% |
+| users.astro | 3,042 | 1,483 | 51% |
+| WeeklyScheduleGrid.astro | 3,507 | 2,389 | 32% |
+| AddressForm.astro | 1,803 | 1,036 | 43% |
+| SmartBookingModal.astro | 1,657 | 890 | 46% |
+| teacher/schedule.astro | 1,810 | 1,235 | 32% |
+| teacher/availability.astro | 1,605 | 1,222 | 24% |
+| parent/schedule.astro | 1,227 | 744 | 39% |
+| travel-errors.astro | 1,366 | 1,064 | 22% |
+| availability-approvals.astro | 926 | 569 | 39% |
+| approvals.astro | 679 | 318 | 53% |
+| settings.astro | 630 | 372 | 41% |
+| pending-cancellations.astro | 625 | 355 | 43% |
+| theme-editor.astro | 2,504 | 1,972 | 21% |
+
+**Benefits:**
+- ~9,500 lines removed from Astro pages
+- 17 typed TypeScript modules (~13,900 lines total)
+- Vite bundles modules for optimal client-side loading
+- Pattern: hidden inputs → module import → `initPage(config)`
+
+**CSS Variable Fixes (34 violations fixed):**
+- Fixed `--text-primary` → `--color-text`
+- Fixed `--text-secondary` → `--color-text-light`
+- Fixed `--text-muted` → `--color-text-muted`
+- Fixed `--bg-secondary` → `--color-surface`
+- Files: parent/schedule.astro, parent/invoice.astro, parent/history.astro
+
+**Performance Optimization:**
+- Fixed N+1 queries in schedule-generator.ts (90% query reduction)
+- Added shared-utils.js for client-side date formatting
+
+### 2025-12-17: Comprehensive Documentation Audit
 
 **Findings from parallel agent audit (4 agents):**
 
