@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2025-12-20
+**Last Updated:** 2025-12-22
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 95+ total
+**Endpoints:** 100+ total
 
 ## Overview
 
@@ -738,6 +738,70 @@ Approve or reject a teacher time-off request.
 - **Actions:** `approve` or `reject` (rejection requires `admin_notes`)
 - **Response:** `{ "success": true, "message": "Time-off request approved" }`
 
+### GET /api/admin/pausado-approvals
+List pending parent pausado (pause) requests for enrollments.
+- **Auth:** Admin only
+- **Response:** Array of pausado requests with student and enrollment info
+```json
+{
+  "requests": [{
+    "id": "psr_xxx",
+    "enrollment_id": "enr_xxx",
+    "student_id": "stu_xxx",
+    "student_name": "Maria Silva",
+    "parent_email": "parent@example.com",
+    "requested_start_date": "2025-01-15",
+    "reason": "Family vacation",
+    "status": "PENDING",
+    "requested_at": 1735200000,
+    "day_of_week": 1,
+    "start_time": "09:00",
+    "language": "Inglês",
+    "teacher_name": "John Smith"
+  }]
+}
+```
+
+### POST /api/admin/pausado-approvals
+Approve or reject a parent pausado request.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "request_id": "psr_xxx",
+  "action": "approve",
+  "admin_notes": "Approved for vacation period"
+}
+```
+- **Actions:** `approve` (transitions enrollment to PAUSADO) or `reject` (requires `admin_notes`)
+- **Response:** `{ "success": true, "message": "Solicitação aprovada. Matrícula pausada." }`
+
+### GET /api/parent/pausado-request
+List pausado requests for parent's students.
+- **Auth:** Parent only
+- **Query:** `?studentId=stu_xxx` (optional, defaults to all students)
+- **Response:** Array of pausado requests
+
+### POST /api/parent/pausado-request
+Create a new pausado request for an enrollment.
+- **Auth:** Parent only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "enrollment_id": "enr_xxx",
+  "requested_start_date": "2025-01-15",
+  "reason": "Family vacation"
+}
+```
+- **Validation:**
+  - Enrollment must be ATIVO status
+  - Not in 5-month cooldown period
+  - No existing PENDING request for this enrollment
+  - Date must be in the future
+- **Response:** Created pausado request object
+
 ### GET /api/admin/availability-approvals
 List pending teacher availability submissions with comparison data.
 - **Auth:** Admin only
@@ -856,14 +920,81 @@ Cancel or reschedule a class for linked student.
   - `409 DUPLICATE_EXCEPTION` - Exception already exists for this date
   - `400 VALIDATION_ERROR` - Invalid input or past date
 
+### GET /api/parent/feedback
+Get BILIN learning feedback for parent's children.
+- **Auth:** Parent only
+- **Query Params:**
+  - `student_id` (optional) - Filter by specific student
+  - `start_date` (optional) - Start date YYYY-MM-DD (default: 3 months ago)
+  - `end_date` (optional) - End date YYYY-MM-DD (default: today)
+  - `limit` (optional) - Max results per page (default: 50, max: 100)
+  - `offset` (optional) - Pagination offset (default: 0)
+- **Response:**
+```json
+{
+  "feedbackItems": [
+    {
+      "id": "cmp_xxx",
+      "class_date": "2025-12-15",
+      "class_time": "14:00",
+      "student_id": "stu_xxx",
+      "student_name": "Sofia",
+      "teacher_name": "John",
+      "notes": "Worked on vocabulary",
+      "bilin_pillars": ["ACONCHEGO_EDUCATIVO", "CONEXAO_LUDICA"],
+      "skill_ratings": {
+        "criatividade": 4, "leitura": 3, "escrita": 3,
+        "escuta": 5, "atencao": 4, "espontaneidade": 4
+      }
+    }
+  ],
+  "aggregatedProgress": [
+    {
+      "student_id": "stu_xxx",
+      "student_name": "Sofia",
+      "pillarCounts": {
+        "ACONCHEGO_EDUCATIVO": 5, "CONEXAO_LUDICA": 3, ...
+      },
+      "avgSkillRatings": {
+        "criatividade": 4.2, "leitura": 3.5, ...
+      },
+      "totalClasses": 12,
+      "classesWithFeedback": 10
+    }
+  ],
+  "pagination": {
+    "total": 42,
+    "limit": 50,
+    "offset": 0,
+    "hasMore": false
+  }
+}
+```
+- **Pillar Keys:** `ACONCHEGO_EDUCATIVO`, `CONEXAO_LUDICA`, `CRESCIMENTO_NATURAL`, `CURIOSIDADE_ATENTA`, `EXPRESSAO_VIVA`, `JORNADA_UNICA`, `PROCESSO_CONTINUO`
+- **Skill Keys:** `criatividade`, `leitura`, `escrita`, `escuta`, `atencao`, `espontaneidade` (0-5 scale)
+- **Errors:**
+  - `401 UNAUTHORIZED` - Not authenticated
+  - `403 FORBIDDEN` - Not parent role
+  - `404 NOT_FOUND` - Student not found or not linked to parent
+
 ---
 
 ## Notification APIs
 
 ### GET /api/notifications
-List user's notifications.
+List user's notifications with pagination.
 - **Auth:** Required
-- **Query Params:** `unread_only`, `limit`
+- **Query Params:** `unread_only` (boolean), `limit` (default 20, max 100), `offset` (default 0)
+- **Response:**
+```json
+{
+  "notifications": [...],
+  "total": 42,
+  "unreadCount": 5,
+  "limit": 20,
+  "offset": 0
+}
+```
 
 ### POST /api/notifications/[id]/read
 Mark notification as read.
@@ -871,6 +1002,53 @@ Mark notification as read.
 - **CSRF:** Required
 - **Response:** `{ "success": true }` or `{ "success": true, "alreadyRead": true }`
 - **Errors:** `404 NOT_FOUND` if notification doesn't exist or doesn't belong to user
+
+### POST /api/notifications/read-all
+Mark all user's notifications as read.
+- **Auth:** Required
+- **CSRF:** Required
+- **Response:** `{ "success": true, "markedAsRead": 5 }`
+
+---
+
+## Pending Counts APIs (Badge System)
+
+### GET /api/admin/pending-counts
+Get counts of all pending items for admin badge display.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "changeRequests": 2,
+  "availabilityApprovals": 1,
+  "timeOffRequests": 1,
+  "cancellations": 3,
+  "total": 7
+}
+```
+
+### GET /api/teacher/pending-counts
+Get teacher's pending request counts.
+- **Auth:** Teacher only
+- **Response:**
+```json
+{
+  "pendingAvailability": 1,
+  "pendingTimeOff": 0,
+  "total": 1
+}
+```
+
+### GET /api/parent/pending-counts
+Get parent's pending cancellation counts.
+- **Auth:** Parent only
+- **Response:**
+```json
+{
+  "pendingCancellations": 1,
+  "total": 1
+}
+```
 
 ---
 

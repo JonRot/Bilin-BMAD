@@ -1,9 +1,9 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2025-12-20
+**Last Updated:** 2025-12-27
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
-**Tables:** 18 total (9 core + 9 via migrations)
+**Tables:** 19 total (9 core + 10 via migrations)
 
 ## Overview
 
@@ -17,9 +17,11 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 | **Availability** | teacher_availability, teacher_day_zones |
 | **Status Tracking** | enrollment_status_history |
 | **Time-Off** | teacher_time_off_requests |
+| **Pausado Requests** | pausado_requests |
 | **Travel** | travel_time_cache, travel_time_errors |
 | **Notifications** | notifications |
 | **Parent Links** | parent_links |
+| **Teacher Credits** | teacher_credits |
 
 ## Entity Relationship Diagram
 
@@ -159,6 +161,7 @@ leads --> (converts to) students + enrollments
 | hourly_rate | REAL | NOT NULL | Rate in BRL (R$) |
 | status | TEXT | NOT NULL, DEFAULT 'ATIVO' | See status lifecycle |
 | pausado_at | INTEGER | | Unix timestamp when paused |
+| pausado_started_at | INTEGER | | When pause began (for tracking) |
 | pausado_reason | TEXT | | Reason for pause |
 | pausado_return_date | INTEGER | | Auto-return timestamp |
 | last_pausado_end | INTEGER | | For cooldown calculation |
@@ -206,14 +209,19 @@ ATIVO <--> PAUSADO --> CANCELADO
 | approved_by | TEXT | | Admin who approved |
 | approved_at | INTEGER | | Approval timestamp |
 | status | TEXT | NOT NULL, DEFAULT 'PENDING' | PENDING, APPROVED, REJECTED |
+| is_sick_protected | INTEGER | DEFAULT 0 | 1 if sick cancellation (no penalty) |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 
 **Exception Types:**
 - `CANCELLED_STUDENT` - Student/parent cancelled (not billed)
 - `CANCELLED_TEACHER` - Teacher cancelled (requires approval)
-- `RESCHEDULED` - Moved to different date/time
+- `CANCELLED_ADMIN` - Admin cancelled on behalf of student/teacher
+- `RESCHEDULED` - Moved to different date/time (legacy)
+- `RESCHEDULED_BY_STUDENT` - Rescheduled by student/parent
+- `RESCHEDULED_BY_TEACHER` - Rescheduled by teacher
 - `HOLIDAY` - System closure
-- `NO_SHOW` - Student didn't attend (billable)
+
+**Note:** `NO_SHOW` is a `class_completions.status` value, not an exception type.
 
 **Approval Flow (FR14):**
 - Parent cancellations: Auto-approved
@@ -224,7 +232,7 @@ ATIVO <--> PAUSADO --> CANCELADO
 
 ### 6. class_completions
 
-**Purpose:** Proof of delivery for invoicing
+**Purpose:** Proof of delivery for invoicing + BILIN learning feedback
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -234,11 +242,24 @@ ATIVO <--> PAUSADO --> CANCELADO
 | class_time | TEXT | NOT NULL | Actual start time |
 | status | TEXT | NOT NULL | COMPLETED, NO_SHOW |
 | notes | TEXT | | Teacher notes (visible to parents) |
+| bilin_pillars | TEXT | NULL | JSON array of 1-3 BILIN pillar keys |
+| skill_ratings | TEXT | NULL | JSON object with 6 skill ratings (0-5) |
 | marked_by | TEXT | NOT NULL | Teacher who marked |
 | actual_rate | REAL | NULL | Rate charged for this class (for group billing) |
 | effective_group_size | INTEGER | NULL | Number of active group members at completion time |
+| makeup_for_date | TEXT | NULL | Date this makeup class is for (YYYY-MM-DD) |
+| makeup_for_exception_id | TEXT | NULL, FK | Links to cancelled class exception |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+
+**BILIN Pillar Keys:** `ACONCHEGO_EDUCATIVO`, `CONEXAO_LUDICA`, `CRESCIMENTO_NATURAL`, `CURIOSIDADE_ATENTA`, `EXPRESSAO_VIVA`, `JORNADA_UNICA`, `PROCESSO_CONTINUO`
+
+**Skill Rating Keys:** `criatividade`, `leitura`, `escrita`, `escuta`, `atencao`, `espontaneidade` (values 0-5)
+
+**Indexes:**
+- `idx_completions_makeup_exception` on makeup_for_exception_id (partial)
+- `idx_completions_makeup_date` on makeup_for_date (partial)
+- `idx_completions_has_bilin_feedback` on (enrollment_id, class_date) WHERE bilin_pillars IS NOT NULL
 
 **Edit Window (FR16):** Teachers can edit notes within 7 days
 
@@ -251,11 +272,12 @@ ATIVO <--> PAUSADO --> CANCELADO
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | TEXT | PRIMARY KEY | Format: `cls_xxx` |
-| closure_type | TEXT | NOT NULL | HOLIDAY, FERIAS |
+| closure_type | TEXT | NOT NULL | FERIAS, HOLIDAY, WEATHER, EMERGENCY, CUSTOM |
 | start_date | TEXT | NOT NULL | Start date (YYYY-MM-DD) |
 | end_date | TEXT | NOT NULL | End date (YYYY-MM-DD) |
 | name | TEXT | NOT NULL | Display name |
 | affects_all | INTEGER | NOT NULL, DEFAULT 1 | 1=all teachers |
+| city_id | TEXT | FK | References cities(id), NULL = all cities |
 | teacher_ids | TEXT | | JSON array if not all |
 | created_by | TEXT | NOT NULL | Admin who created |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
@@ -633,6 +655,76 @@ WHERE status = 'PAUSADO'
 
 ---
 
+### 20. pausado_requests
+
+**Purpose:** Parent-initiated pause requests for enrollments (requires admin approval)
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | Request ID (psr_xxx) |
+| enrollment_id | TEXT | NOT NULL, FK | References enrollments(id) |
+| student_id | TEXT | NOT NULL, FK | References students(id) |
+| parent_email | TEXT | NOT NULL | Requesting parent email |
+| requested_start_date | TEXT | NOT NULL | When pausado should start YYYY-MM-DD |
+| reason | TEXT | | Optional reason for pause |
+| status | TEXT | NOT NULL, DEFAULT 'PENDING' | PENDING, APPROVED, REJECTED |
+| requested_at | INTEGER | NOT NULL | Unix timestamp of request |
+| reviewed_by | TEXT | FK | Admin who reviewed |
+| reviewed_at | INTEGER | | Review timestamp |
+| admin_notes | TEXT | | Admin notes on decision |
+| created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+| updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+
+**Indexes:**
+- On `status` for filtering pending requests
+- On `enrollment_id` for lookups
+- On `student_id` for parent queries
+
+**Business Rules:**
+- Only ATIVO enrollments can have pausado requests
+- 5-month cooldown period between pauses enforced
+- When approved, enrollment transitions to PAUSADO on requested_start_date
+- 21-day maximum pause period before auto-return to ATIVO
+
+---
+
+### 21. teacher_credits
+
+**Purpose:** Teacher scoring and tiered pay rate system
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | Credit ID (tcr_xxx) |
+| teacher_id | TEXT | NOT NULL, UNIQUE, FK | References teachers(id) |
+| credit_score | INTEGER | NOT NULL, DEFAULT 700 | Score 0-1000 |
+| tier | TEXT | NOT NULL, DEFAULT 'STANDARD' | NEW, STANDARD, PREMIUM, ELITE |
+| individual_rate | REAL | NOT NULL, DEFAULT 85 | Pay rate for individual classes |
+| group_rate | REAL | NOT NULL, DEFAULT 58 | Pay rate for group classes |
+| total_classes_taught | INTEGER | DEFAULT 0 | Lifetime class count |
+| created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+| updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+
+**Tier Mapping:**
+| Tier | Score Range | Individual Rate | Group Rate |
+|------|-------------|-----------------|------------|
+| NEW | 0-499 | R$79 | R$50 |
+| STANDARD | 500-699 | R$85 | R$58 |
+| PREMIUM | 700-899 | R$90 | R$65 |
+| ELITE | 900-1000 | R$95 | R$70 |
+
+**Indexes:**
+- On `teacher_id` (unique)
+- On `tier` for filtering
+
+**Business Rules:**
+- Each teacher has exactly one credit record
+- Existing teachers are grandfathered at ELITE tier (score 950)
+- New teachers start at NEW tier (score 300)
+- Scores updated based on performance events (Phase 2 feature)
+- Rates are used for teacher earnings, NOT client billing
+
+---
+
 ## Security Considerations
 
 1. **Prepared Statements:** All queries use parameterized queries
@@ -644,4 +736,4 @@ WHERE status = 'PAUSADO'
 
 ---
 
-**Last Updated:** 2025-12-20
+**Last Updated:** 2025-12-21

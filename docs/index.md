@@ -10,8 +10,8 @@
 
 **Latest Deployment:** <https://eduschedule-app.pages.dev>
 
-**Implementation Stats (as of 2025-12-21):**
-- **26 pages** (17 admin, 4 teacher, 5 parent) - 9 beyond original PRD
+**Implementation Stats (as of 2025-12-26):**
+- **26 pages** (17 admin, 5 teacher, 4 parent) - 9 beyond original PRD
 - **80+ API endpoints** across 12 categories
 - **31 reusable components** with full design system compliance
 - **24 business services** with repository pattern
@@ -45,6 +45,7 @@
 | **Run QA tests** | [Enrollments Test Checklist](./testing/enrollments-test-checklist.md) |
 | **Review page audit** | [Page Audit 2025-12-20](./testing/page-audit-2025-12-20.md) |
 | **PRD Compliance Audit** | [Comprehensive Audit 2025-12-20](./testing/audit-2025-12-20.md) |
+| **Full App Audit (latest)** | [Comprehensive App Audit 2025-12-21](./testing/comprehensive-app-audit-2025-12-21.md) |
 
 ---
 
@@ -263,7 +264,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 
 ## Application Routes
 
-### Admin Routes (`/admin/*`) - 18 Pages
+### Admin Routes (`/admin/*`) - 19 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
@@ -278,6 +279,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/admin/theme-editor` | Design system customization with live preview | - |
 | `/admin/pending-cancellations` | Teacher cancellation approval workflow | FR13-14 |
 | `/admin/time-off-approvals` | Teacher vacation/sick/personal time-off requests | Extra |
+| `/admin/pausado-approvals` | Parent pausado (pause) requests approval workflow | Extra |
 | `/admin/parent-links` | Link parent OAuth emails to students | Extra |
 | `/admin/teacher-links` | Link teacher OAuth emails to teacher records | Extra |
 | `/admin/account-links` | Combined parent/teacher link management | Extra |
@@ -286,26 +288,32 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/admin/re-encrypt` | Data re-encryption tool for key rotation | Extra |
 | `/admin/import-data` | Bulk student import from JSON | Extra |
 
-### Teacher Routes (`/teacher/*`) - 4 Pages
+### Teacher Routes (`/teacher/*`) - 5 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
-| `/teacher` | Dashboard: stats, student list (up to 5), quick actions | - |
+| `/teacher` | Dashboard: stats, itinerary view, student grid with details | - |
 | `/teacher/schedule` | Weekly schedule: start/complete class, cancellation requests, time-off, earnings | FR19, FR22-23 |
 | `/teacher/availability` | LIVRE/BLOCKED grid: day-zone selectors, potential earnings calculation | FR20-21 |
 | `/teacher/profile` | Profile info, banking (PIX/CPF), change requests | - |
+| `/teacher/invoice` | Monthly earnings: tier display, class-by-class breakdown, summary stats | FR23 |
 
-### Parent Routes (`/parent/*`) - 5 Pages
+### Parent Routes (`/parent/*`) - 4 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
-| `/parent` | Dashboard: children cards, upcoming classes, quick actions | - |
-| `/parent/schedule` | Weekly schedule: cancel/reschedule 3-step modal with slot picker | FR28, FR12 |
-| `/parent/history` | Class history: teacher notes, makeup indicators, monthly navigation | FR26-27 |
+| `/parent` | Dashboard: children cards, upcoming classes list, pausado request modal | - |
+| `/parent/profile` | Parent profile: account info, contact details, change requests | - |
+| `/parent/students` | Consolidated dashboard: BILIN pillars, skill ratings, class history with status, student info | FR25-27 |
 | `/parent/invoice` | Monthly billing: per-class breakdown, group rates, total due | FR29 |
-| `/parent/students` | Student details: profile, parent info, change requests | FR25 |
 
-### API Routes (`/api/*`) - 80+ Endpoints
+### Common Routes - 1 Page
+
+| Route | Purpose | PRD Ref |
+|-------|---------|---------|
+| `/notifications` | Notification center: filter by type/status, mark read, pagination | Extra |
+
+### API Routes (`/api/*`) - 100+ Endpoints
 
 | Category | Count | Key Endpoints | Purpose |
 |----------|-------|---------------|---------|
@@ -317,7 +325,8 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | Slots | 3 | `/[teacherId]`, `/matches`, `/suggestions` | Availability queries, matching |
 | Availability | 2 | `/index`, `/approvals` | Teacher availability CRUD |
 | Teacher | 6 | `/availability`, `/time-off`, `/day-zones` | Teacher-specific operations |
-| Notifications | 2 | `/index`, `/[id]/read` | User notifications |
+| Notifications | 3 | `/index`, `/[id]/read`, `/read-all` | User notifications |
+| Pending Counts | 3 | `/admin/pending-counts`, `/teacher/pending-counts`, `/parent/pending-counts` | Badge counts |
 | Travel | 2 | `/index`, `/matrix` | Travel time calculations |
 | Change Requests | 4 | `/index`, `/count`, `/[id]/approve`, `/[id]/reject` | Change request workflow |
 | System | 1 | `/closures` | System closure management |
@@ -404,8 +413,8 @@ All architecture decisions follow the [Edge Architecture Spec](./claude-edge-arc
 | Table | Field | Valid Values |
 |-------|-------|--------------|
 | `enrollments` | status | WAITLIST, ATIVO, PAUSADO, AVISO, INATIVO |
-| `students` | status | Ativo, Novo, Aula Teste, Aviso, Sem Contrato, Pausado, Inativo |
-| `enrollment_exceptions` | exception_type | CANCELLED_STUDENT, CANCELLED_TEACHER, RESCHEDULED, RESCHEDULED_BY_STUDENT, RESCHEDULED_BY_TEACHER, HOLIDAY |
+| `students` | status | ATIVO, AULA_TESTE, PAUSADO, AVISO, INATIVO |
+| `enrollment_exceptions` | exception_type | CANCELLED_STUDENT, CANCELLED_TEACHER, CANCELLED_ADMIN, RESCHEDULED, RESCHEDULED_BY_STUDENT, RESCHEDULED_BY_TEACHER, HOLIDAY |
 | `class_completions` | status | COMPLETED, NO_SHOW |
 | `leads` | status | AGUARDANDO, EM_ANALISE, WAITLIST, CONTRACTED, NOT_A_MATCH |
 
@@ -448,6 +457,45 @@ These features were built during implementation but aren't in the original PRD. 
 ---
 
 ## Recent Changes
+
+### 2025-12-27: Teacher Invoice UX Redesign (Session 39)
+
+**Major UX Overhaul of `/teacher/invoice`:**
+- Hero section with trend indicator (% change vs previous month)
+- Smart month picker dropdown with year navigation
+- 5 KPI cards: total classes, avg/class, best day (trophy), YTD, projection
+- Tier progression visualization with labeled progress track (0-1000)
+- Calendar heatmap with earnings intensity levels
+- YTD bar chart with clickable month navigation
+- Enhanced day-by-day details with collapsible sections
+
+**Deployment:** https://66f8bde6.eduschedule-app.pages.dev
+
+---
+
+### 2025-12-21: Teacher Portal Overhaul (Sessions 22-23)
+
+**Dashboard Redesign (`/teacher`):**
+- Added "Next Class" card showing today's or tomorrow's upcoming class
+- Class action buttons: Iniciar Aula (start), Concluir Aula (complete), Cancelar
+- PRD-compliant button visibility (confirm only today's classes, cancel only future)
+- Added earnings stat card (estimated monthly earnings)
+- Fixed locale (`pt-BR`) and status check (`ATIVO`)
+- New `teacher-dashboard-client.ts` for button interactions
+
+**Availability Page Fixes (`/teacher/availability`):**
+- Fixed edit button visibility (uses `style.display` instead of CSS class)
+- Added quick-fill buttons: ☀️ Manhã (8-12), 🍽️ Almoço (12-14), 🌙 Tarde (14-19), 🧹 Limpar
+- Individual/Group slot color differentiation: Purple (#9796ca) / Coral (#e85d44)
+- **Fixed group slots to show ALL student names** (slot-service populates `studentNames` array)
+- Group slots show up to 2 student names + "+N more"
+
+**Schedule Page Fixes (`/teacher/schedule`):**
+- Time-off request now reloads page after successful submission
+- **Fixed button visibility:** Iniciar only current, Cancelar only future, Concluir for past/started
+- **Added Falta (NO_SHOW) button** for marking absent students
+- closeModal exposed globally (fixes onclick handlers)
+- Button text translated to Portuguese
 
 ### 2025-12-21: Page Optimization & Code Quality
 
