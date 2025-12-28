@@ -271,10 +271,10 @@ ENROLLMENT_STATUS_LABELS.AVISO = 'Em Aviso'  // ← Different!
 | Severity | Count | Categories |
 |----------|-------|------------|
 | **CRITICAL** | ~~8~~ **0** | ~~XSS, CSRF, Race conditions, Duplicate functions~~ ALL 4 FIXED ✅ |
-| **HIGH** | ~~45~~ **40** | API patterns, ~~Type safety~~, ~~Hardcoded values~~, Buttons (5 fixed) |
+| **HIGH** | ~~45~~ **38** | API patterns, ~~Type safety~~, ~~Hardcoded values~~, Buttons (7 fixed) |
 | **MEDIUM** | ~~62~~ **55** | ~~CSS violations~~, ~~Status labels~~, Validation, Error handling (7 fixed) |
 | **LOW** | 35 | Documentation, Minor inconsistencies |
-| **TOTAL** | ~~150~~ **130** | 20 issues fixed on 2025-12-28 |
+| **TOTAL** | ~~150~~ **128** | 22 issues fixed on 2025-12-28 |
 
 ---
 
@@ -294,7 +294,9 @@ ENROLLMENT_STATUS_LABELS.AVISO = 'Em Aviso'  // ← Different!
 - [ ] Standardize auth pattern (use `requireRole()` everywhere)
 - [x] **Type Safety:** Fixed `catch (error: any)` → `catch (error: unknown)` in 3 client scripts (FIXED 2025-12-28)
 - [x] **Null Checks:** Added null safety to `getElementById` calls in `preview-handler.ts` (FIXED 2025-12-28)
-- [ ] Replace 38 raw `<button>` elements with Button component
+- [ ] Replace remaining raw `<button>` elements with Button component (~36 remaining)
+- [x] **Buttons:** Replaced in time-off-approvals.astro (btn--success, btn--outline-danger) (FIXED 2025-12-28)
+- [x] **Buttons:** Replaced in parent/students.astro with Button component (FIXED 2025-12-28)
 - [x] **Brand Colors:** Fixed Indigo → Coral fallbacks in 5 components (AddressForm, NotificationBell, AvailabilityGrid, time-off-approvals, CheckboxGroup) (FIXED 2025-12-28)
 - [x] **Default City:** Added `LOCALE.DEFAULT_CITY` constant to config.ts (FIXED 2025-12-28)
 
