@@ -310,6 +310,13 @@ ENROLLMENT_STATUS_LABELS.AVISO = 'Em Aviso'  // ← Different!
 - [x] **Scripts:** Updated teacher-schedule-client.ts btn--loading class (FIXED 2025-12-28)
 - [x] **CSS Cleanup:** Removed duplicate btn-action CSS from teacher/index.astro (FIXED 2025-12-28)
 - [x] **CSS Cleanup:** Removed duplicate btn-action CSS from StudentDashboardCard.astro (FIXED 2025-12-28)
+- [x] **CSS Cleanup:** Removed btn-action CSS from teacher/schedule.astro (FIXED 2025-12-28)
+- [x] **CSS Cleanup:** Removed btn-action CSS from teacher/profile.astro (FIXED 2025-12-28)
+- [x] **CSS Cleanup:** Removed btn-action CSS from teacher/availability.astro (FIXED 2025-12-28)
+- [x] **CSS Cleanup:** Removed btn-action CSS from parent/index.astro (FIXED 2025-12-28)
+- [x] **CSS Cleanup:** Updated admin/re-encrypt.astro to use btn--disabled (FIXED 2025-12-28)
+- [x] **CSS Cleanup:** Updated admin/approvals.astro to use btn--hidden (FIXED 2025-12-28)
+- [x] **CSS Cleanup:** Removed 120+ lines of deprecated btn-action from components.css (FIXED 2025-12-28)
 - [x] **Brand Colors:** Fixed Indigo → Coral fallbacks in 5 components (AddressForm, NotificationBell, AvailabilityGrid, time-off-approvals, CheckboxGroup) (FIXED 2025-12-28)
 - [x] **Default City:** Added `LOCALE.DEFAULT_CITY` constant to config.ts (FIXED 2025-12-28)
 
@@ -398,5 +405,5 @@ ENROLLMENT_STATUS_LABELS.AVISO = 'Em Aviso'  // ← Different!
 **Auditor:** Claude Code (12 parallel agents across 2 phases)
 **Status:** ✅ COMPLETE
 **Total Issues Found:** 150 (8 Critical, 45 High, 62 Medium, 35 Low)
-**Issues Fixed:** 36+ (8 Critical, 18+ High, 7 Medium, 3+ Low)
+**Issues Fixed:** 45+ (8 Critical, 25+ High, 9 Medium, 3+ Low)
 **Files Analyzed:** 200+ (88 Astro, 70+ API, 20 scripts, 20+ lib)
