@@ -102,13 +102,13 @@ ENROLLMENT_STATUS_LABELS.AVISO = 'Em Aviso'  // ← Different!
 | `parent/students.astro` | Raw `<button class="btn-action">` | 306-307, 423, 505 |
 | `parent/invoice.astro` | Raw `<select>` without FormField | 406 |
 
-#### Component Hardcoded Values
+#### Component Hardcoded Values ✅ FIXED 2025-12-28
 
-| Component | Issue | Lines |
-|-----------|-------|-------|
-| `CheckboxGroup.astro` | `width: 18px`, `height: 18px`, checkmark sizes | 153-183 |
-| `PillarBadges.astro` | `gap: 4px`, icon sizes `16px`, `20px`, `28px` | 72, 92-104 |
-| `ActionCard.astro` | `padding: 2px 6px`, `font-size: 10px`, `gap: 4px` | 347-354, 372 |
+| Component | Issue | Status |
+|-----------|-------|--------|
+| `CheckboxGroup.astro` | ~~`width: 18px`, checkmark sizes~~ Focus shadow fixed to coral | ✅ |
+| `PillarBadges.astro` | ~~`gap: 4px`, icon sizes~~ Now uses CSS variables | ✅ |
+| `ActionCard.astro` | ~~`padding: 2px 6px`, `font-size: 10px`~~ Now uses CSS variables | ✅ |
 
 ---
 
@@ -225,12 +225,12 @@ ENROLLMENT_STATUS_LABELS.AVISO = 'Em Aviso'  // ← Different!
 | Meta Tags | 100% consistent | ✅ |
 | Auth Flow | 100% consistent | ✅ |
 
-**Components with wrong brand color (Indigo instead of Coral):**
-- AddressForm.astro (lines 431, 440, 446)
-- ClassPreferencesSection.astro
-- ParentInfoSection.astro
-- StudentInfoSection.astro
-- CheckboxGroup.astro
+**Components with wrong brand color (Indigo instead of Coral):** ✅ ALL FIXED 2025-12-28
+- ~~AddressForm.astro (lines 431, 440, 446)~~
+- ~~ClassPreferencesSection.astro~~ (via AddressForm fix)
+- ~~ParentInfoSection.astro~~ (via AddressForm fix)
+- ~~StudentInfoSection.astro~~ (via AddressForm fix)
+- ~~CheckboxGroup.astro~~
 
 ### Utility Functions Analysis
 **Compliance: 85%** - Good with specific issues
@@ -271,10 +271,10 @@ ENROLLMENT_STATUS_LABELS.AVISO = 'Em Aviso'  // ← Different!
 | Severity | Count | Categories |
 |----------|-------|------------|
 | **CRITICAL** | ~~8~~ **0** | ~~XSS, CSRF, Race conditions, Duplicate functions~~ ALL 4 FIXED ✅ |
-| **HIGH** | ~~45~~ **41** | API patterns, ~~Type safety~~, ~~Hardcoded values~~, Buttons (4 fixed) |
-| **MEDIUM** | ~~62~~ **59** | ~~CSS violations~~, Validation, Error handling (3 fixed) |
+| **HIGH** | ~~45~~ **40** | API patterns, ~~Type safety~~, ~~Hardcoded values~~, Buttons (5 fixed) |
+| **MEDIUM** | ~~62~~ **55** | ~~CSS violations~~, ~~Status labels~~, Validation, Error handling (7 fixed) |
 | **LOW** | 35 | Documentation, Minor inconsistencies |
-| **TOTAL** | ~~150~~ **135** | 11 issues fixed on 2025-12-28 |
+| **TOTAL** | ~~150~~ **130** | 20 issues fixed on 2025-12-28 |
 
 ---
 
@@ -295,19 +295,20 @@ ENROLLMENT_STATUS_LABELS.AVISO = 'Em Aviso'  // ← Different!
 - [x] **Type Safety:** Fixed `catch (error: any)` → `catch (error: unknown)` in 3 client scripts (FIXED 2025-12-28)
 - [x] **Null Checks:** Added null safety to `getElementById` calls in `preview-handler.ts` (FIXED 2025-12-28)
 - [ ] Replace 38 raw `<button>` elements with Button component
-- [x] **Brand Colors:** Fixed Indigo → Coral fallbacks in 4 components (AddressForm, NotificationBell, AvailabilityGrid, time-off-approvals) (FIXED 2025-12-28)
+- [x] **Brand Colors:** Fixed Indigo → Coral fallbacks in 5 components (AddressForm, NotificationBell, AvailabilityGrid, time-off-approvals, CheckboxGroup) (FIXED 2025-12-28)
 - [x] **Default City:** Added `LOCALE.DEFAULT_CITY` constant to config.ts (FIXED 2025-12-28)
 
-### To Fix - MEDIUM (Consistency) - 3 FIXED ✅
+### To Fix - MEDIUM (Consistency) - 7 FIXED ✅
 
 - [x] **CSS Variables:** Already defined in BaseLayout.astro (false positive) - verified 2025-12-28
 - [x] **Class Mode Colors:** Added `--color-class-individual/group` variables to theme.ts and BaseLayout.astro, updated teacher/index.astro and teacher/availability.astro (FIXED 2025-12-28)
-- [ ] Consolidate status labels to single source in `enrollment-statuses.ts`
+- [x] **Status Labels:** Consolidated to single source - removed duplicates from ui.ts, fixed 'Aviso' → 'Em Aviso' in user-forms.ts (FIXED 2025-12-28)
 - [x] **Debug Logs:** Removed console.log from `time-off.ts:findPending()` (FIXED 2025-12-28)
+- [x] **Hardcoded Pixels:** Fixed font sizes, spacing, icon sizes in PillarBadges.astro, ActionCard.astro (FIXED 2025-12-28)
+- [x] **CheckboxGroup Focus:** Fixed focus shadow color from indigo (#667eea) to coral (#F69897) (FIXED 2025-12-28)
 - [ ] Convert pausado-request.ts to class-based pattern
 - [ ] Standardize media query breakpoints (choose: 640px, 768px, 1024px)
 - [ ] Add Zod schemas to APIs missing validation (cancellations, time-off-approvals)
-- [ ] Fix component hardcoded pixel values (CheckboxGroup, PillarBadges, ActionCard)
 
 ### To Fix - LOW (Polish)
 

@@ -288,12 +288,13 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/admin/re-encrypt` | Data re-encryption tool for key rotation | Extra |
 | `/admin/import-data` | Bulk student import from JSON | Extra |
 
-### Teacher Routes (`/teacher/*`) - 5 Pages
+### Teacher Routes (`/teacher/*`) - 6 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
 | `/teacher` | Dashboard: stats, itinerary view, student grid with details | - |
 | `/teacher/schedule` | Weekly schedule: start/complete class, cancellation requests, time-off, earnings | FR19, FR22-23 |
+| `/teacher/student/[id]` | Student detail: class history with full editing (status, notes, BILIN, skills) | - |
 | `/teacher/availability` | LIVRE/BLOCKED grid: day-zone selectors, potential earnings calculation | FR20-21 |
 | `/teacher/profile` | Profile info, banking (PIX/CPF), change requests | - |
 | `/teacher/invoice` | Monthly earnings: tier display, class-by-class breakdown, summary stats | FR23 |

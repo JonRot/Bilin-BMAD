@@ -251,9 +251,20 @@ Mark class as complete.
 ```
 
 ### PUT /api/enrollments/[id]/completions/[cmpId]
-Update completion notes.
-- **Auth:** Teacher (7-day window) or Admin
+Update class completion details (status, notes, BILIN pillars, skill ratings).
+- **Auth:** Teacher (invoice lock) or Admin (no restrictions)
 - **CSRF:** Required
+- **Invoice Lock:** Teachers can edit until 10th of month following the class date
+- **Body:**
+```json
+{
+  "status": "COMPLETED" | "NO_SHOW",
+  "notes": "Aula focada em vocabulário...",
+  "bilin_pillars": ["play", "music"],
+  "skill_ratings": { "criatividade": 4, "leitura": 3 }
+}
+```
+- **Response:** Updated completion object
 
 ---
 
@@ -592,6 +603,30 @@ Search students by name/email.
 ### GET /api/students/[id]/enrollments
 List student's enrollments.
 - **Auth:** Required (role-filtered)
+
+### GET /api/students/[id]/class-history
+List completed classes for a student with completion details.
+- **Auth:** Admin, Teacher (own students), Parent (own children)
+- **Query Params:** `start_date`, `end_date` (YYYY-MM-DD, defaults to 3 months)
+- **Response:**
+```json
+{
+  "classes": [{
+    "completion_id": "cmp_xxx",
+    "enrollment_id": "enr_xxx",
+    "class_date": "2024-12-20",
+    "class_time": "15:00",
+    "status": "COMPLETED",
+    "notes": "Vocabulary lesson...",
+    "bilin_pillars": ["play", "music"],
+    "skill_ratings": { "criatividade": 4 },
+    "teacher_nickname": "Teacher",
+    "language": "Inglês",
+    "is_editable": true
+  }],
+  "stats": { "completed": 10, "noShows": 1, "total": 11 }
+}
+```
 
 ---
 
