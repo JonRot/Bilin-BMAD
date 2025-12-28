@@ -294,9 +294,22 @@ ENROLLMENT_STATUS_LABELS.AVISO = 'Em Aviso'  // ← Different!
 - [ ] Standardize auth pattern (use `requireRole()` everywhere)
 - [x] **Type Safety:** Fixed `catch (error: any)` → `catch (error: unknown)` in 3 client scripts (FIXED 2025-12-28)
 - [x] **Null Checks:** Added null safety to `getElementById` calls in `preview-handler.ts` (FIXED 2025-12-28)
-- [ ] Replace remaining raw `<button>` elements with Button component (~36 remaining)
 - [x] **Buttons:** Replaced in time-off-approvals.astro (btn--success, btn--outline-danger) (FIXED 2025-12-28)
 - [x] **Buttons:** Replaced in parent/students.astro with Button component (FIXED 2025-12-28)
+- [x] **Buttons:** Replaced in admin/settings.astro (10 buttons) (FIXED 2025-12-28)
+- [x] **Buttons:** Replaced in admin/users.astro (8 buttons) (FIXED 2025-12-28)
+- [x] **Buttons:** Replaced in teacher/index.astro (2 links) (FIXED 2025-12-28)
+- [x] **Buttons:** Replaced in teacher/profile.astro (fullWidth prop) (FIXED 2025-12-28)
+- [x] **Buttons:** Replaced in parent/profile.astro (fullWidth prop) (FIXED 2025-12-28)
+- [x] **Buttons:** Replaced in StudentForm.astro (6 buttons) (FIXED 2025-12-28)
+- [x] **Buttons:** Replaced in TeacherForm.astro (4 buttons) (FIXED 2025-12-28)
+- [x] **Buttons:** Replaced in StudentDashboardCard.astro (1 button) (FIXED 2025-12-28)
+- [x] **Scripts:** Updated users-page-client.ts btn classes (FIXED 2025-12-28)
+- [x] **Scripts:** Updated approvals-client.ts btn classes (FIXED 2025-12-28)
+- [x] **Scripts:** Updated availability-approvals-client.ts btn classes (FIXED 2025-12-28)
+- [x] **Scripts:** Updated teacher-schedule-client.ts btn--loading class (FIXED 2025-12-28)
+- [x] **CSS Cleanup:** Removed duplicate btn-action CSS from teacher/index.astro (FIXED 2025-12-28)
+- [x] **CSS Cleanup:** Removed duplicate btn-action CSS from StudentDashboardCard.astro (FIXED 2025-12-28)
 - [x] **Brand Colors:** Fixed Indigo → Coral fallbacks in 5 components (AddressForm, NotificationBell, AvailabilityGrid, time-off-approvals, CheckboxGroup) (FIXED 2025-12-28)
 - [x] **Default City:** Added `LOCALE.DEFAULT_CITY` constant to config.ts (FIXED 2025-12-28)
 
@@ -368,10 +381,11 @@ ENROLLMENT_STATUS_LABELS.AVISO = 'Em Aviso'  // ← Different!
 - ~~Fix catch(error: any) patterns~~ ✅ DONE (3 client scripts)
 - ~~Add DEFAULT_CITY constant~~ ✅ DONE (config.ts)
 
-### Week 3: Component Cleanup
-1. Replace 38 raw buttons with Button component
-2. Fix Indigo → Coral brand colors in form components
-3. Add missing CSS variables to theme.ts
+### Week 3: Component Cleanup - MOSTLY COMPLETED ✅
+1. ~~Replace 38 raw buttons with Button component~~ ✅ DONE (36+ buttons replaced)
+2. ~~Fix Indigo → Coral brand colors in form components~~ ✅ DONE (5 components)
+3. ~~Add missing CSS variables to theme.ts~~ ✅ DONE (class mode colors)
+4. Remaining: CSS cleanup in other pages with btn-action definitions
 
 ### Week 4: Polish
 1. Replace `any` types with proper interfaces
@@ -384,4 +398,5 @@ ENROLLMENT_STATUS_LABELS.AVISO = 'Em Aviso'  // ← Different!
 **Auditor:** Claude Code (12 parallel agents across 2 phases)
 **Status:** ✅ COMPLETE
 **Total Issues Found:** 150 (8 Critical, 45 High, 62 Medium, 35 Low)
+**Issues Fixed:** 36+ (8 Critical, 18+ High, 7 Medium, 3+ Low)
 **Files Analyzed:** 200+ (88 Astro, 70+ API, 20 scripts, 20+ lib)
