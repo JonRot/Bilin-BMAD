@@ -60,6 +60,7 @@
 - [x] Brand Colors: Fixed Indigo → Coral fallbacks in 5 components
 - [x] Default City: Added `LOCALE.DEFAULT_CITY` constant to config.ts
 - [x] Class Mode Colors: Added CSS variables to theme.ts and BaseLayout.astro
+- [x] Schedule Colors: Added COLORS.schedule to theme.ts, updated BaseLayout.astro (FIXED 2025-12-29)
 
 **Remaining:**
 - [ ] Standardize API response format (choose ONE: `{ data }` or `{ success, data }`)
@@ -67,7 +68,6 @@
 - [ ] Standardize auth pattern (use `requireRole()` everywhere)
 - [ ] Replace remaining innerHTML patterns with safe alternatives
 - [ ] Translate 35+ Zod validation messages to Portuguese
-- [ ] Fix WeeklySchedulePreview hardcoded colors (5 hex values)
 
 ### Medium Priority - 11 Fixed, ~12 Remaining
 
@@ -196,12 +196,12 @@ These files demonstrate ideal patterns:
 - [ ] Standardize auth to requireRole() everywhere
 - [ ] Add Zod schemas to unvalidated endpoints
 
-### Phase 3: Component & CSS Cleanup - MOSTLY DONE
+### Phase 3: Component & CSS Cleanup - COMPLETE
 
 - [x] Replace 36+ raw buttons with Button component
 - [x] Fix Indigo → Coral brand colors
 - [x] Add class mode CSS variables
-- [ ] Fix WeeklySchedulePreview hardcoded colors
+- [x] Fix WeeklySchedulePreview hardcoded colors (FIXED 2025-12-29)
 - [ ] Replace remaining rgba() patterns
 
 ### Phase 4: Polish
