@@ -15,7 +15,7 @@
 - **80+ API endpoints** across 12 categories
 - **31 reusable components** with full design system compliance
 - **24 business services** with repository pattern
-- **18 database tables** (9 added via migrations beyond original spec)
+- **22 database tables** (11 added via migrations beyond original spec)
 - **17 client-side TypeScript modules** in `src/scripts/` (~13,900 lines)
 
 ---
@@ -230,7 +230,7 @@ docs/                                 # PROJECT-LEVEL DOCUMENTATION
 ├── reference/                        # Technical specifications
 │   ├── application-flows-v3.md       # 🔑 AI-OPTIMIZED FLOWS (Mermaid + YAML)
 │   ├── api-contracts.md              # REST API documentation (80+ endpoints)
-│   ├── data-models.md                # Database schema (18 tables)
+│   ├── data-models.md                # Database schema (22 tables)
 │   ├── design-system-architecture.md # CSS variables, components ✅ Implemented
 │   ├── development-guide.md          # Setup instructions
 │   ├── business-context.md           # BILIN domain knowledge
@@ -545,7 +545,7 @@ Extracted inline JavaScript from Astro pages to typed TypeScript modules in `src
 
 1. **Pages:** 26 implemented vs 17 documented (+53%)
 2. **API Endpoints:** 80+ implemented vs ~30 documented
-3. **Database Tables:** 18 total (9 added via migrations)
+3. **Database Tables:** 22 total (11 added via migrations)
 4. **All 52 FRs:** Verified implemented ✅
 5. **PRD Alignment:** 95%+ (core innovation fully working)
 
@@ -637,4 +637,4 @@ docs/index.md (documentation map - THIS FILE)
 
 ---
 
-**Last Updated:** 2025-12-17 (Knowledge registry added, archive consolidated)
+**Last Updated:** 2025-12-29 (Synced table counts to 22, added slot_reservations)

@@ -1,9 +1,9 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2025-12-27
+**Last Updated:** 2025-12-29
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
-**Tables:** 19 total (9 core + 10 via migrations)
+**Tables:** 22 total (11 core + 11 via migrations)
 
 ## Overview
 
@@ -15,6 +15,7 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 |----------|--------|
 | **Core** | users, teachers, students, enrollments, enrollment_exceptions, class_completions, system_closures, leads, change_requests, audit_log, sessions |
 | **Availability** | teacher_availability, teacher_day_zones |
+| **Scheduling** | slot_reservations |
 | **Status Tracking** | enrollment_status_history |
 | **Time-Off** | teacher_time_off_requests |
 | **Pausado Requests** | pausado_requests |
@@ -247,6 +248,8 @@ ATIVO <--> PAUSADO --> CANCELADO
 | marked_by | TEXT | NOT NULL | Teacher who marked |
 | actual_rate | REAL | NULL | Rate charged for this class (for group billing) |
 | effective_group_size | INTEGER | NULL | Number of active group members at completion time |
+| group_id | TEXT | NULL | Group ID at completion time (temporal snapshot) |
+| group_members_snapshot | TEXT | NULL | JSON array of group members at completion time |
 | makeup_for_date | TEXT | NULL | Date this makeup class is for (YYYY-MM-DD) |
 | makeup_for_exception_id | TEXT | NULL, FK | Links to cancelled class exception |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
@@ -255,6 +258,8 @@ ATIVO <--> PAUSADO --> CANCELADO
 **BILIN Pillar Keys:** `ACONCHEGO_EDUCATIVO`, `CONEXAO_LUDICA`, `CRESCIMENTO_NATURAL`, `CURIOSIDADE_ATENTA`, `EXPRESSAO_VIVA`, `JORNADA_UNICA`, `PROCESSO_CONTINUO`
 
 **Skill Rating Keys:** `criatividade`, `leitura`, `escrita`, `escuta`, `atencao`, `espontaneidade` (values 0-5)
+
+**Group Members Snapshot Format:** `[{"student_id": "xxx", "student_name": "Name", "enrollment_id": "yyy"}, ...]`
 
 **Indexes:**
 - `idx_completions_makeup_exception` on makeup_for_exception_id (partial)
@@ -725,6 +730,41 @@ WHERE status = 'PAUSADO'
 
 ---
 
+### 22. slot_reservations
+
+**Purpose:** Movie theater pattern for slot booking - prevents concurrent double-booking by temporarily reserving slots
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | Reservation ID (res_xxx) |
+| teacher_id | TEXT | NOT NULL, FK | References teachers(id) ON DELETE CASCADE |
+| day_of_week | INTEGER | NOT NULL, CHECK 0-6 | Day of week (0=Sunday) |
+| start_time | TEXT | NOT NULL | Time in HH:MM format |
+| duration_minutes | INTEGER | NOT NULL, DEFAULT 60 | Slot duration |
+| reserved_by_user_id | TEXT | NOT NULL, FK | References users(id) |
+| reserved_by_name | TEXT | NOT NULL | Display name of reserving user |
+| reserved_at | INTEGER | NOT NULL | Unix timestamp of reservation |
+| expires_at | INTEGER | NOT NULL | Unix timestamp when reservation expires |
+| status | TEXT | NOT NULL, DEFAULT 'reserved' | reserved, booked, released, expired |
+| created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+| updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+
+**Indexes:**
+- UNIQUE on `(teacher_id, day_of_week, start_time, duration_minutes) WHERE status = 'reserved'` - enforces first-click-wins
+- On `teacher_id` for teacher slot queries
+- On `reserved_by_user_id` for user reservation queries
+- On `status, expires_at` for cleanup queries
+
+**Business Rules:**
+- Only ONE active reservation allowed per slot (enforced by unique partial index)
+- Reservations expire after 5 minutes (300 seconds)
+- Status transitions: reserved → booked (enrollment created) OR released (user cancelled) OR expired (timeout)
+- Stale reservations are cleaned up automatically on slot queries
+- Only admins can create/release reservations
+- Users can only release their own reservations
+
+---
+
 ## Security Considerations
 
 1. **Prepared Statements:** All queries use parameterized queries
@@ -736,4 +776,4 @@ WHERE status = 'PAUSADO'
 
 ---
 
-**Last Updated:** 2025-12-21
+**Last Updated:** 2025-12-28
