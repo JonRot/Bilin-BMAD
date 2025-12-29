@@ -68,7 +68,7 @@
 - [ ] Standardize API response format (choose ONE: `{ data }` or `{ success, data }`)
 - [ ] Standardize API error format (choose ONE: `{ error, message }` or ApiError class)
 - [ ] Standardize auth pattern (use `requireRole()` everywhere)
-- [ ] Replace remaining `any` types in 4 scripts (~20 remaining)
+- [x] Replace remaining `any` types in 4 scripts (FIXED 2025-12-29)
 - [x] Replace remaining innerHTML patterns with safe alternatives (FIXED 2025-12-29)
 - [x] Translate Zod validation messages to Portuguese (FIXED 2025-12-29)
 
@@ -207,15 +207,18 @@ These files demonstrate ideal patterns:
 - [x] Fix WeeklySchedulePreview hardcoded colors (FIXED 2025-12-29)
 - [x] Replace rgba() patterns with color-mix() (FIXED 2025-12-29)
 
-### Phase 4: Polish - IN PROGRESS
+### Phase 4: Polish - COMPLETE
 
 - [x] Translate validation messages to Portuguese (FIXED 2025-12-29)
 - [x] Add escapeHtml() to innerHTML patterns in client scripts (FIXED 2025-12-29)
 - [x] Add null checks to querySelector/getElementById calls (FIXED 2025-12-29)
-- [x] Replace `any` types with proper interfaces in major scripts (FIXED 2025-12-29)
+- [x] Replace `any` types with proper interfaces - ALL SCRIPTS FIXED (FIXED 2025-12-29)
   - users-page-client.ts: 30+ fixes (Window extensions, API response types, sorting types)
   - weekly-schedule-grid-client.ts: 25+ fixes (Exception, Enrollment, ActionData interfaces)
-- [ ] Replace remaining `any` types in 4 scripts (~20 remaining)
+  - class-edit-client.ts: 6 fixes (Window extensions)
+  - enrollments-page-client.ts: 4 fixes (GroupMemberApiResponse, Window extensions)
+  - leads-page-client.ts: 6 fixes (AvailabilityGridElement, ZodValidationDetail, WaitlistStats)
+  - availability-approvals-client.ts: 4 fixes (Window extensions, error handling)
 - [ ] Remove debug logging and unused exports
 
 ---
