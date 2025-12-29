@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2025-12-22
+**Last Updated:** 2025-12-29
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 100+ total
+**Endpoints:** 110+ total
 
 ## Overview
 
@@ -13,18 +13,24 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 
 | Category | Endpoints | Description |
 |----------|-----------|-------------|
-| Authentication | 5 | OAuth, sessions, CSRF |
-| Enrollments | 12+ | CRUD, status, exceptions, completions |
-| Students | 8+ | CRUD, search, status |
-| Teachers | 10+ | CRUD, availability, time-off |
+| Authentication | 7 | Google/Microsoft OAuth, sessions, CSRF |
+| Enrollments | 14 | CRUD, status, groups, exceptions, completions |
+| Students | 8+ | CRUD, search, class history |
+| Teachers | 12 | CRUD, availability, time-off, day-zones |
 | Users | 6+ | Management, roles |
 | Leads | 6+ | Pipeline, matching, conversion |
-| Schedule | 4+ | Generation, views |
-| Slots | 3+ | Availability grid |
+| Schedule | 4 | Generation, views |
+| Slots | 5 | Availability grid, reservations, matches |
+| System | 5 | Closures, exceptions |
 | Calendar | 4 | Google Calendar sync |
-| Admin | 10+ | Settings, utilities |
-| Parent | 4+ | Dashboard, students |
-| Notifications | 4+ | In-app notifications |
+| Admin | 20+ | Approvals, geocoding, settings, utilities |
+| Parent | 6 | Dashboard, cancellations, pausado, feedback |
+| Notifications | 3 | List, read, read-all |
+| Change Requests | 5 | CRUD, approve/reject |
+| Settings | 6 | App configuration, theme |
+| Locations | 2 | Autocomplete, reverse geocode |
+| Travel Time | 2 | Calculate, matrix |
+| Webhooks | 1 | JotForm integration |
 
 ## Authentication
 
@@ -266,6 +272,70 @@ Update class completion details (status, notes, BILIN pillars, skill ratings).
 ```
 - **Response:** Updated completion object
 
+### POST /api/enrollments/[id]/add-to-group
+Add a student to an existing enrollment's time slot, creating a group class.
+- **Auth:** Admin only
+- **CSRF:** Required (X-CSRF-Token header)
+- **Rate Limit:** WRITE (stricter)
+- **Body:**
+```json
+{
+  "student_id": "stu_xxx",
+  "is_location_host": false,
+  "hourly_rate": 120,
+  "language": "English",
+  "notes": "Optional notes"
+}
+```
+- **Behavior:**
+  - If source enrollment has no group_id, one is generated
+  - Creates new enrollment with same teacher/day/time
+  - Sets location host appropriately
+- **Response (201):**
+```json
+{
+  "success": true,
+  "enrollment": { "id": "enr_xxx", ... },
+  "group": {
+    "group_id": "grp_xxx",
+    "members": [...],
+    "size": 2
+  }
+}
+```
+- **Errors:**
+  - 404: Source enrollment not found
+  - 409: Student already enrolled at this time (DUPLICATE_ERROR)
+  - 403: Not admin or CSRF invalid
+
+### DELETE /api/enrollments/[id]/remove-from-group
+Remove a student from a group class.
+- **Auth:** Admin only
+- **CSRF:** Required (X-CSRF-Token header)
+- **Rate Limit:** WRITE (stricter)
+- **Behavior:**
+  - Sets the enrollment status to TERMINADO
+  - If only one member remains after removal, clears group_id and converts to individual class
+  - Re-assigns location host if removed member was the host
+  - Full audit logging
+- **Response (200):**
+```json
+{
+  "success": true,
+  "message": "Aluno removido do grupo.",
+  "group": {
+    "group_id": "grp_abc123",
+    "members": [...],
+    "size": 2,
+    "converted_to_individual": false
+  }
+}
+```
+- **Errors:**
+  - 400: Not in a group, or last member in group
+  - 404: Enrollment not found
+  - 403: Not admin or CSRF invalid
+
 ---
 
 ## Lead APIs
@@ -330,16 +400,85 @@ Get generated student schedule.
 ### GET /api/slots/[teacherId]
 Get teacher slot availability grid.
 - **Auth:** Required
-- **Roles:** Admin (full details), Teacher (own only)
-- **Query Params:** `include_weekends`, `start_hour`, `end_hour`
+- **Roles:** Admin (full details), Teacher (own only), Parent (LIVRE slots only)
+- **Query Params:** `include_weekends`, `start_hour`, `end_hour`, `start_date`, `end_date`
 - **Response:**
 ```json
 {
   "teacher_id": "tea_xxx",
+  "teacher_name": "Prof. Maria",
   "slots": [
     { "day_of_week": 1, "time": "09:00", "status": "LIVRE" },
-    { "day_of_week": 1, "time": "10:00", "status": "BLOCKED", "student_name": "Sofia" }
+    { "day_of_week": 1, "time": "10:00", "status": "BLOCKED", "student_name": "Sofia", "enrollment_id": "enr_xxx" },
+    { "day_of_week": 1, "time": "11:00", "status": "RESERVADO", "reservation_info": {
+        "reservation_id": "res_xxx",
+        "reserved_by_name": "Admin User",
+        "expires_at": 1735380000,
+        "seconds_remaining": 240,
+        "time_remaining": "4:00",
+        "is_own": true
+      }
+    }
   ]
+}
+```
+- **Slot Statuses:** `LIVRE`, `BLOCKED`, `TEMPORARILY_AVAILABLE`, `RESERVADO`
+
+### POST /api/slots/reserve
+Reserve a slot for 5 minutes (movie theater pattern).
+- **Auth:** Admin only
+- **Headers:** `X-CSRF-Token` (required)
+- **Request:**
+```json
+{
+  "teacher_id": "tea_xxx",
+  "day_of_week": 1,
+  "start_time": "09:00",
+  "duration_minutes": 60
+}
+```
+- **Response (201):**
+```json
+{
+  "success": true,
+  "reservation": {
+    "id": "res_xxx",
+    "teacher_id": "tea_xxx",
+    "day_of_week": 1,
+    "start_time": "09:00",
+    "duration_minutes": 60,
+    "reserved_by_name": "Admin User",
+    "reserved_at": 1735379700,
+    "expires_at": 1735380000
+  }
+}
+```
+- **Response (409 - Already Reserved):**
+```json
+{
+  "error": "ALREADY_RESERVED",
+  "message": "Reservado por Admin User",
+  "reserved_by_name": "Admin User",
+  "expires_at": 1735380000,
+  "time_remaining": "4:00"
+}
+```
+
+### DELETE /api/slots/reserve
+Release a slot reservation.
+- **Auth:** Admin only (own reservations)
+- **Headers:** `X-CSRF-Token` (required)
+- **Request:**
+```json
+{
+  "reservation_id": "res_xxx"
+}
+```
+- **Response (200):**
+```json
+{
+  "success": true,
+  "message": "Reserva liberada"
 }
 ```
 
@@ -1125,6 +1264,211 @@ Reject cancellation.
 
 ---
 
+## Change Request APIs
+
+### GET /api/change-requests
+List change requests with filtering.
+- **Auth:** Required (Admin sees all, others see own)
+- **Query Params:** `status`, `request_type`, `requester_id`, `resource_id`, `id` (for single)
+- **Response:** Array of change requests
+
+### POST /api/change-requests
+Create a new change request.
+- **Auth:** Required
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "request_type": "teacher",
+  "resource_id": "tea_xxx",
+  "old_values": { "nickname": "Old Name" },
+  "new_values": { "nickname": "New Name" }
+}
+```
+- **Request Types:** `teacher`, `student`
+- **Response:** `201 Created` with change request
+
+### GET /api/change-requests/count
+Get count of pending change requests.
+- **Auth:** Admin only
+- **Response:** `{ "count": 5 }`
+
+### PUT /api/change-requests/[id]/approve
+Approve a change request.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Response:** Updated change request with `status: "APPROVED"`
+
+### PUT /api/change-requests/[id]/reject
+Reject a change request.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** `{ "reason": "Rejection reason" }`
+- **Response:** Updated change request with `status: "REJECTED"`
+
+---
+
+## Settings APIs
+
+### GET /api/settings
+Get settings by key.
+- **Auth:** Required (any role)
+- **Query Params:**
+  - `key` (required): Setting key (e.g., `languages`, `cities`, `class_modes`, `plan_types`)
+  - `details` (optional): If `true`, returns full setting objects with id, active, displayOrder
+- **Response (values only):** `["English", "Spanish", "Portuguese"]`
+- **Response (with details):**
+```json
+[
+  { "id": 1, "key": "languages", "value": "English", "active": true, "displayOrder": 1 },
+  { "id": 2, "key": "languages", "value": "Spanish", "active": true, "displayOrder": 2 }
+]
+```
+
+### POST /api/settings
+Add a new setting value.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** `{ "key": "languages", "value": "French", "displayOrder": 3 }`
+- **Response:** `201 Created` with setting object
+- **Errors:** `409 CONFLICT` if value already exists
+
+### PUT /api/settings
+Update a setting.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** `{ "id": 1, "value": "Updated Value", "displayOrder": 2, "active": true }`
+
+### DELETE /api/settings
+Delete a setting.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** `{ "id": 1 }`
+
+### PATCH /api/settings
+Toggle setting active status.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** `{ "id": 1 }`
+- **Response:** `{ "success": true, "active": false }`
+
+### GET /api/settings/theme
+Get theme settings.
+- **Auth:** Required
+- **Response:** Theme configuration object
+
+### PUT /api/settings/theme
+Update theme settings.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** Theme configuration
+
+---
+
+## Teacher Day Zones APIs
+
+### GET /api/teacher/day-zones
+Get teacher's geographic zones per day of week.
+- **Auth:** Required (Admin or Teacher own)
+- **Query Params:** `teacher_id` (required for admin, auto-detected for teacher)
+- **Response:**
+```json
+[
+  { "day_of_week": 1, "neighborhood": "Centro" },
+  { "day_of_week": 2, "neighborhood": "Jardins" }
+]
+```
+
+### POST /api/teacher/day-zones
+Update teacher's day zones.
+- **Auth:** Admin or Teacher (own)
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "teacher_id": "tea_xxx",
+  "zones": [
+    { "day_of_week": 1, "neighborhood": "Centro" },
+    { "day_of_week": 2, "neighborhood": "Jardins" }
+  ]
+}
+```
+- **Response:** `{ "success": true, "message": "Day zones updated" }`
+
+### GET /api/teacher/month-calendar
+Get teacher's month calendar view.
+- **Auth:** Teacher only
+- **Query Params:** `month`, `year`
+- **Response:** Calendar data with classes per day
+
+---
+
+## Location APIs
+
+### GET /api/locations/autocomplete
+Autocomplete location search using Google Places API.
+- **Auth:** Required
+- **Query Params:** `query` (min 3 chars)
+- **Response:** Array of location suggestions
+
+### GET /api/locations/reverse
+Reverse geocode coordinates to address.
+- **Auth:** Required
+- **Query Params:** `lat`, `lon`
+- **Response:** Address details
+
+---
+
+## Travel Time APIs
+
+### GET /api/travel-time
+Calculate travel time between two locations.
+- **Auth:** Required
+- **Query Params:** `origin`, `destination`
+- **Response:** `{ "travel_time_minutes": 25, "distance_km": 12.5 }`
+
+### GET /api/travel-time/matrix
+Calculate travel time matrix for multiple locations.
+- **Auth:** Admin only
+- **Query Params:** `origins`, `destinations`
+- **Response:** Matrix of travel times
+
+---
+
+## Microsoft OAuth APIs
+
+### GET /api/auth/microsoft/login
+Initiates Microsoft OAuth 2.0 flow.
+- **Auth:** None
+- **Response:** `302 Redirect` to Microsoft OAuth
+
+### GET /api/auth/microsoft/callback
+Handles Microsoft OAuth callback, creates session.
+- **Auth:** State validation
+- **Response:** `302 Redirect` to role dashboard
+
+---
+
+## Public APIs
+
+### POST /api/public/register
+Public lead registration (from cadastro page).
+- **Auth:** None (public)
+- **Body:** Lead registration data
+- **Response:** `201 Created` with lead reference
+
+---
+
+## Webhook APIs
+
+### POST /api/webhooks/jotform
+JotForm webhook for lead submissions.
+- **Auth:** Webhook signature validation
+- **Body:** JotForm submission data
+- **Response:** `{ "success": true }`
+
+---
+
 ## Error Response Format
 
 ```json
@@ -1163,4 +1507,4 @@ Reject cancellation.
 
 ---
 
-**Last Updated:** 2025-12-20
+**Last Updated:** 2025-12-29
