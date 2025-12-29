@@ -88,7 +88,7 @@
 
 **Remaining:**
 - [x] Standardize media query breakpoints (FIXED 2025-12-29) - 33 breakpoints updated across 25 files
-- [ ] Add Zod schemas to 10+ public/teacher endpoints (code quality improvement, not security-critical)
+- [x] Add Zod schemas to remaining endpoints (FIXED 2025-12-29) - 4 endpoints updated with Portuguese messages
 
 ### Low Priority - Backlog
 
