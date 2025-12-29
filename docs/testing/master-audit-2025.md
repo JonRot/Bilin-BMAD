@@ -66,7 +66,7 @@
 - [ ] Standardize API response format (choose ONE: `{ data }` or `{ success, data }`)
 - [ ] Standardize API error format (choose ONE: `{ error, message }` or ApiError class)
 - [ ] Standardize auth pattern (use `requireRole()` everywhere)
-- [ ] Replace remaining innerHTML patterns with safe alternatives
+- [x] Replace remaining innerHTML patterns with safe alternatives (FIXED 2025-12-29)
 - [x] Translate Zod validation messages to Portuguese (FIXED 2025-12-29)
 
 ### Medium Priority - 12 Fixed, ~11 Remaining
@@ -207,6 +207,7 @@ These files demonstrate ideal patterns:
 ### Phase 4: Polish - IN PROGRESS
 
 - [x] Translate validation messages to Portuguese (FIXED 2025-12-29)
+- [x] Add escapeHtml() to innerHTML patterns in client scripts (FIXED 2025-12-29)
 - [ ] Replace `any` types with proper interfaces
 - [ ] Add null checks to querySelector calls
 - [ ] Remove debug logging and unused exports
