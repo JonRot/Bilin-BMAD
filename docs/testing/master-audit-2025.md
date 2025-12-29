@@ -94,10 +94,10 @@
 
 - [ ] Add ARIA to Card, StatsCard, ActionCard components
 - [ ] Add JSDoc to 40% of lib/ functions missing documentation
-- [ ] Standardize container classes (`container` vs `page-container`)
+- [ ] Standardize container classes (23 files use `container`, 7 use `page-container`)
 - [ ] Add print styles if invoice printing needed
-- [ ] Remove unused English status aliases from ui.ts
-- [ ] Replace `var` with `const`/`let` in public JS files
+- [x] Remove unused English status aliases from ui.ts - RESOLVED: None exist (all Portuguese)
+- [x] Replace `var` with `const`/`let` in public JS files - RESOLVED: No public JS files in project
 
 ---
 
