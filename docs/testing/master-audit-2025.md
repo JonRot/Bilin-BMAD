@@ -92,7 +92,7 @@
 
 ### Low Priority - Backlog
 
-- [ ] Add ARIA to Card, StatsCard, ActionCard components
+- [x] Add ARIA to Card, StatsCard, ActionCard components (FIXED 2025-12-29) - Full a11y support with keyboard navigation
 - [ ] Add JSDoc to 40% of lib/ functions missing documentation
 - [x] Standardize container classes (FIXED 2025-12-29) - Added --narrow/--medium/--wide/--full modifiers to BaseLayout
 - [ ] Add print styles if invoice printing needed
