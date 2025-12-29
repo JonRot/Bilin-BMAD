@@ -44,8 +44,7 @@
 | **Phase 2: AI optimization** | [Booking Optimizer Architecture](./planning/architecture-booking-optimizer.md) |
 | **Run QA tests** | [Enrollments Test Checklist](./testing/enrollments-test-checklist.md) |
 | **Review page audit** | [Page Audit 2025-12-20](./testing/page-audit-2025-12-20.md) |
-| **PRD Compliance Audit** | [Comprehensive Audit 2025-12-20](./testing/audit-2025-12-20.md) |
-| **Full App Audit (latest)** | [Comprehensive App Audit 2025-12-21](./testing/comprehensive-app-audit-2025-12-21.md) |
+| **Master Audit (consolidated)** | [Master Audit 2025](./testing/master-audit-2025.md) |
 
 ---
 
@@ -241,7 +240,8 @@ docs/                                 # PROJECT-LEVEL DOCUMENTATION
 │
 ├── testing/                          # Test plans and checklists
 │   ├── enrollments-test-checklist.md
-│   └── page-audit-2025-12-20.md      # Comprehensive page audit (92 issues)
+│   ├── page-audit-2025-12-20.md      # Comprehensive page audit (92 issues)
+│   └── master-audit-2025.md          # Consolidated audit report (150+ issues tracked)
 │
 └── archive/                          # Historical summary
     └── ARCHIVE-HISTORY.md            # Master summary of project history
