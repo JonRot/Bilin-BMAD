@@ -69,7 +69,7 @@
 - [ ] Replace remaining innerHTML patterns with safe alternatives
 - [ ] Translate 35+ Zod validation messages to Portuguese
 
-### Medium Priority - 11 Fixed, ~12 Remaining
+### Medium Priority - 12 Fixed, ~11 Remaining
 
 **Fixed:**
 - [x] CSS Variables: Verified all defined in BaseLayout.astro
@@ -77,12 +77,12 @@
 - [x] Debug Logs: Removed console.log from time-off.ts
 - [x] Hardcoded Pixels: Fixed in PillarBadges.astro, ActionCard.astro
 - [x] CheckboxGroup Focus: Fixed shadow color from indigo to coral
+- [x] Replace rgba() patterns with color-mix() in 7 files (FIXED 2025-12-29)
 
 **Remaining:**
 - [ ] Convert pausado-request.ts to class-based pattern
 - [ ] Standardize media query breakpoints (choose: 640px, 768px, 1024px)
 - [ ] Add Zod schemas to APIs missing validation
-- [ ] Replace 27+ rgba() patterns with color-mix()
 - [ ] Consolidate duplicate date utility functions
 
 ### Low Priority - Backlog
@@ -202,7 +202,7 @@ These files demonstrate ideal patterns:
 - [x] Fix Indigo → Coral brand colors
 - [x] Add class mode CSS variables
 - [x] Fix WeeklySchedulePreview hardcoded colors (FIXED 2025-12-29)
-- [ ] Replace remaining rgba() patterns
+- [x] Replace rgba() patterns with color-mix() (FIXED 2025-12-29)
 
 ### Phase 4: Polish
 
