@@ -67,7 +67,7 @@
 - [ ] Standardize API error format (choose ONE: `{ error, message }` or ApiError class)
 - [ ] Standardize auth pattern (use `requireRole()` everywhere)
 - [ ] Replace remaining innerHTML patterns with safe alternatives
-- [ ] Translate 35+ Zod validation messages to Portuguese
+- [x] Translate Zod validation messages to Portuguese (FIXED 2025-12-29)
 
 ### Medium Priority - 12 Fixed, ~11 Remaining
 
@@ -204,9 +204,9 @@ These files demonstrate ideal patterns:
 - [x] Fix WeeklySchedulePreview hardcoded colors (FIXED 2025-12-29)
 - [x] Replace rgba() patterns with color-mix() (FIXED 2025-12-29)
 
-### Phase 4: Polish
+### Phase 4: Polish - IN PROGRESS
 
-- [ ] Translate validation messages to Portuguese
+- [x] Translate validation messages to Portuguese (FIXED 2025-12-29)
 - [ ] Replace `any` types with proper interfaces
 - [ ] Add null checks to querySelector calls
 - [ ] Remove debug logging and unused exports
