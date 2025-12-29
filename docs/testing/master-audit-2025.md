@@ -50,10 +50,12 @@
 | 6-12 | 7 CSRF-missing endpoints | Various API files | FIXED 2025-12-20 |
 | 13-15 | 3 unsafe JSON.parse | session.ts, slots/*.ts | FIXED 2025-12-20 |
 
-### High Priority - 22 Fixed, ~16 Remaining
+### High Priority - 24 Fixed, ~14 Remaining
 
 **Fixed:**
 - [x] Type Safety: `catch (error: any)` → `catch (error: unknown)` in 3 client scripts
+- [x] Type Safety: Replaced 30+ `any` types with proper interfaces in users-page-client.ts (FIXED 2025-12-29)
+- [x] Type Safety: Replaced 25+ `any` types with proper interfaces in weekly-schedule-grid-client.ts (FIXED 2025-12-29)
 - [x] Null Checks: Added to `getElementById` calls in preview-handler.ts
 - [x] Buttons: 36+ raw buttons replaced with Button component across 10+ files
 - [x] CSS Cleanup: Removed 120+ lines of deprecated btn-action from components.css
@@ -66,6 +68,7 @@
 - [ ] Standardize API response format (choose ONE: `{ data }` or `{ success, data }`)
 - [ ] Standardize API error format (choose ONE: `{ error, message }` or ApiError class)
 - [ ] Standardize auth pattern (use `requireRole()` everywhere)
+- [ ] Replace remaining `any` types in 4 scripts (~20 remaining)
 - [x] Replace remaining innerHTML patterns with safe alternatives (FIXED 2025-12-29)
 - [x] Translate Zod validation messages to Portuguese (FIXED 2025-12-29)
 
@@ -209,7 +212,10 @@ These files demonstrate ideal patterns:
 - [x] Translate validation messages to Portuguese (FIXED 2025-12-29)
 - [x] Add escapeHtml() to innerHTML patterns in client scripts (FIXED 2025-12-29)
 - [x] Add null checks to querySelector/getElementById calls (FIXED 2025-12-29)
-- [ ] Replace `any` types with proper interfaces
+- [x] Replace `any` types with proper interfaces in major scripts (FIXED 2025-12-29)
+  - users-page-client.ts: 30+ fixes (Window extensions, API response types, sorting types)
+  - weekly-schedule-grid-client.ts: 25+ fixes (Exception, Enrollment, ActionData interfaces)
+- [ ] Replace remaining `any` types in 4 scripts (~20 remaining)
 - [ ] Remove debug logging and unused exports
 
 ---
