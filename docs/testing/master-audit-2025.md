@@ -87,14 +87,14 @@
 - [x] Zod validation audit - RESOLVED: All 85 API endpoints audited, 32 use Zod schemas, remaining have inline validation
 
 **Remaining:**
-- [ ] Standardize media query breakpoints (27 non-standard: 480px, 600px, 900px → 640/768/1024px)
+- [x] Standardize media query breakpoints (FIXED 2025-12-29) - 33 breakpoints updated across 25 files
 - [ ] Add Zod schemas to 10+ public/teacher endpoints (code quality improvement, not security-critical)
 
 ### Low Priority - Backlog
 
 - [ ] Add ARIA to Card, StatsCard, ActionCard components
 - [ ] Add JSDoc to 40% of lib/ functions missing documentation
-- [ ] Standardize container classes (23 files use `container`, 7 use `page-container`)
+- [x] Standardize container classes (FIXED 2025-12-29) - Added --narrow/--medium/--wide/--full modifiers to BaseLayout
 - [ ] Add print styles if invoice printing needed
 - [x] Remove unused English status aliases from ui.ts - RESOLVED: None exist (all Portuguese)
 - [x] Replace `var` with `const`/`let` in public JS files - RESOLVED: No public JS files in project
