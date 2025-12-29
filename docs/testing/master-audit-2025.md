@@ -219,7 +219,10 @@ These files demonstrate ideal patterns:
   - enrollments-page-client.ts: 4 fixes (GroupMemberApiResponse, Window extensions)
   - leads-page-client.ts: 6 fixes (AvailabilityGridElement, ZodValidationDetail, WaitlistStats)
   - availability-approvals-client.ts: 4 fixes (Window extensions, error handling)
-- [ ] Remove debug logging and unused exports
+- [x] Remove debug logging and unused exports (FIXED 2025-12-29)
+  - Removed 5 console.log statements from address-form-client.ts
+  - Removed unused export block from weekly-schedule-grid-client.ts
+  - Removed unused type exports from leads-page-client.ts
 
 ---
 
