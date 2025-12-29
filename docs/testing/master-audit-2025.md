@@ -208,8 +208,8 @@ These files demonstrate ideal patterns:
 
 - [x] Translate validation messages to Portuguese (FIXED 2025-12-29)
 - [x] Add escapeHtml() to innerHTML patterns in client scripts (FIXED 2025-12-29)
+- [x] Add null checks to querySelector/getElementById calls (FIXED 2025-12-29)
 - [ ] Replace `any` types with proper interfaces
-- [ ] Add null checks to querySelector calls
 - [ ] Remove debug logging and unused exports
 
 ---
