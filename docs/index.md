@@ -236,7 +236,8 @@ docs/                                 # PROJECT-LEVEL DOCUMENTATION
 │   ├── business-context.md           # BILIN domain knowledge
 │   ├── brainstorming-session-2025-12-06.md  # Foundational business decisions
 │   ├── teacher-cancellation-workflow.md     # Cancellation approval flow
-│   └── makeup-class-tracking.md             # Makeup class system
+│   ├── makeup-class-tracking.md             # Makeup class system
+│   └── notification-mapping.md              # Notification types and triggers
 │
 ├── testing/                          # Test plans and checklists
 │   ├── enrollments-test-checklist.md
