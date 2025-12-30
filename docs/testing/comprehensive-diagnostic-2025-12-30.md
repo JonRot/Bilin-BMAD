@@ -181,11 +181,12 @@
 | No slot-service tests | slot-service.test.ts | Added 42 tests for slot availability computation |
 | No pausado-automator tests | pausado-automator.test.ts | Added 35 tests for PAUSADO auto-transition |
 | No aviso-automator tests | aviso-automator.test.ts | Added 34 tests for AVISO auto-transition |
+| No lead-service tests | lead-service.test.ts | Added 44 tests for JotForm/PII/pipeline logic |
 | Coverage dependency missing | package.json | Added @vitest/coverage-v8 |
 | Broken MAX_SUGGESTIONS test | waitlist-matcher.test.ts | Fixed test to match current LIMITS constant (5) |
 
 **Test Suite Status:**
-- **632 tests passing** (14 test files)
+- **676 tests passing** (15 test files)
 - **status-machine.ts**: 100% line coverage
 - **enrollment-service.ts**: CRUD, status transitions, cooldown tested
 - **teacher-credits.ts**: Tier/earnings calculation fully tested
@@ -194,6 +195,7 @@
 - **slot-service.ts**: Slot availability, blocking, exceptions tested
 - **pausado-automator.ts**: Auto-transition, cooldown periods, batch processing
 - **aviso-automator.ts**: Auto-transition to INATIVO, termination dates
+- **lead-service.ts**: JotForm, PII encryption, status pipeline tested
 - **time-utils.ts**: Pure functions fully tested
 - **slot-calculator.ts**: Core slot logic tested
 - **validation.ts**: Key schemas tested (lat/lon bounds, time formats, email)
