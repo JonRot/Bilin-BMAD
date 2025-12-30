@@ -183,11 +183,12 @@
 | No aviso-automator tests | aviso-automator.test.ts | Added 34 tests for AVISO auto-transition |
 | No lead-service tests | lead-service.test.ts | Added 44 tests for JotForm/PII/pipeline logic |
 | No exception-repo tests | exception.test.ts | Added 41 tests for exception CRUD/approval/conflicts |
+| No enrollment-repo tests | enrollment.test.ts | Added 51 tests for enrollment CRUD/slot conflicts |
 | Coverage dependency missing | package.json | Added @vitest/coverage-v8 |
 | Broken MAX_SUGGESTIONS test | waitlist-matcher.test.ts | Fixed test to match current LIMITS constant (5) |
 
 **Test Suite Status:**
-- **717 tests passing** (16 test files)
+- **768 tests passing** (17 test files)
 - **status-machine.ts**: 100% line coverage
 - **enrollment-service.ts**: CRUD, status transitions, cooldown tested
 - **teacher-credits.ts**: Tier/earnings calculation fully tested
@@ -198,6 +199,7 @@
 - **aviso-automator.ts**: Auto-transition to INATIVO, termination dates
 - **lead-service.ts**: JotForm, PII encryption, status pipeline tested
 - **exception.ts** (repo): CRUD, sick-protection, reschedule conflicts tested
+- **enrollment.ts** (repo): CRUD, slot conflicts, overlap detection tested
 - **time-utils.ts**: Pure functions fully tested
 - **slot-calculator.ts**: Core slot logic tested
 - **validation.ts**: Key schemas tested (lat/lon bounds, time formats, email)
