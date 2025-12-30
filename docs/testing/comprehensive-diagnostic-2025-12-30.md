@@ -175,12 +175,14 @@
 | No slot-calculator tests | slot-calculator.test.ts | Added 23 tests for slot calculation logic |
 | No validation tests | validation.test.ts | Added 40 tests for Zod validation schemas |
 | No billing/credits tests | teacher-credits.test.ts | Added 41 tests for tier/earnings calculation |
+| No enrollment-service tests | enrollment-service.test.ts | Added 41 tests for CRUD/status/conflicts |
 | Coverage dependency missing | package.json | Added @vitest/coverage-v8 |
 | Broken MAX_SUGGESTIONS test | waitlist-matcher.test.ts | Fixed test to match current LIMITS constant (5) |
 
 **Test Suite Status:**
-- **399 tests passing** (8 test files)
+- **440 tests passing** (9 test files)
 - **status-machine.ts**: 100% line coverage
+- **enrollment-service.ts**: CRUD, status transitions, cooldown tested
 - **teacher-credits.ts**: Tier/earnings calculation fully tested
 - **time-utils.ts**: Pure functions fully tested
 - **slot-calculator.ts**: Core slot logic tested
@@ -312,7 +314,7 @@
 | Documentation | 95% |
 | Type Safety | 82% |
 | Localization | 95% |
-| Test Coverage | 10% (399 tests, critical paths covered) |
+| Test Coverage | 12% (440 tests, critical paths covered) |
 
 ---
 
