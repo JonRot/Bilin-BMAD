@@ -107,6 +107,7 @@
 | Orphaned debug page | pages/debug.astro | Deleted unused file |
 | Orphaned backup file | schedule-generator.ts.backup | Deleted unused file |
 | Unused geocoding provider | geoapify.ts | Deleted unused legacy file |
+| Missing success toasts | travel-errors-client.ts | Added toasts for status/lead/student/teacher saves |
 
 ### Verified as Non-Issues (False Positives)
 
@@ -184,10 +185,10 @@
 - Data retention policy undefined
 - Third-party disclosure documentation
 
-**Form UX (2 items)** - Partially Fixed Session 63
+**Form UX (1 item)** - Mostly Fixed Session 63
 - ~~Missing loading states on 8 forms~~ FIXED Session 62-63 (most forms now have loading states)
-- Missing success toasts
-- Auto-focus rarely implemented
+- ~~Missing success toasts~~ FIXED Session 63 (travel-errors-client.ts)
+- Auto-focus rarely implemented (low priority)
 
 **Other (3 items)**
 - Client-side session expiry handling
