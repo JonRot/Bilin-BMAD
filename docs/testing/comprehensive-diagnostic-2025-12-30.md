@@ -214,9 +214,12 @@
 | No address-autocomplete tests | address-autocomplete.test.ts | Added 73 tests for utility functions (normalizeText, hashQuery, CEP detection, similarity algorithms, haversine distance) |
 | No locationiq tests | locationiq.test.ts | Added 46 tests for geocoding service (CEP lookup, address search, reverse geocode) |
 | No enrollment status API tests | status.test.ts | Added 31 tests for PUT /api/enrollments/[id]/status (auth, validation, transitions, notifications) |
+| No google-geocode tests | google-geocode.test.ts | Added 23 tests for Google Maps Geocoding API (address parsing, error handling, Brazilian addresses) |
+| No google-sheets tests | google-sheets.test.ts | Added 28 tests for Sheets webhook + formatAvailabilityForSheets utility |
+| No lead conversion API tests | convert.test.ts | Added 36 tests for POST /api/leads/[id]/convert (slot validation, conversion flow, audit) |
 
 **Test Suite Status:**
-- **1711 tests passing** (40 test files)
+- **1798 tests passing** (43 test files)
 - **status-machine.ts**: 100% line coverage
 - **enrollment-service.ts**: CRUD, status transitions, cooldown tested
 - **teacher-credits.ts**: Tier/earnings calculation fully tested
