@@ -12,7 +12,7 @@
 |----------|-------|--------|
 | Critical Issues | 0 remaining | ✅ ALL FIXED |
 | High Priority | 0 remaining | ✅ ALL FIXED |
-| Medium Priority | ~11 remaining | ⚠️ Non-blocking |
+| Medium Priority | ~9 remaining | ⚠️ Non-blocking |
 | Low Priority | ~21 remaining | ℹ️ Backlog |
 
 ---
@@ -123,6 +123,13 @@
 
 **Total: 11 endpoint methods + status lifecycle documented**
 
+### Session 64 Fixes (Validation & Type Safety) ✅
+
+| Issue | File | Fix Applied |
+|-------|------|-------------|
+| Missing Zod validation on webhook | webhooks/jotform.ts | Added JotFormWebhookSchema, JotFormAnswerSchema |
+| `Record<string, any>` in ChangeRequest | lib/change-requests.ts | Changed to `Record<string, unknown>` |
+
 ### Verified as Non-Issues (False Positives)
 
 | Reported Issue | Verification |
@@ -140,20 +147,20 @@
 
 ## Remaining Issues (Medium/Low Priority)
 
-### Medium Priority - Non-Blocking (~11 items)
+### Medium Priority - Non-Blocking (~9 items)
 
 **Validation (0 items)** ✅ FIXED
 - ~~Weak Zod schemas needing refinement (email regex, time format, lat/lon bounds)~~ FIXED Session 60
 - ~~Admin approval endpoints without Zod validation~~ FIXED Session 60
-- Remaining: Webhooks/jotform Zod validation (deferred - low risk)
+- ~~Webhooks/jotform Zod validation~~ FIXED Session 64
 
 **Documentation (0 items)** ✅ FIXED
 - ~~Remaining undocumented endpoints~~ FIXED Session 64 (11 endpoints documented)
 - ~~Status transition edge cases (PAUSADO → AVISO, AVISO → PAUSADO)~~ FIXED Session 64
 
-**Type Safety (5 items)**
+**Type Safety (4 items)** - Partially Fixed Session 64
 - Remaining `any` types in edge cases
-- `Record<string, any>` in ChangeRequest interface
+- ~~`Record<string, any>` in ChangeRequest interface~~ FIXED Session 64
 - 238 unsafe row castings from D1
 
 **Client Performance (2 items)** - Partially Fixed Session 62
