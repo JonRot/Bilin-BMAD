@@ -12,7 +12,7 @@
 |----------|-------|--------|
 | Critical Issues | 0 remaining | ✅ ALL FIXED |
 | High Priority | 0 remaining | ✅ ALL FIXED |
-| Medium Priority | ~9 remaining | ⚠️ Non-blocking |
+| Medium Priority | ~7 remaining | ⚠️ Non-blocking |
 | Low Priority | ~21 remaining | ℹ️ Backlog |
 
 ---
@@ -130,6 +130,11 @@
 | Missing Zod validation on webhook | webhooks/jotform.ts | Added JotFormWebhookSchema, JotFormAnswerSchema |
 | `Record<string, any>` in ChangeRequest | lib/change-requests.ts | Changed to `Record<string, unknown>` |
 | `catch (err: any)` patterns | teacher/schedule.astro | Changed to `catch (err: unknown)` with instanceof check |
+| `any` function params | closures.astro | Added SystemClosure type |
+| `any[]` variable types | account-links.astro | Added ParentLink, TeacherLink, Student, Teacher types |
+| `any[]` D1 results | travel-errors.astro | Added TravelErrorRow, StatusCountRow interfaces |
+| `any` callback params | users.astro, leads.astro | Added inline types for D1 query results |
+| `any` function params | leads.astro | Added Lead type for 3 helper functions |
 
 ### Verified as Non-Issues (False Positives)
 
@@ -148,7 +153,7 @@
 
 ## Remaining Issues (Medium/Low Priority)
 
-### Medium Priority - Non-Blocking (~9 items)
+### Medium Priority - Non-Blocking (~7 items)
 
 **Validation (0 items)** ✅ FIXED
 - ~~Weak Zod schemas needing refinement (email regex, time format, lat/lon bounds)~~ FIXED Session 60
@@ -159,10 +164,10 @@
 - ~~Remaining undocumented endpoints~~ FIXED Session 64 (11 endpoints documented)
 - ~~Status transition edge cases (PAUSADO → AVISO, AVISO → PAUSADO)~~ FIXED Session 64
 
-**Type Safety (4 items)** - Partially Fixed Session 64
-- Remaining `any` types in edge cases
+**Type Safety (2 items)** - Mostly Fixed Session 64
+- ~~Remaining `any` types in edge cases~~ FIXED Session 64 (13 occurrences fixed)
 - ~~`Record<string, any>` in ChangeRequest interface~~ FIXED Session 64
-- 238 unsafe row castings from D1
+- 238 unsafe row castings from D1 (lower priority, would need D1 type generator)
 
 **Client Performance (2 items)** - Partially Fixed Session 62
 - ~~JSON.parse without try/catch in client files~~ FIXED Session 62 (weekly-schedule-grid-client.ts)
