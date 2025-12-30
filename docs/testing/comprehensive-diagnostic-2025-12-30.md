@@ -185,11 +185,12 @@
 | No exception-repo tests | exception.test.ts | Added 41 tests for exception CRUD/approval/conflicts |
 | No enrollment-repo tests | enrollment.test.ts | Added 51 tests for enrollment CRUD/slot conflicts |
 | No student-repo tests | student.test.ts | Added 53 tests for student CRUD/PII encryption |
+| No teacher-repo tests | teacher.test.ts | Added 60 tests for teacher+credit CRUD |
 | Coverage dependency missing | package.json | Added @vitest/coverage-v8 |
 | Broken MAX_SUGGESTIONS test | waitlist-matcher.test.ts | Fixed test to match current LIMITS constant (5) |
 
 **Test Suite Status:**
-- **821 tests passing** (18 test files)
+- **881 tests passing** (19 test files)
 - **status-machine.ts**: 100% line coverage
 - **enrollment-service.ts**: CRUD, status transitions, cooldown tested
 - **teacher-credits.ts**: Tier/earnings calculation fully tested
@@ -202,6 +203,7 @@
 - **exception.ts** (repo): CRUD, sick-protection, reschedule conflicts tested
 - **enrollment.ts** (repo): CRUD, slot conflicts, overlap detection tested
 - **student.ts** (repo): CRUD, PII encryption, parent links tested
+- **teacher.ts** (repo): CRUD, PII, linked emails, credits tested
 - **time-utils.ts**: Pure functions fully tested
 - **slot-calculator.ts**: Core slot logic tested
 - **validation.ts**: Key schemas tested (lat/lon bounds, time formats, email)
