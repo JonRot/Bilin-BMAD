@@ -205,9 +205,10 @@
 | No schedule-generator tests | schedule-generator.test.ts | Added 41 tests for weekly schedule generation |
 | No push-notification-service tests | push-notification-service.test.ts | Added 27 tests for FCM stub service |
 | No complete-class API tests | complete-class.test.ts | Added 40 tests for class completion API endpoint |
+| No start-class API tests | start-class.test.ts | Added 23 tests for class start API endpoint |
 
 **Test Suite Status:**
-- **1538 tests passing** (36 test files)
+- **1561 tests passing** (37 test files)
 - **status-machine.ts**: 100% line coverage
 - **enrollment-service.ts**: CRUD, status transitions, cooldown tested
 - **teacher-credits.ts**: Tier/earnings calculation fully tested
@@ -353,7 +354,7 @@
 | Documentation | 95% |
 | Type Safety | 82% |
 | Localization | 95% |
-| Test Coverage | 35%+ (1538 tests, 36 files, all critical paths covered) |
+| Test Coverage | 35%+ (1561 tests, 37 files, all critical paths covered) |
 
 ---
 
