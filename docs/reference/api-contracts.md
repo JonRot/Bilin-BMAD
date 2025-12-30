@@ -337,6 +337,66 @@ Remove a student from a group class.
   - 404: Enrollment not found
   - 403: Not admin or CSRF invalid
 
+### GET /api/enrollments/group/[groupId]/status
+Get group details and effective status.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "group_id": "grp_abc123",
+  "effective_group": {
+    "groupId": "grp_abc123",
+    "totalMembers": 3,
+    "activeMembers": [
+      { "enrollmentId": "enr_1", "studentId": "stu_1", "studentName": "Ana", "status": "ATIVO" }
+    ],
+    "effectiveSize": 2,
+    "effectiveRate": 135
+  },
+  "rates": {
+    "group_rate": 135,
+    "individual_rate": 180
+  }
+}
+```
+
+### POST /api/enrollments/group/[groupId]/status
+Batch status change for group members.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "enrollment_ids": ["enr_1", "enr_2"],
+  "status": "PAUSADO",
+  "override_cooldown": false,
+  "new_location_host_id": "enr_3"
+}
+```
+- **Behavior:**
+  - Changes status for selected group members
+  - Calculates rate impact before/after
+  - Auto-transfers location host if needed (or returns candidates for selection)
+  - Notifies remaining members of rate changes
+- **Response:**
+```json
+{
+  "group_id": "grp_abc123",
+  "results": [
+    { "enrollment_id": "enr_1", "student_name": "Ana", "previous_status": "ATIVO", "new_status": "PAUSADO", "success": true }
+  ],
+  "before": { "effective_size": 2, "effective_rate": 135 },
+  "after": { "effective_size": 1, "effective_rate": 180, "effective_group": {...} },
+  "rate_changed": true,
+  "rates": { "group_rate": 135, "individual_rate": 180 },
+  "host_transfer": {
+    "requires_host_selection": false,
+    "host_auto_transferred": { "enrollment_id": "enr_3", "student_name": "Carlos" }
+  }
+}
+```
+- **Errors:** `404 NOT_FOUND`, `400 VALIDATION_ERROR`
+
 ---
 
 ## Lead APIs
@@ -351,6 +411,33 @@ List leads with filtering.
 Create new lead.
 - **Auth:** Admin only
 - **CSRF:** Required
+
+### GET /api/leads/[id]
+Get single lead details with decrypted address and CPF.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "id": "lead_xxx",
+  "student_name": "Ana",
+  "parent_name": "Maria",
+  "status": "NEW",
+  "lat": -23.55,
+  "lon": -46.64,
+  "availability_windows_parsed": [{"day": 1, "start": "14:00", "end": "18:00"}],
+  "address_decrypted": "Rua Example, 123",
+  "parent_cpf": "123.456.789-00"
+}
+```
+- **Errors:** `404 NOT_FOUND` if lead doesn't exist
+
+### PUT /api/leads/[id]
+Update lead details.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** Any fields from UpdateLeadSchema (student_name, parent_name, phone, address fields, lat, lon, etc.)
+- **Response:** Updated lead object
+- **Errors:** `404 NOT_FOUND`, `400 VALIDATION_ERROR`
 
 ### GET /api/leads/[id]/matches
 Get suggested teacher matches.
@@ -1173,6 +1260,88 @@ Update the status of a travel time error.
 - **Response:** `{ "success": true, "id": "...", "status": "RESOLVED" }`
 - **Errors:** `404 NOT_FOUND` if error doesn't exist
 
+### GET /api/admin/parent-links
+List all parent account links.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "links": [
+    {
+      "id": "uuid",
+      "auth_email": "parent@example.com",
+      "student_id": "uuid",
+      "student_name": "Alice",
+      "created_at": 1704067200,
+      "created_by": "admin@example.com"
+    }
+  ]
+}
+```
+
+### POST /api/admin/parent-links
+Create a new parent-student link.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "auth_email": "parent@example.com",
+  "student_id": "uuid"
+}
+```
+- **Response:** `201 Created` with link object
+- **Errors:** `400 VALIDATION_ERROR` if email/student_id invalid
+
+### DELETE /api/admin/parent-links
+Delete a parent-student link.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Query Params:** `id` (link ID to delete)
+- **Response:** `{ "success": true }`
+- **Errors:** `400 VALIDATION_ERROR` if id missing
+
+### GET /api/admin/teacher-links
+List all teacher account links.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "links": [
+    {
+      "id": "uuid",
+      "auth_email": "teacher@example.com",
+      "teacher_id": "uuid",
+      "teacher_nickname": "João",
+      "created_at": 1704067200,
+      "created_by": "admin@example.com"
+    }
+  ]
+}
+```
+
+### POST /api/admin/teacher-links
+Create a new teacher account link.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "auth_email": "teacher@example.com",
+  "teacher_id": "uuid"
+}
+```
+- **Response:** `201 Created` with link object
+- **Errors:** `400 VALIDATION_ERROR` if email/teacher_id invalid
+
+### DELETE /api/admin/teacher-links
+Delete a teacher account link.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Query Params:** `id` (link ID to delete)
+- **Response:** `{ "success": true }`
+- **Errors:** `400 VALIDATION_ERROR` if id missing
+
 ---
 
 ## Parent APIs
@@ -1374,6 +1543,50 @@ Set logged-in teacher's availability slots (replaces all).
   - `start_time`, `end_time`: HH:MM format
   - `start_time` must be before `end_time`
 - **Response:** `{ "success": true, "slots": [...] }`
+
+### GET /api/teacher/time-off
+Get logged-in teacher's time-off requests.
+- **Auth:** Teacher only
+- **Response:** Array of time-off request objects
+```json
+[
+  {
+    "id": "tor_xxx",
+    "teacher_id": "tea_xxx",
+    "start_date": "2024-01-15",
+    "end_date": "2024-01-20",
+    "request_type": "VACATION",
+    "reason": "Family trip",
+    "status": "PENDING",
+    "created_at": 1704067200
+  }
+]
+```
+
+### POST /api/teacher/time-off
+Create a new time-off request.
+- **Auth:** Teacher only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "start_date": "2024-01-15",
+  "end_date": "2024-01-20",
+  "request_type": "VACATION",
+  "reason": "Family trip"
+}
+```
+- **Request Types:** `VACATION`, `SICK_LEAVE`, `PERSONAL`, `OTHER`
+- **Response:** `201 Created` with time-off request object
+- **Errors:** `409 CONFLICT` if overlapping request exists
+
+### DELETE /api/teacher/time-off
+Cancel a pending time-off request.
+- **Auth:** Teacher only
+- **CSRF:** Required
+- **Query Params:** `id` (request ID to cancel)
+- **Response:** `{ "success": true }`
+- **Errors:** `404 NOT_FOUND`, `403 FORBIDDEN` (if not owner), `400 VALIDATION_ERROR` (if not pending)
 
 ### GET /api/parent/pending-counts
 Get parent's pending cancellation counts.
