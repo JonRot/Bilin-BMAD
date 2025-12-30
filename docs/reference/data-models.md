@@ -766,6 +766,35 @@ WHERE status = 'PAUSADO'
 
 ---
 
+## Database Triggers
+
+The following triggers enforce business rules and data integrity:
+
+### Cascade Delete Triggers
+
+| Trigger | On Table | Action |
+|---------|----------|--------|
+| `trg_enrollment_cascade_exceptions` | enrollments | DELETE → Deletes related enrollment_exceptions |
+| `trg_enrollment_cascade_completions` | enrollments | DELETE → Deletes related class_completions |
+| `trg_enrollment_cascade_status_history` | enrollments | DELETE → Deletes related enrollment_status_history |
+
+### Timestamp Update Triggers
+
+Auto-update `updated_at` on record changes:
+- `update_users_timestamp`, `update_teachers_timestamp`, `update_enrollments_timestamp`
+- `update_leads_timestamp`, `update_availability_timestamp`, `update_approvals_timestamp`
+- `update_app_settings_timestamp`, `update_teacher_credits_timestamp`, `update_slot_reservation_timestamp`
+
+### Validation Triggers
+
+| Trigger | On Table | Validation |
+|---------|----------|------------|
+| `trg_enrollment_validate_rate_insert/update` | enrollments | hourly_rate between 1-500 |
+| `trg_enrollment_validate_duration_insert/update` | enrollments | duration_minutes between 15-180 |
+| `trg_exception_set_teacher_id` | enrollment_exceptions | Ensures enrollment exists |
+
+---
+
 ## Security Considerations
 
 1. **Prepared Statements:** All queries use parameterized queries

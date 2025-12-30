@@ -22,7 +22,7 @@
 
 **Total Issues Found:** 170+
 - Critical: ~~8~~ → **0 remaining** ✅ ALL FIXED
-- High: ~~22~~ → **12 remaining** (7 fixed in Sessions 57-58, 3 already correct)
+- High: ~~22~~ → **4 remaining** (10 fixed in Sessions 57-59, 8 already correct/false positives)
 - Medium: 39
 - Low: 27
 
@@ -77,6 +77,29 @@
 | Auth pattern migration | 5 endpoints | Migrated to requireApiRole/requireApiAuth | ✅ FIXED |
 
 **Revised HIGH Count:** 18 → **12 remaining** (7 fixed, 3 already correct)
+
+### Session 59 HIGH Priority Fixes (2025-12-30)
+
+| Issue | File | Fix Applied | Status |
+|-------|------|-------------|--------|
+| GROUP_RATE_CHANGED not in CHECK constraint | notifications table | Created migration 030 | ✅ FIXED |
+| Missing audit logging for pausado approvals | pausado-approvals.ts | Added logAudit for PAUSADO_APPROVED/REJECTED | ✅ FIXED |
+| XSS in scheduling-analytics.astro | scheduling-analytics.astro | Verified: Only renders server data, no user input | ⚠️ False Positive |
+| XSS in time-off-approvals.astro | time-off-approvals.astro | Verified: Uses escapeHtml on all user data | ⚠️ False Positive |
+| Login endpoint rate limiting | login.ts | Already has checkRateLimit with RateLimits.AUTH | ⚠️ Non-issue |
+| monthCache memory leak | teacher-schedule-client.ts | Already has MAX_MONTH_CACHE_SIZE = 6 | ⚠️ Already fixed |
+
+**Revised HIGH Count:** 12 → **8 remaining** (2 fixed, 4 already correct)
+
+### Session 59 Continued Fixes (2025-12-30)
+
+| Issue | File | Fix Applied | Status |
+|-------|------|-------------|--------|
+| Missing CASCADE DELETE | enrollment_exceptions, class_completions | Verified: Already implemented via triggers (`trg_enrollment_cascade_exceptions`, `trg_enrollment_cascade_completions`) | ⚠️ False Positive |
+| PAUSADO/AVISO `>` vs `>=` boundary | status-machine.ts:113, :173 | Changed to `>=` for exact expiry | ✅ FIXED |
+| Hardcoded rates ignore teacher tiers | group-service.ts | Verified: Client rates (R$150/R$120) are separate from teacher pay rates. Teacher tiers handled by teacher-credits.ts | ⚠️ False Positive |
+
+**Revised HIGH Count:** 8 → **4 remaining** (1 fixed, 2 false positives)
 
 ---
 
