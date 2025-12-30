@@ -108,6 +108,7 @@
 | Orphaned backup file | schedule-generator.ts.backup | Deleted unused file |
 | Unused geocoding provider | geoapify.ts | Deleted unused legacy file |
 | Missing success toasts | travel-errors-client.ts | Added toasts for status/lead/student/teacher saves |
+| Missing form loading states | travel-errors-client.ts | Added loading states to 3 form handlers (lead/student/teacher) |
 
 ### Verified as Non-Issues (False Positives)
 
