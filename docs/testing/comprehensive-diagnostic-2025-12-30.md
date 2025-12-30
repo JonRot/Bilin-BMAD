@@ -176,14 +176,16 @@
 | No validation tests | validation.test.ts | Added 40 tests for Zod validation schemas |
 | No billing/credits tests | teacher-credits.test.ts | Added 41 tests for tier/earnings calculation |
 | No enrollment-service tests | enrollment-service.test.ts | Added 41 tests for CRUD/status/conflicts |
+| No group-service tests | group-service.test.ts | Added 40 tests for group class billing/rate logic |
 | Coverage dependency missing | package.json | Added @vitest/coverage-v8 |
 | Broken MAX_SUGGESTIONS test | waitlist-matcher.test.ts | Fixed test to match current LIMITS constant (5) |
 
 **Test Suite Status:**
-- **440 tests passing** (9 test files)
+- **480 tests passing** (10 test files)
 - **status-machine.ts**: 100% line coverage
 - **enrollment-service.ts**: CRUD, status transitions, cooldown tested
 - **teacher-credits.ts**: Tier/earnings calculation fully tested
+- **group-service.ts**: Group billing, effective rates, group composition tested
 - **time-utils.ts**: Pure functions fully tested
 - **slot-calculator.ts**: Core slot logic tested
 - **validation.ts**: Key schemas tested (lat/lon bounds, time formats, email)
@@ -314,7 +316,7 @@
 | Documentation | 95% |
 | Type Safety | 82% |
 | Localization | 95% |
-| Test Coverage | 12% (440 tests, critical paths covered) |
+| Test Coverage | 13% (480 tests, critical paths covered) |
 
 ---
 
