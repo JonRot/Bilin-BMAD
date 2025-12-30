@@ -94,6 +94,8 @@
 | JSON.parse without try/catch | weekly-schedule-grid-client.ts | Added `safeJsonParse()` helper with fallback |
 | setInterval without cleanup | teacher-schedule-client.ts | Store interval ID, cleanup on `beforeunload` |
 | Build error - missing exports | lib/validation.ts | Added re-exports for approval schemas |
+| Missing form loading states | account-links-client.ts | Added `btn--loading` to parent/teacher link forms |
+| Missing form loading states | users-page-client.ts | Added loading states to 4 form handlers |
 
 ### Verified as Non-Issues (False Positives)
 
