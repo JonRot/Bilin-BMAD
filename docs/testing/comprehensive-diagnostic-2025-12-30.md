@@ -202,9 +202,10 @@
 | No schedule-page-service tests | schedule-page-service.test.ts | Added 22 tests for data orchestration |
 | No lead-matching tests | lead-matching.test.ts | Added 35 tests for teacher-lead matching |
 | No travel-time-service tests | travel-time-service.test.ts | Added 32 tests for travel time calculation |
+| No schedule-generator tests | schedule-generator.test.ts | Added 41 tests for weekly schedule generation |
 
 **Test Suite Status:**
-- **1430 tests passing** (33 test files)
+- **1471 tests passing** (34 test files)
 - **status-machine.ts**: 100% line coverage
 - **enrollment-service.ts**: CRUD, status transitions, cooldown tested
 - **teacher-credits.ts**: Tier/earnings calculation fully tested
@@ -350,7 +351,7 @@
 | Documentation | 95% |
 | Type Safety | 82% |
 | Localization | 95% |
-| Test Coverage | 35%+ (1430 tests, 33 files, all critical paths covered) |
+| Test Coverage | 35%+ (1471 tests, 34 files, all critical paths covered) |
 
 ---
 
