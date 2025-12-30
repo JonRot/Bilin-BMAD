@@ -12,8 +12,8 @@
 |----------|-------|--------|
 | Critical Issues | 0 remaining | ✅ ALL FIXED |
 | High Priority | 0 remaining | ✅ ALL FIXED |
-| Medium Priority | ~18 remaining | ⚠️ Non-blocking |
-| Low Priority | ~23 remaining | ℹ️ Backlog |
+| Medium Priority | ~17 remaining | ⚠️ Non-blocking |
+| Low Priority | ~21 remaining | ℹ️ Backlog |
 
 ---
 
@@ -127,7 +127,7 @@
 
 ## Remaining Issues (Medium/Low Priority)
 
-### Medium Priority - Non-Blocking (~35 items)
+### Medium Priority - Non-Blocking (~17 items)
 
 **Validation (0 items)** ✅ FIXED
 - ~~Weak Zod schemas needing refinement (email regex, time format, lat/lon bounds)~~ FIXED Session 60
@@ -164,7 +164,7 @@
 - ~~Client script messages in English~~ FIXED Session 60
 - Remaining: API error messages in English (low priority, rarely seen by users)
 
-### Low Priority - Backlog (~23 items)
+### Low Priority - Backlog (~21 items)
 
 **Documentation (5 items)**
 - Index documentation improvements
