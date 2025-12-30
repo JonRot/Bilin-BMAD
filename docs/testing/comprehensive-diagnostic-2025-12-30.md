@@ -129,6 +129,7 @@
 |-------|------|-------------|
 | Missing Zod validation on webhook | webhooks/jotform.ts | Added JotFormWebhookSchema, JotFormAnswerSchema |
 | `Record<string, any>` in ChangeRequest | lib/change-requests.ts | Changed to `Record<string, unknown>` |
+| `catch (err: any)` patterns | teacher/schedule.astro | Changed to `catch (err: unknown)` with instanceof check |
 
 ### Verified as Non-Issues (False Positives)
 
