@@ -1,6 +1,6 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2025-12-29
+**Last Updated:** 2025-12-30
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
 **Tables:** 22 total (11 core + 11 via migrations)
@@ -164,8 +164,8 @@ leads --> (converts to) students + enrollments
 | pausado_at | INTEGER | | Unix timestamp when paused |
 | pausado_started_at | INTEGER | | When pause began (for tracking) |
 | pausado_reason | TEXT | | Reason for pause |
-| pausado_return_date | INTEGER | | Auto-return timestamp |
-| last_pausado_end | INTEGER | | For cooldown calculation |
+| pausado_cooldown_until | INTEGER | | Unix timestamp when cooldown ends |
+| recurrence_start_date | TEXT | NOT NULL | When enrollment began (YYYY-MM-DD) |
 | google_calendar_event_id | TEXT | | Linked calendar event |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
@@ -546,8 +546,9 @@ WHERE status = 'PAUSADO'
 | id | TEXT | PRIMARY KEY | Zone ID |
 | teacher_id | TEXT | NOT NULL, FK | References teachers(id) |
 | day_of_week | INTEGER | NOT NULL, CHECK 0-6 | Day of week |
-| neighborhood | TEXT | NOT NULL | Zone/neighborhood name |
+| city | TEXT | NOT NULL | City/zone name for that day |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+| updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 
 **Note:** Single zone per day enforced (no priority needed).
 
@@ -776,4 +777,4 @@ WHERE status = 'PAUSADO'
 
 ---
 
-**Last Updated:** 2025-12-28
+**Last Updated:** 2025-12-30

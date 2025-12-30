@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2025-12-29
+**Last Updated:** 2025-12-30
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 110+ total
+**Endpoints:** 120+ total
 
 ## Overview
 
@@ -44,6 +44,7 @@ All API endpoints (except `/api/auth/login`) require authentication via session 
 | READ | 200 | 60s | GET requests |
 | WRITE | 30 | 60s | POST, PUT, DELETE |
 | CALENDAR | 50 | 60s | Google Calendar ops |
+| WEBHOOK | 10 | 60s | Webhook endpoints (per IP) |
 
 Rate limit responses return `429 Too Many Requests` with `Retry-After` header.
 
@@ -693,6 +694,110 @@ Re-encrypt PII with new key.
 - **Auth:** Admin only
 - **CSRF:** Required
 
+### POST /api/admin/jotform-sync
+Sync leads from JotForm CADASTRO BILIN form.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Response:**
+```json
+{
+  "success": true,
+  "imported": 5,
+  "skipped": 10,
+  "errors": 0,
+  "message": "Imported 5 new leads, skipped 10 existing"
+}
+```
+- **Notes:** Fetches all submissions from JotForm and imports as leads, skipping duplicates by submission ID
+
+### GET /api/admin/conflicts
+Scan for scheduling conflicts across all active enrollments.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "conflicts": [
+    {
+      "teacher_id": "tea_xxx",
+      "teacher_name": "John",
+      "day_of_week": 1,
+      "day_label": "Segunda-feira",
+      "enrollments": [
+        { "id": "enr_1", "student_name": "Sofia", "start_time": "14:00", "end_time": "15:00" },
+        { "id": "enr_2", "student_name": "Lucas", "start_time": "14:30", "end_time": "15:30" }
+      ],
+      "overlap_description": "14:30-15:00 overlap (30 min)"
+    }
+  ],
+  "total_conflicts": 1
+}
+```
+
+### GET /api/admin/hot-times-stats
+Scheduling analytics: time slot demand vs supply analysis.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "supply": {
+    "byDay": { "1": 45, "2": 38, ... },
+    "byPeriod": { "morning": 40, "afternoon": 80 },
+    "total": 150
+  },
+  "demand": {
+    "byDay": { "1": 60, "2": 45, ... },
+    "byPeriod": { "morning": 80, "afternoon": 60 },
+    "total": 180
+  },
+  "capacity": { ... },
+  "gapAnalysis": { ... }
+}
+```
+- **Notes:** Analyzes enrollment distribution (supply) vs lead availability windows (demand)
+
+### GET /api/admin/waitlist-stats
+Waitlist analytics for AI optimization panel.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "total_active_leads": 45,
+  "leads_by_status": { "WAITLIST": 30, "EM_ANALISE": 15 },
+  "data_quality": {
+    "with_coordinates": 35,
+    "without_coordinates": 10,
+    "with_availability": 40,
+    "without_availability": 5
+  },
+  "matching_potential": {
+    "ready_for_matching": 30,
+    "needs_geocoding": 5,
+    "needs_availability": 5
+  }
+}
+```
+
+### POST /api/admin/update-lead-statuses
+Bulk update lead statuses from spreadsheet export.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "data": [
+    { "ID": "led_xxx", "STATUS": "Agendado" },
+    { "ID": "led_yyy", "STATUS": "Lista de Espera" }
+  ]
+}
+```
+- **Status Mapping:**
+  - "Agendado" → CONTRACTED
+  - "Aguardando Análise" → AGUARDANDO
+  - "Atendimento Encerrado" → NOT_A_MATCH
+  - "Follow Up" → EM_ANALISE
+  - "Lista de Espera" → WAITLIST
+- **Response:** `{ "success": true, "updated": 5, "skipped": 2 }`
+
 ---
 
 ## Student APIs
@@ -766,6 +871,31 @@ List completed classes for a student with completion details.
   "stats": { "completed": 10, "noShows": 1, "total": 11 }
 }
 ```
+
+### GET /api/students/[id]/exceptions
+List all exceptions for a student's enrollments.
+- **Auth:** Admin, Teacher (own students), Parent (own children)
+- **Query Params:** `start_date`, `end_date` (optional YYYY-MM-DD)
+- **Response:**
+```json
+{
+  "exceptions": [
+    {
+      "id": "exc_xxx",
+      "enrollment_id": "enr_xxx",
+      "exception_date": "2025-01-15",
+      "exception_type": "CANCELLED_STUDENT",
+      "reason": "Student is sick",
+      "status": "APPROVED",
+      "is_sick_protected": true,
+      "new_date": null,
+      "new_time": null
+    }
+  ],
+  "total": 5
+}
+```
+- **Notes:** Returns all cancelled and rescheduled classes across all enrollments for tracking and history
 
 ---
 
@@ -1213,6 +1343,38 @@ Get teacher's pending request counts.
 }
 ```
 
+### GET /api/teacher/availability
+Get logged-in teacher's availability slots.
+- **Auth:** Teacher only
+- **Response:**
+```json
+{
+  "slots": [
+    { "day_of_week": 1, "start_time": "08:00", "end_time": "12:00" },
+    { "day_of_week": 1, "start_time": "14:00", "end_time": "18:00" }
+  ]
+}
+```
+
+### POST /api/teacher/availability
+Set logged-in teacher's availability slots (replaces all).
+- **Auth:** Teacher only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "slots": [
+    { "day_of_week": 1, "start_time": "08:00", "end_time": "12:00" },
+    { "day_of_week": 2, "start_time": "14:00", "end_time": "18:00" }
+  ]
+}
+```
+- **Validation:**
+  - `day_of_week`: 0-6 (0=Sunday)
+  - `start_time`, `end_time`: HH:MM format
+  - `start_time` must be before `end_time`
+- **Response:** `{ "success": true, "slots": [...] }`
+
 ### GET /api/parent/pending-counts
 Get parent's pending cancellation counts.
 - **Auth:** Parent only
@@ -1463,9 +1625,32 @@ Public lead registration (from cadastro page).
 
 ### POST /api/webhooks/jotform
 JotForm webhook for lead submissions.
-- **Auth:** Webhook signature validation
-- **Body:** JotForm submission data
-- **Response:** `{ "success": true }`
+- **Auth:** Rate limited (10 req/min per IP)
+- **Body:** JotForm form-urlencoded or JSON submission data
+- **Response:**
+```json
+{
+  "status": "created",
+  "lead_id": "led_xxx"
+}
+```
+- **Notes:**
+  - Form ID validated against configured CADASTRO BILIN form
+  - Duplicate submissions skipped by jotform_submission_id
+  - Availability windows parsed from day-specific time fields
+  - Sensitive fields (CPF, address) encrypted before storage
+
+### GET /api/webhooks/jotform
+Webhook health check.
+- **Auth:** None (public)
+- **Response:**
+```json
+{
+  "status": "active",
+  "webhook": "JotForm CADASTRO BILIN",
+  "form_id": "252266949174064"
+}
+```
 
 ---
 
@@ -1507,4 +1692,4 @@ JotForm webhook for lead submissions.
 
 ---
 
-**Last Updated:** 2025-12-29
+**Last Updated:** 2025-12-30
