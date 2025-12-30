@@ -180,11 +180,12 @@
 | No notification-service tests | notification-service.test.ts | Added 41 tests for real-time notification logic |
 | No slot-service tests | slot-service.test.ts | Added 42 tests for slot availability computation |
 | No pausado-automator tests | pausado-automator.test.ts | Added 35 tests for PAUSADO auto-transition |
+| No aviso-automator tests | aviso-automator.test.ts | Added 34 tests for AVISO auto-transition |
 | Coverage dependency missing | package.json | Added @vitest/coverage-v8 |
 | Broken MAX_SUGGESTIONS test | waitlist-matcher.test.ts | Fixed test to match current LIMITS constant (5) |
 
 **Test Suite Status:**
-- **598 tests passing** (13 test files)
+- **632 tests passing** (14 test files)
 - **status-machine.ts**: 100% line coverage
 - **enrollment-service.ts**: CRUD, status transitions, cooldown tested
 - **teacher-credits.ts**: Tier/earnings calculation fully tested
@@ -192,6 +193,7 @@
 - **notification-service.ts**: All notification types and edge cases tested
 - **slot-service.ts**: Slot availability, blocking, exceptions tested
 - **pausado-automator.ts**: Auto-transition, cooldown periods, batch processing
+- **aviso-automator.ts**: Auto-transition to INATIVO, termination dates
 - **time-utils.ts**: Pure functions fully tested
 - **slot-calculator.ts**: Core slot logic tested
 - **validation.ts**: Key schemas tested (lat/lon bounds, time formats, email)
@@ -322,7 +324,7 @@
 | Documentation | 95% |
 | Type Safety | 82% |
 | Localization | 95% |
-| Test Coverage | 16% (598 tests, critical paths covered) |
+| Test Coverage | 17% (632 tests, critical paths covered) |
 
 ---
 
