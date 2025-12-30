@@ -12,7 +12,7 @@
 |----------|-------|--------|
 | Critical Issues | 0 remaining | ✅ ALL FIXED |
 | High Priority | 0 remaining | ✅ ALL FIXED |
-| Medium Priority | ~12 remaining | ⚠️ Non-blocking |
+| Medium Priority | ~11 remaining | ⚠️ Non-blocking |
 | Low Priority | ~21 remaining | ℹ️ Backlog |
 
 ---
@@ -119,8 +119,9 @@
 | Undocumented leads/[id] endpoints | api-contracts.md | Documented GET/PUT /api/leads/[id] |
 | Undocumented teacher time-off endpoints | api-contracts.md | Documented GET/POST/DELETE /api/teacher/time-off |
 | Undocumented group status endpoints | api-contracts.md | Documented GET/POST /api/enrollments/group/[groupId]/status |
+| Status transition edge cases | api-contracts.md | Documented complete Status Lifecycle with edge cases |
 
-**Total: 11 endpoint methods documented**
+**Total: 11 endpoint methods + status lifecycle documented**
 
 ### Verified as Non-Issues (False Positives)
 
@@ -139,16 +140,16 @@
 
 ## Remaining Issues (Medium/Low Priority)
 
-### Medium Priority - Non-Blocking (~12 items)
+### Medium Priority - Non-Blocking (~11 items)
 
 **Validation (0 items)** ✅ FIXED
 - ~~Weak Zod schemas needing refinement (email regex, time format, lat/lon bounds)~~ FIXED Session 60
 - ~~Admin approval endpoints without Zod validation~~ FIXED Session 60
 - Remaining: Webhooks/jotform Zod validation (deferred - low risk)
 
-**Documentation (2 items)** - Partially Fixed Session 64
+**Documentation (0 items)** ✅ FIXED
 - ~~Remaining undocumented endpoints~~ FIXED Session 64 (11 endpoints documented)
-- Status transition edge cases (PAUSADO → AVISO, AVISO → PAUSADO)
+- ~~Status transition edge cases (PAUSADO → AVISO, AVISO → PAUSADO)~~ FIXED Session 64
 
 **Type Safety (5 items)**
 - Remaining `any` types in edge cases

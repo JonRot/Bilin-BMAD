@@ -82,6 +82,30 @@ Returns CSRF token for mutations.
 
 ## Enrollment APIs
 
+### Status Lifecycle
+
+Enrollments follow a state machine with these valid transitions:
+
+| From Status | Valid Transitions | Notes |
+|-------------|-------------------|-------|
+| `WAITLIST` | `ATIVO`, `INATIVO` | Initial state for waitlisted students |
+| `ATIVO` | `PAUSADO`, `AVISO`, `INATIVO` | Active enrollment |
+| `PAUSADO` | `ATIVO`, `AVISO`, `INATIVO` | Temporary pause (max 21 days) |
+| `AVISO` | `ATIVO`, `PAUSADO`, `INATIVO` | Termination warning (max 15 days) |
+| `INATIVO` | _(none)_ | Terminal state |
+
+**Edge Case Transitions:**
+- **PAUSADO → AVISO:** Parent can be notified of potential termination while paused (e.g., payment issues during pause)
+- **AVISO → PAUSADO:** Parent can request pause during warning period (e.g., to resolve payment/scheduling issues)
+
+**Time-Based Auto-Transitions:**
+- `PAUSADO` → `ATIVO`: Auto-transitions after 21 days (`PAUSADO_MAX_DAYS`)
+- `AVISO` → `INATIVO`: Auto-transitions after 15 days (`AVISO_MAX_DAYS`)
+
+**Cooldown Rules:**
+- After exiting `PAUSADO`, a 3-month cooldown prevents re-entering (`PAUSADO_COOLDOWN_MONTHS`)
+- Admins can override cooldown with `override_cooldown: true`
+
 ### GET /api/enrollments
 List enrollments with filtering.
 - **Auth:** Required
