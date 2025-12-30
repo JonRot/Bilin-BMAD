@@ -203,9 +203,10 @@
 | No lead-matching tests | lead-matching.test.ts | Added 35 tests for teacher-lead matching |
 | No travel-time-service tests | travel-time-service.test.ts | Added 32 tests for travel time calculation |
 | No schedule-generator tests | schedule-generator.test.ts | Added 41 tests for weekly schedule generation |
+| No push-notification-service tests | push-notification-service.test.ts | Added 27 tests for FCM stub service |
 
 **Test Suite Status:**
-- **1471 tests passing** (34 test files)
+- **1498 tests passing** (35 test files)
 - **status-machine.ts**: 100% line coverage
 - **enrollment-service.ts**: CRUD, status transitions, cooldown tested
 - **teacher-credits.ts**: Tier/earnings calculation fully tested
@@ -351,7 +352,7 @@
 | Documentation | 95% |
 | Type Safety | 82% |
 | Localization | 95% |
-| Test Coverage | 35%+ (1471 tests, 34 files, all critical paths covered) |
+| Test Coverage | 35%+ (1498 tests, 35 files, all critical paths covered) |
 
 ---
 
