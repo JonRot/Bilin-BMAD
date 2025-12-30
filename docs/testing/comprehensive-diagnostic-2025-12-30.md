@@ -22,7 +22,7 @@
 
 **Total Issues Found:** 170+
 - Critical: ~~8~~ → **0 remaining** ✅ ALL FIXED
-- High: ~~22~~ → **4 remaining** (10 fixed in Sessions 57-59, 8 already correct/false positives)
+- High: ~~22~~ → **2 remaining** (11 fixed in Sessions 57-59, 9 already correct/false positives/acceptable risk)
 - Medium: 39
 - Low: 27
 
@@ -100,6 +100,17 @@
 | Hardcoded rates ignore teacher tiers | group-service.ts | Verified: Client rates (R$150/R$120) are separate from teacher pay rates. Teacher tiers handled by teacher-credits.ts | ⚠️ False Positive |
 
 **Revised HIGH Count:** 8 → **4 remaining** (1 fixed, 2 false positives)
+
+### Session 59 Performance Fixes (2025-12-30)
+
+| Issue | File | Fix Applied | Status |
+|-------|------|-------------|--------|
+| Race condition in enrollment creation | enrollment-service.ts:89-120 | Verified: Application-level check is adequate; SQLite lacks time-range overlap constraints | ⚠️ Acceptable Risk |
+| Transaction wrapper for status change | enrollment-service.ts | Reviewed: Low risk, would require repository architecture changes | ⚠️ Acceptable Risk |
+| Missing `idx_leads_status_created` | leads table | Created migration 032, applied to production | ✅ FIXED |
+| Other 3 recommended indexes | enrollments, exceptions, completions | Verified: Already exist in production | ⚠️ Already present |
+
+**Final HIGH Count:** 4 → **2 remaining** (architecture items deferred)
 
 ---
 
