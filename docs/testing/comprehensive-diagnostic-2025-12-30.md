@@ -170,13 +170,19 @@
 | Issue | File | Fix Applied |
 |-------|------|-------------|
 | No status machine tests | status-machine.test.ts | Added 63 comprehensive tests (100% coverage) |
-| No roles/auth tests | roles.test.ts | Added 49 comprehensive tests for hasRole, canAccessRoute, getAllowedRoutes, getUserRole |
+| No roles/auth tests | roles.test.ts | Added 49 tests for hasRole, canAccessRoute, getAllowedRoutes, getUserRole |
+| No time-utils tests | time-utils.test.ts | Added 50 tests for time conversion/manipulation functions |
+| No slot-calculator tests | slot-calculator.test.ts | Added 23 tests for slot calculation logic |
+| No validation tests | validation.test.ts | Added 40 tests for Zod validation schemas |
 | Coverage dependency missing | package.json | Added @vitest/coverage-v8 |
 | Broken MAX_SUGGESTIONS test | waitlist-matcher.test.ts | Fixed test to match current LIMITS constant (5) |
 
 **Test Suite Status:**
-- **245 tests passing** (4 test files)
+- **358 tests passing** (7 test files)
 - **status-machine.ts**: 100% line coverage
+- **time-utils.ts**: Pure functions fully tested
+- **slot-calculator.ts**: Core slot logic tested
+- **validation.ts**: Key schemas tested (lat/lon bounds, time formats, email)
 - **roles.ts**: 35% line coverage (async DB functions not covered)
 - **waitlist-matcher.ts**: 45% line coverage
 - **FormField component**: 86 tests
@@ -304,7 +310,7 @@
 | Documentation | 95% |
 | Type Safety | 82% |
 | Localization | 95% |
-| Test Coverage | 5.5% (245 tests, critical paths covered) |
+| Test Coverage | 8% (358 tests, critical paths covered) |
 
 ---
 
