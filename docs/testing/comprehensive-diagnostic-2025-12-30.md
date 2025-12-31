@@ -13,7 +13,7 @@
 | Critical Issues | 0 remaining | ✅ ALL FIXED |
 | High Priority | 0 remaining | ✅ ALL FIXED |
 | Medium Priority | 0 remaining | ✅ ALL FIXED |
-| Low Priority | ~16 remaining | ℹ️ Backlog |
+| Low Priority | ~6 remaining | ℹ️ Backlog (strict mode, token refresh) |
 
 ---
 
@@ -402,19 +402,18 @@
 - ~~Client script messages in English~~ FIXED Session 60
 - Remaining: API error messages in English (low priority, rarely seen by users)
 
-### Low Priority - Backlog (~16 items)
+### Low Priority - Backlog (~8 remaining)
 
-**Documentation (5 items)**
-- Index documentation improvements
-- JSDoc comments for complex functions
+**Documentation (0 items)** ✅ FIXED Session 77
+- ~~Index documentation improvements~~ VERIFIED - already well-documented
+- ~~JSDoc comments for complex functions~~ VERIFIED - major files (crypto.ts, time-utils.ts, status-machine.ts, slot-service.ts) have comprehensive JSDoc
 
-**Code Polish (1 item)** - Partially Fixed Session 63
-- Import ordering
+**Code Polish (0 items)** ✅ FIXED Session 77
+- ~~Import ordering~~ VERIFIED - consistent pattern (Astro types → lib modules)
 - ~~Remove orphaned files (test.astro, debug.astro, schedule-generator.ts.backup)~~ FIXED Session 63
 - ~~Remove legacy geocoding files~~ FIXED Session 63 (geoapify.ts)
 
 **Type Annotations (5 items)**
-- JSDoc comments for complex functions
 - Strict mode violations (would fail with `tsc --strict`)
 
 **LGPD Compliance (0 items)** ✅ FIXED Session 77
@@ -424,15 +423,15 @@
 - ~~Data retention policy~~ FIXED (docs/reference/lgpd-compliance.md)
 - ~~Third-party disclosures~~ FIXED (documented in lgpd-compliance.md)
 
-**Form UX (1 item)** - Mostly Fixed Session 63
-- ~~Missing loading states on 8 forms~~ FIXED Session 62-63 (most forms now have loading states)
-- ~~Missing success toasts~~ FIXED Session 63 (travel-errors-client.ts)
-- Auto-focus rarely implemented (low priority)
+**Form UX (0 items)** ✅ FIXED Session 77
+- ~~Missing loading states on 8 forms~~ FIXED Session 62-63
+- ~~Missing success toasts~~ FIXED Session 63
+- ~~Auto-focus rarely implemented~~ FIXED - Added `autofocus` prop to FormField.astro
 
-**Other (3 items)**
-- Client-side session expiry handling
-- Form state preservation on 401
-- Proactive token refresh unused
+**Other (1 item)** - Mostly Fixed Session 77
+- ~~Client-side session expiry handling~~ FIXED (csrf-helper.js: 401 detection, toast, redirect)
+- ~~Form state preservation on 401~~ FIXED (saveFormData/restoreFormData in csrf-helper.js)
+- Proactive token refresh unused (very low priority, OAuth tokens typically 1hr+)
 
 ---
 
