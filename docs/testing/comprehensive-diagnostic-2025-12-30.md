@@ -687,9 +687,18 @@ Added rate limiting to all 15 remaining unprotected endpoints:
 - Replaced outdated status values with current constants
 - All 6 test files fixed to match actual type definitions
 
-**Remaining strict mode errors (~784):**
-- D1 type casting (`Record<string, unknown>[]` → typed arrays) - ~50 errors
-- Unknown params in crypto/decrypt functions - ~30 errors
-- These require more invasive architectural changes
+**Session 83: Strict Mode Progress**
+- Started with 784 errors, reduced to 499 (~36% reduction)
+- Created type utilities: `d1-types.ts`, `mock-factories.ts`
+- Fixed repository runtime types (`runtime?: unknown` → `Runtime`)
+- Fixed test mock patterns in ~20 test files
+- Fixed `waitlist-stats.ts` (68 errors → 0 with typed D1 row interfaces)
+- All 3585 tests still passing
+
+**Remaining strict mode errors (~499):**
+- D1 type casting in `database.ts` (~25 errors)
+- Test mock type issues (~150 errors)
+- Client script DOM types (~60 errors)
+- API route D1 queries (~50 errors)
 
 **All 3585 tests passing after fixes.**
