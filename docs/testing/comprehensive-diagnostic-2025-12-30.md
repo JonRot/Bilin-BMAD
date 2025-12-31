@@ -13,7 +13,7 @@
 | Critical Issues | 0 remaining | ✅ ALL FIXED |
 | High Priority | 0 remaining | ✅ ALL FIXED |
 | Medium Priority | 0 remaining | ✅ ALL FIXED |
-| Low Priority | ~21 remaining | ℹ️ Backlog |
+| Low Priority | ~16 remaining | ℹ️ Backlog |
 
 ---
 
@@ -402,7 +402,7 @@
 - ~~Client script messages in English~~ FIXED Session 60
 - Remaining: API error messages in English (low priority, rarely seen by users)
 
-### Low Priority - Backlog (~21 items)
+### Low Priority - Backlog (~16 items)
 
 **Documentation (5 items)**
 - Index documentation improvements
@@ -417,12 +417,12 @@
 - JSDoc comments for complex functions
 - Strict mode violations (would fail with `tsc --strict`)
 
-**LGPD Compliance (5 items)**
-- Consent mechanism missing
-- Data export endpoint missing
-- Account deletion flow missing
-- Data retention policy undefined
-- Third-party disclosure documentation
+**LGPD Compliance (0 items)** ✅ FIXED Session 77
+- ~~Consent mechanism~~ FIXED (lgpd_consent table + /api/lgpd/consent endpoint)
+- ~~Data export endpoint~~ FIXED (/api/lgpd/export - JSON download)
+- ~~Account deletion flow~~ FIXED (/api/lgpd/deletion with admin approval)
+- ~~Data retention policy~~ FIXED (docs/reference/lgpd-compliance.md)
+- ~~Third-party disclosures~~ FIXED (documented in lgpd-compliance.md)
 
 **Form UX (1 item)** - Mostly Fixed Session 63
 - ~~Missing loading states on 8 forms~~ FIXED Session 62-63 (most forms now have loading states)
