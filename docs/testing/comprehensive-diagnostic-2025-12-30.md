@@ -1,7 +1,7 @@
 # EduSchedule Pro - Comprehensive Diagnostic Audit
 
 **Date:** 2025-12-30/31
-**Status:** ACTIVE - Sessions 56-72 Complete
+**Status:** ACTIVE - Sessions 56-73 Complete
 **Overall Health:** 97% - Production Ready
 
 ---
@@ -274,16 +274,27 @@
 | No change-requests reject API tests | change-requests/[id]/reject.test.ts | 11 tests (PUT, admin only, CSRF, audit) |
 | No settings API tests | settings/index.test.ts | 30 tests (GET/POST/PUT/DELETE/PATCH, admin only) |
 | No settings theme API tests | settings/theme.test.ts | 11 tests (GET public, POST admin) |
+| No slots/[teacherId] API tests | slots/[teacherId].test.ts | 10 tests (GET, IDOR protection, parent filtering) |
+| No slots/reserve API tests | slots/reserve.test.ts | 19 tests (POST/DELETE, movie theater pattern) |
+| No slots/suggestions API tests | slots/suggestions.test.ts | 7 tests (GET admin, graceful degradation) |
+| No slots/matches API tests | slots/matches.test.ts | 9 tests (GET admin, pagination, teacher rates) |
+| No auth/login API tests | auth/login.test.ts | 6 tests (GET, OAuth flow, cookie setting) |
+| No auth/logout API tests | auth/logout.test.ts | 4 tests (GET/POST, session clear) |
+| No auth/csrf API tests | auth/csrf.test.ts | 5 tests (GET, token retrieval) |
 
 **Test Coverage Includes:**
 - Change request workflow (create, approve, reject)
 - Role-based filtering (admin sees all, others see own)
 - Settings CRUD with conflict detection
 - Theme persistence (insert vs update)
+- Slot reservation with movie theater pattern (conflict handling)
+- Slot filtering by role (parent sees only LIVRE/TEMPORARILY_AVAILABLE)
+- OAuth flow initiation and cookie setting
+- CSRF token retrieval for all authenticated roles
 - All CSRF validation for state-changing operations
 
 **Test Suite Status:**
-- **2258 tests passing** (63 test files)
+- **2318 tests passing** (70 test files)
 - **status-machine.ts**: 100% line coverage
 - **enrollment-service.ts**: CRUD, status transitions, cooldown tested
 - **teacher-credits.ts**: Tier/earnings calculation fully tested
