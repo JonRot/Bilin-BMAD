@@ -13,7 +13,7 @@
 | Critical Issues | 0 remaining | ✅ ALL FIXED |
 | High Priority | 0 remaining | ✅ ALL FIXED |
 | Medium Priority | 0 remaining | ✅ ALL FIXED |
-| Low Priority | ~6 remaining | ℹ️ Backlog (strict mode, token refresh) |
+| Low Priority | 2 deferred | ℹ️ Backlog (strict mode ~769 errors, proactive token refresh) |
 
 ---
 
@@ -413,8 +413,12 @@
 - ~~Remove orphaned files (test.astro, debug.astro, schedule-generator.ts.backup)~~ FIXED Session 63
 - ~~Remove legacy geocoding files~~ FIXED Session 63 (geoapify.ts)
 
-**Type Annotations (5 items)**
-- Strict mode violations (would fail with `tsc --strict`)
+**Type Annotations (deferred)**
+- Strict mode compliance (~769 errors with `tsc --strict`) - larger undertaking
+- Current build/tests pass without strict mode
+- Fixed: Teacher/Student interfaces missing location fields (Session 77)
+- Fixed: EXCEPTION_TYPE_LABELS missing CANCELLED_ADMIN (Session 77)
+- Fixed: rate-limit.ts Retry-After header type (Session 77)
 
 **LGPD Compliance (0 items)** ✅ FIXED Session 77
 - ~~Consent mechanism~~ FIXED (lgpd_consent table + /api/lgpd/consent endpoint)
