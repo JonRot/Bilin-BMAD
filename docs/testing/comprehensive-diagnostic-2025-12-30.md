@@ -414,7 +414,7 @@
 - ~~Remove legacy geocoding files~~ FIXED Session 63 (geoapify.ts)
 
 **Type Annotations (in progress)**
-- Strict mode compliance: 784 → 216 errors (~72% reduction, Session 83)
+- Strict mode compliance: 784 → 166 errors (~79% reduction, Session 84)
 - Current build/tests pass without strict mode
 - Fixed: Teacher/Student interfaces missing location fields (Session 77)
 - Fixed: EXCEPTION_TYPE_LABELS missing CANCELLED_ADMIN (Session 77)
@@ -422,7 +422,11 @@
 - Fixed: Invalid enum values in 6 test files (Session 79)
 - Fixed: Zod validation schemas, Window interfaces, errorResponse overload (Session 83)
 - Fixed: Geocoding env typing, D1 query typing, client interfaces (Session 83)
-- Remaining: ~216 errors mostly in test mock type mismatches
+- Fixed: D1 typing in travel-time-service, schedule-page-service (Session 84)
+- Fixed: Client script typing (global.d.ts WindowSlotData/WindowClassData) (Session 84)
+- Fixed: Event bus ScheduleEvents group:statusChanged event (Session 84)
+- Fixed: Travel-time test mocks, cleanup-data typed interfaces (Session 84)
+- Remaining: ~166 errors mostly in test mock type mismatches
 
 **LGPD Compliance (0 items)** ✅ FIXED Session 77
 - ~~Consent mechanism~~ FIXED (lgpd_consent table + /api/lgpd/consent endpoint)
@@ -482,13 +486,13 @@
 
 ## Diagnostic Complete ✅
 
-All critical, high, medium, and low priority issues have been addressed across Sessions 56-83.
+All critical, high, medium, and low priority issues have been addressed across Sessions 56-84.
 
 ### Remaining (In Progress)
 
 | Item | Status |
 |------|--------|
-| Strict mode (~216 errors) | 72% reduced from 784; mostly test mock type mismatches remaining |
+| Strict mode (~166 errors) | 79% reduced from 784; mostly test mock type mismatches remaining |
 
 ### Future Work (Phase 2)
 
@@ -498,8 +502,8 @@ See `docs/planning/epic-6-advanced-enrollment.md` and `docs/planning/epic-7-rock
 
 **Report Generated:** 2025-12-30/31
 **Methodology:** BMAD Multi-Agent Analysis
-**Sessions Completed:** 56-83
-**Last Updated:** Session 83 - Strict TypeScript Mode Progress (784 → 216 errors)
+**Sessions Completed:** 56-84
+**Last Updated:** Session 84 - Strict TypeScript Mode Progress (216 → 166 errors)
 
 ### Session 82 - Test Suite Updates for Portuguese Localization
 
@@ -710,5 +714,45 @@ Added rate limiting to all 15 remaining unprotected endpoints:
 - Client script SlotData conflicts (~20 errors)
 - API route D1 queries (~30 errors)
 - Misc type narrowing issues (~16 errors)
+
+**All 3585 tests passing after fixes.**
+
+### Session 84 - Continued Strict Mode Progress (216 → 166 errors)
+
+Reduced strict mode errors by 50 (~23% of remaining errors):
+
+| Fix Category | Files | Description |
+|--------------|-------|-------------|
+| D1 Result typing | 1 file | travel-time-service.ts duplicate check with proper `D1Result<T>` handling |
+| Schedule page service | 2 files | schedule-page-service.ts + waitlist-matcher.ts - FreeSlot/AdjacentClass alignment, TERMINATED → INATIVO |
+| Client script typing | 7 files | Global.d.ts WindowSlotData/WindowClassData unification, smart-booking-client, enrollments-page-client |
+| Event bus | 1 file | Added GroupStatusChangedEvent, fixed Window integration cast |
+| Validation | 1 file | closure.ts path refinement type cast |
+| Cleanup data | 1 file | StudentCleanupRow, TeacherCleanupRow typed interfaces |
+| Travel-time tests | 2 files | Mock type assertions with `as unknown as` |
+| Vitest config | 1 file | VitestUserConfig → UserConfig import |
+| API webhook | 1 file | jotform.ts metadata as object (not JSON string) |
+
+**Files Modified (Source):**
+- `src/lib/services/travel-time-service.ts` - D1 query results
+- `src/lib/services/schedule-page-service.ts` - INATIVO status, FreeSlot typing
+- `src/lib/services/waitlist-matcher.ts` - FreeSlot prev_class/next_class optional fields
+- `src/lib/utils/event-bus.ts` - GroupStatusChangedEvent, window cast
+- `src/lib/validation/closure.ts` - PropertyKey[] path type
+- `src/pages/api/admin/cleanup-data.ts` - Typed row interfaces
+- `src/pages/api/webhooks/jotform.ts` - metadata as object
+- `src/global.d.ts` - WindowSlotData, WindowClassData, smart booking functions
+- `src/scripts/enrollments-page-client.ts` - WindowSlotData/WindowClassData usage
+- `src/scripts/smart-booking-client.ts` - Removed conflicting Window declarations
+- `src/scripts/theme-editor-client.ts` - Proper type casting for theme record
+- `src/scripts/teacher-availability-client.ts` - Modal closure variable capture
+- `src/scripts/users-page-client.ts` - day_of_week null coalescing
+- `vitest.config.ts` - UserConfig import fix
+
+**Tests Updated:**
+- `schedule-page-service.test.ts` - TERMINATED → INATIVO test case
+- `jotform.test.ts` - metadata objectContaining assertions
+- `travel-time/index.test.ts` - Mock type assertions (7 occurrences)
+- `travel-time/matrix.test.ts` - Mock type assertions (15 occurrences)
 
 **All 3585 tests passing after fixes.**
