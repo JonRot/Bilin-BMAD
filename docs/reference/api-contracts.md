@@ -3,7 +3,7 @@
 **Last Updated:** 2025-12-30
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 120+ total
+**Endpoints:** 127+ total
 
 ## Overview
 
@@ -31,6 +31,7 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | Locations | 2 | Autocomplete, reverse geocode |
 | Travel Time | 2 | Calculate, matrix |
 | Webhooks | 1 | JotForm integration |
+| LGPD | 7 | Consent, data export, deletion |
 
 ## Authentication
 
@@ -1886,6 +1887,94 @@ Webhook health check.
   "status": "active",
   "webhook": "JotForm CADASTRO BILIN",
   "form_id": "252266949174064"
+}
+```
+
+---
+
+## LGPD (Data Protection) APIs
+
+### GET /api/lgpd/consent
+Get current user's consent status for all types.
+- **Auth:** Required (any role)
+- **Response:**
+```json
+{
+  "consents": {
+    "data_processing": { "granted": true, "grantedAt": 1735649000, "revokedAt": null },
+    "marketing": { "granted": false, "grantedAt": null, "revokedAt": null },
+    "third_party_sharing": { "granted": true, "grantedAt": 1735649000, "revokedAt": null },
+    "analytics": { "granted": true, "grantedAt": 1735649000, "revokedAt": null }
+  }
+}
+```
+
+### POST /api/lgpd/consent
+Update consent for a specific type.
+- **Auth:** Required (any role)
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "consent_type": "marketing",
+  "granted": true
+}
+```
+- **Consent Types:** `data_processing`, `marketing`, `third_party_sharing`, `analytics`
+
+### GET /api/lgpd/export
+Download all personal data as JSON file.
+- **Auth:** Required (any role)
+- **Response:** JSON file download with Content-Disposition header
+- **Data Included:** User profile, encrypted fields (decrypted), enrollments, consents, audit log
+
+### POST /api/lgpd/export
+Request data export (creates audit record).
+- **Auth:** Required (any role)
+- **CSRF:** Required
+
+### GET /api/lgpd/deletion
+Check status of deletion requests.
+- **Auth:** Required (any role)
+- **Response:**
+```json
+{
+  "requests": [
+    {
+      "id": "uuid",
+      "request_type": "full_deletion",
+      "status": "pending",
+      "reason": "...",
+      "created_at": 1735649000
+    }
+  ]
+}
+```
+
+### POST /api/lgpd/deletion
+Request account deletion or anonymization.
+- **Auth:** Required (any role)
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "request_type": "full_deletion",
+  "reason": "No longer using the service"
+}
+```
+- **Request Types:** `full_deletion`, `anonymization`, `partial_deletion`
+- **Notes:** Requires admin approval before processing
+
+### PUT /api/lgpd/deletion
+Process deletion request (admin only).
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "request_id": "uuid",
+  "action": "approve",
+  "admin_notes": "Verified user request"
 }
 ```
 
