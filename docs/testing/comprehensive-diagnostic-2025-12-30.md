@@ -557,3 +557,5 @@
 - Quality maintained via clear scope + reference patterns
 
 **Final totals:** 3585 tests across 123 files (100% API coverage)
+
+**Refactored:** Moved availability tests from `src/pages/api/availability_tests/` to `src/pages/api/availability/` for proper co-location with source files. Import paths updated from `'../availability/'` to `'./'`.
