@@ -413,13 +413,16 @@
 - ~~Remove orphaned files (test.astro, debug.astro, schedule-generator.ts.backup)~~ FIXED Session 63
 - ~~Remove legacy geocoding files~~ FIXED Session 63 (geoapify.ts)
 
-**Type Annotations (deferred)**
-- Strict mode compliance (~784 errors with `tsc --strict`) - larger undertaking
+**Type Annotations (in progress)**
+- Strict mode compliance: 784 → 216 errors (~72% reduction, Session 83)
 - Current build/tests pass without strict mode
 - Fixed: Teacher/Student interfaces missing location fields (Session 77)
 - Fixed: EXCEPTION_TYPE_LABELS missing CANCELLED_ADMIN (Session 77)
 - Fixed: rate-limit.ts Retry-After header type (Session 77)
 - Fixed: Invalid enum values in 6 test files (Session 79)
+- Fixed: Zod validation schemas, Window interfaces, errorResponse overload (Session 83)
+- Fixed: Geocoding env typing, D1 query typing, client interfaces (Session 83)
+- Remaining: ~216 errors mostly in test mock type mismatches
 
 **LGPD Compliance (0 items)** ✅ FIXED Session 77
 - ~~Consent mechanism~~ FIXED (lgpd_consent table + /api/lgpd/consent endpoint)
@@ -471,7 +474,7 @@
 | Accessibility | 98% |
 | Design System | 99.5% |
 | Documentation | 95% |
-| Type Safety | 82% |
+| Type Safety | 88% |
 | Localization | 98% |
 | Test Coverage | 85%+ (3585 tests, 123 files, 100% API coverage) |
 
@@ -479,13 +482,13 @@
 
 ## Diagnostic Complete ✅
 
-All critical, high, medium, and low priority issues have been addressed across Sessions 56-79.
+All critical, high, medium, and low priority issues have been addressed across Sessions 56-83.
 
-### Remaining (Deferred as Acceptable)
+### Remaining (In Progress)
 
-| Item | Reason |
+| Item | Status |
 |------|--------|
-| Strict mode (~784 errors) | Build/tests pass without strict; D1 type casting requires architectural changes |
+| Strict mode (~216 errors) | 72% reduced from 784; mostly test mock type mismatches remaining |
 
 ### Future Work (Phase 2)
 
@@ -495,8 +498,8 @@ See `docs/planning/epic-6-advanced-enrollment.md` and `docs/planning/epic-7-rock
 
 **Report Generated:** 2025-12-30/31
 **Methodology:** BMAD Multi-Agent Analysis
-**Sessions Completed:** 56-82
-**Last Updated:** Session 82 - Test Suite Updates for Localization
+**Sessions Completed:** 56-83
+**Last Updated:** Session 83 - Strict TypeScript Mode Progress (784 → 216 errors)
 
 ### Session 82 - Test Suite Updates for Portuguese Localization
 
@@ -687,18 +690,25 @@ Added rate limiting to all 15 remaining unprotected endpoints:
 - Replaced outdated status values with current constants
 - All 6 test files fixed to match actual type definitions
 
-**Session 83: Strict Mode Progress**
-- Started with 784 errors, reduced to 499 (~36% reduction)
+**Session 83: Strict Mode Progress (Continued)**
+- Started with 784 errors, reduced to 216 (~72% reduction)
 - Created type utilities: `d1-types.ts`, `mock-factories.ts`
 - Fixed repository runtime types (`runtime?: unknown` → `Runtime`)
 - Fixed test mock patterns in ~20 test files
 - Fixed `waitlist-stats.ts` (68 errors → 0 with typed D1 row interfaces)
+- Fixed Zod validation schemas (`errorMap` → `message` parameter)
+- Fixed Window interface conflicts (consolidated in global.d.ts)
+- Fixed `errorResponse()` overload for backward compatibility
+- Fixed CSRF validation mock signatures in tests
+- Fixed DOMPurify types, geocoding env typing, D1 query typing
+- Fixed client interface definitions (GroupEnrollment, StudentExceptionHistory)
+- Fixed Window function signatures (closeClassEditModal, openSlotModal, etc.)
 - All 3585 tests still passing
 
-**Remaining strict mode errors (~499):**
-- D1 type casting in `database.ts` (~25 errors)
-- Test mock type issues (~150 errors)
-- Client script DOM types (~60 errors)
-- API route D1 queries (~50 errors)
+**Remaining strict mode errors (~216):**
+- Test mock type mismatches (~150 errors)
+- Client script SlotData conflicts (~20 errors)
+- API route D1 queries (~30 errors)
+- Misc type narrowing issues (~16 errors)
 
 **All 3585 tests passing after fixes.**
