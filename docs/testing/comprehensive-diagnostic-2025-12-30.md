@@ -504,12 +504,41 @@ See `docs/planning/epic-6-advanced-enrollment.md` and `docs/planning/epic-7-rock
 
 **Report Generated:** 2025-12-30/31
 **Methodology:** BMAD Multi-Agent Analysis
-**Sessions Completed:** 56-94
-**Last Updated:** Session 94 - Geocoding Provider Test Coverage
+**Sessions Completed:** 56-95
+**Last Updated:** Session 95 - Test Coverage Improvements (Schedule Generator DateRange)
 
-### Session 94 - Geocoding Provider Test Coverage
+### Session 95 - Test Coverage Improvements
 
-Added 86 new tests for geocoding module (was 0% coverage):
+**Part 1: Schedule Generator DateRange Tests (25 new tests)**
+
+| File | Before | After | Tests Added |
+|------|--------|-------|-------------|
+| `schedule-generator.ts` | 63.63% | 80.16% | 25 tests (getScheduleForDateRange makeup class generation) |
+
+**Coverage added for `getScheduleForDateRange` method:**
+- Makeup class generation on rescheduled dates within range
+- Closure status on makeup dates
+- Teacher time-off status on makeup dates
+- Exception status changes (CANCELLED_STUDENT, CANCELLED_TEACHER, RESCHEDULED, HOLIDAY)
+- Completion status (COMPLETED, NO_SHOW) on makeup dates
+- Conflict detection (same enrollment on same date)
+- Student name resolution (map and callback)
+- Location hint resolution (map and callback)
+- Location student name resolution
+- RESCHEDULED_BY_STUDENT and RESCHEDULED_BY_TEACHER exception types
+- Sorting by date then time
+
+**Total tests:** 3,795 → 3,820 (+25 tests, 127 test files)
+
+**Coverage improvements:**
+- `schedule-generator.ts`: 63.63% → 80.16% (target 80% achieved!)
+- Overall coverage: 86.78% → 89.20%
+
+---
+
+### Session 94 - Test Coverage Improvements
+
+**Part 1: Geocoding Module Tests (86 new tests)**
 
 | File | Before | After | Tests Added |
 |------|--------|-------|-------------|
@@ -517,18 +546,33 @@ Added 86 new tests for geocoding module (was 0% coverage):
 | `geocoding/google-provider.ts` | 0% | 100% | 29 tests (searchAddress, geocodeAddress, reverseGeocode) |
 | `geocoding/locationiq-provider.ts` | 0% | 100% | 36 tests (searchAddress, geocodeAddress, reverseGeocode) |
 
-**Total tests:** 3,610 → 3,696 (+86 tests, 127 test files)
+**Part 2: Waitlist Matcher Tests (27 new tests)**
+
+| File | Before | After | Tests Added |
+|------|--------|-------|-------------|
+| `waitlist-matcher.ts` | 45.94% | 94.14% | 27 tests (calculateTravelTimes, identifyMissingData, createWaitlistMatcher) |
+
+**Part 3: Schedule Generator Tests (8 new tests)**
+
+| File | Before | After | Tests Added |
+|------|--------|-------|-------------|
+| `schedule-generator.ts` | 56.61% | 58.26% | 8 tests (getWeeklyClassCount status counting) |
+
+**Total tests:** 3,610 → 3,731 (+121 tests, 127 test files)
 
 **Coverage improvements:**
 - `lib/services/geocoding`: 0% → 97.77%
-- Overall coverage: 71.83% → 77.17%
+- `waitlist-matcher.ts`: 45.94% → 94.14%
+- `schedule-generator.ts`: 56.61% → 58.26%
+- Overall coverage: 71.83% → 80.69%
 
 **Key test coverage added:**
-- Provider factory and auto-detection logic
-- Google Maps API integration (search, geocode, reverse)
-- LocationIQ API integration (search, geocode, reverse)
-- Brazilian address parsing and street extraction
-- Error handling for API failures, rate limits, network errors
+- Geocoding provider factory and auto-detection
+- Google/LocationIQ API integrations
+- Travel time calculations with origin/destination selection
+- Missing data identification and error logging
+- Waitlist service factory and candidate queries
+- Schedule status counting for all status types
 
 ---
 
