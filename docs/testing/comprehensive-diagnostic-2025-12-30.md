@@ -481,7 +481,7 @@
 | Documentation | 95% |
 | Type Safety | 100% |
 | Localization | 100% |
-| Test Coverage | 77%+ (3696 tests, 127 files, 100% API coverage) |
+| Test Coverage | 91%+ (3857 tests, 127 files, 100% API coverage) |
 
 ---
 
@@ -504,8 +504,48 @@ See `docs/planning/epic-6-advanced-enrollment.md` and `docs/planning/epic-7-rock
 
 **Report Generated:** 2025-12-30/31
 **Methodology:** BMAD Multi-Agent Analysis
-**Sessions Completed:** 56-95
-**Last Updated:** Session 95 - Test Coverage Improvements (Schedule Generator DateRange)
+**Sessions Completed:** 56-96
+**Last Updated:** Session 96 - Service Test Coverage Improvements
+
+### Session 96 - Service Test Coverage Improvements
+
+**Coverage improvements for core services (37 new tests):**
+
+| File | Before | After | Tests Added |
+|------|--------|-------|-------------|
+| `schedule-page-service.ts` | 70.92% | 98.23% | 26 tests (exception handling, completion status, projected status, free slots) |
+| `locationiq.ts` | 87.28% | 100% | 6 tests (searchNearby/reverseGeocode error handling, street extraction) |
+| `travel-time-service.ts` | 89.1% | 92.94% | 5 tests (cache errors, context logging, anomaly detection) |
+
+**Coverage added for `schedule-page-service.ts`:**
+- Exception handling (CANCELLED_STUDENT, CANCELLED_TEACHER, HOLIDAY)
+- Completion status (COMPLETED, NO_SHOW)
+- Projected status calculations (PAUSADO, AVISO, INATIVO)
+- Free slots with partial overlap from cancellations (MAKEUP_ONLY detection)
+- AI suggestions from waitlist matcher
+- Travel time calculation with coordinates
+
+**Coverage added for `locationiq.ts`:**
+- searchNearby API error, non-array response, network error
+- reverseGeocode API error, network error
+- geocodeAddress network error
+- Street extraction with 3+ parts without prefix
+
+**Coverage added for `travel-time-service.ts`:**
+- Database error during cache lookup
+- Database error during cache save
+- Cache save with invalid coordinates (NaN)
+- Anomaly detection with context logging
+
+**Total tests:** 3,820 → 3,857 (+37 tests, 127 test files)
+
+**Coverage improvements:**
+- `schedule-page-service.ts`: 70.92% → 98.23%
+- `locationiq.ts`: 87.28% → 100%
+- `travel-time-service.ts`: 89.1% → 92.94%
+- Overall coverage: 91.08% → 91.69%
+
+---
 
 ### Session 95 - Test Coverage Improvements
 
