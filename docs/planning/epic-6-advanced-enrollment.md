@@ -147,23 +147,24 @@ CREATE TABLE system_settings (
 
 ---
 
-### Story 6.4: Enhanced PAUSADO Automation 🟡 PARTIALLY COMPLETE
+### Story 6.4: Enhanced PAUSADO Automation ✅ COMPLETE
 
 **Priority:** Medium
 **Estimate:** 8 points
 **Dependencies:** Story 2.4 (PAUSADO Automator)
-**Status:** 🟡 Core implemented, notifications/escalation remaining
+**Status:** ✅ Implemented (Session 117)
 
 **Implemented:**
 - `src/lib/services/pausado-automator.ts` - 21-day auto-transition
 - `pausado_cooldown_until` field - 30-day cooldown enforcement
 - `src/pages/api/parent/pausado-request.ts` - Parent pause requests
 - `src/pages/admin/pausado-approvals.astro` - Admin approval queue
+- Day 18 reminder notification (PAUSADO_EXPIRING)
+- Admin escalation notification after day 21 (PAUSADO_EXPIRED)
+- PAUSADO OVERDUE badge on admin dashboard (clickable)
 
-**Remaining:**
-- Day 18 reminder notification
-- Escalation notifications after day 21
-- "Pay to Hold" option
+**Deferred to Phase 3:**
+- "Pay to Hold" option (requires payment integration)
 
 **Description:**
 Enhance PAUSADO with notifications, escalation, and paid-hold option.
@@ -409,7 +410,7 @@ Analyze impact when teacher or student moves to new location.
 | 6.1 Movie Theater Reservation | ✅ COMPLETE | 5-min slot reservation system |
 | 6.2 AVISO Countdown | ✅ COMPLETE | 14-day auto-transition |
 | 6.3 FÉRIAS/Closures | ✅ COMPLETE | Extended to full closure system |
-| 6.4 Enhanced PAUSADO | 🟡 PARTIAL | Core logic done, notifications pending |
+| 6.4 Enhanced PAUSADO | ✅ COMPLETE | Day 18 reminder + admin escalation + dashboard badge |
 | 6.5 Cascade Impact | ⬜ NOT STARTED | |
 | 6.6 Zone Matrix | ⬜ NOT STARTED | |
 | 6.7 AI Rescheduling | ⬜ NOT STARTED | |
