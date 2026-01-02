@@ -337,24 +337,26 @@ Automatically suggest best matches when slots become available.
 
 ---
 
-### Story 6.10: Teacher Credit Gamification 🟡 PARTIALLY COMPLETE
+### Story 6.10: Teacher Credit Gamification ✅ COMPLETE
 
 **Priority:** Low
 **Estimate:** 13 points
 **Dependencies:** None
-**Status:** 🟡 Foundation implemented, tracking remaining
+**Status:** ✅ Implemented (Session 117)
 
 **Implemented:**
-- `src/lib/services/teacher-credits.ts` - Tier system and rate calculation
+- `src/lib/services/teacher-credits.ts` - Tier system, rate calculation, TeacherCreditService
+- `src/lib/repositories/d1/credit-event.ts` - Credit event repository
+- `database/migrations/036_teacher_credit_events.sql` - Event history table
 - Tiers: NEW (R$79), STANDARD (R$85), PREMIUM (R$90), ELITE (R$95)
-- `getTierFromScore()`, `getRatesForTier()`, `calculateTotalEarnings()`
 - Grandfathered existing teachers at ELITE tier (score: 950)
-- Score event types defined (CLASS_COMPLETED, PUNCTUALITY_BONUS, etc.)
+- Teacher dashboard tier display with progress bar
+- Event-triggered scoring: +5 points on class completion
+- NO_SHOW tracking (0 points but recorded)
+- Duplicate prevention via reference_id
 
-**Remaining:**
-- Credit history table and tracking
-- Event-triggered score updates
-- Teacher dashboard with tier/progress display
+**Deferred to Phase 3:**
+- Parent feedback rating integration (feature not yet built)
 - Leaderboards
 
 **Description:**
@@ -416,7 +418,7 @@ Analyze impact when teacher or student moves to new location.
 | 6.7 AI Rescheduling | ⬜ NOT STARTED | |
 | 6.8 Group Pricing | ⬜ NOT STARTED | |
 | 6.9 Waitlist Auto-Match | ⬜ NOT STARTED | |
-| 6.10 Teacher Credits | 🟡 PARTIAL | Tier/rate system done, tracking pending |
+| 6.10 Teacher Credits | ✅ COMPLETE | Tier display + event tracking + completion integration |
 | 6.11 Relocation Analysis | ⬜ NOT STARTED | |
 
 ## Remaining Story Prioritization
