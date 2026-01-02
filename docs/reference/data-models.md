@@ -3,7 +3,7 @@
 **Last Updated:** 2025-12-30
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
-**Tables:** 22 total (11 core + 11 via migrations)
+**Tables:** 23 total (11 core + 12 via migrations)
 
 ## Overview
 
@@ -20,7 +20,7 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 | **Time-Off** | teacher_time_off_requests |
 | **Pausado Requests** | pausado_requests |
 | **Travel** | travel_time_cache, travel_time_errors |
-| **Notifications** | notifications |
+| **Notifications** | notifications, push_device_tokens |
 | **Parent Links** | parent_links |
 | **Teacher Credits** | teacher_credits |
 
@@ -636,6 +636,35 @@ WHERE status = 'PAUSADO'
 | link | TEXT | | Optional action link |
 | read | INTEGER | DEFAULT 0 | Read status |
 | created_at | INTEGER | NOT NULL | Unix timestamp |
+
+---
+
+### 18b. push_device_tokens
+
+**Purpose:** Store FCM device tokens for push notifications
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | Token ID (pdt_xxx) |
+| user_id | TEXT | NOT NULL, FK | References users(id) |
+| fcm_token | TEXT | NOT NULL, UNIQUE | Firebase Cloud Messaging token |
+| platform | TEXT | NOT NULL | Platform: 'ios', 'android', 'web' |
+| device_name | TEXT | | Human-readable device name |
+| is_active | INTEGER | NOT NULL, DEFAULT 1 | Token active status |
+| created_at | INTEGER | NOT NULL | Unix timestamp |
+| updated_at | INTEGER | NOT NULL | Unix timestamp |
+| last_used_at | INTEGER | | Last successful push timestamp |
+
+**Indexes:**
+- UNIQUE on `fcm_token` - prevents duplicate registrations
+- On `user_id` for listing user's devices
+- On `is_active` for filtering active tokens
+
+**Business Rules:**
+- FCM token is unique across all users (device can only belong to one account)
+- Tokens are deactivated (not deleted) when invalid response from FCM
+- Only active tokens receive push notifications
+- One user can have multiple devices (web, mobile, etc.)
 
 ---
 

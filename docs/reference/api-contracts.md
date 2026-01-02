@@ -25,7 +25,7 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | Calendar | 4 | Google Calendar sync |
 | Admin | 20+ | Approvals, geocoding, settings, utilities |
 | Parent | 6 | Dashboard, cancellations, pausado, feedback |
-| Notifications | 3 | List, read, read-all |
+| Notifications | 5 | List, read, read-all, push registration |
 | Change Requests | 5 | CRUD, approve/reject |
 | Settings | 6 | App configuration, theme |
 | Locations | 2 | Autocomplete, reverse geocode |
@@ -1506,6 +1506,63 @@ Mark all user's notifications as read.
 - **Auth:** Required
 - **CSRF:** Required
 - **Response:** `{ "success": true, "markedAsRead": 5 }`
+
+---
+
+## Push Notification APIs
+
+### POST /api/push/register
+Register a device for FCM push notifications.
+- **Auth:** Required
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "fcmToken": "eKDfg3...",
+  "platform": "web",
+  "deviceName": "Chrome"
+}
+```
+- **Validation:**
+  - `fcmToken`: string, required
+  - `platform`: enum `['ios', 'android', 'web']`, required
+  - `deviceName`: string, optional
+- **Response:**
+```json
+{
+  "success": true,
+  "deviceId": "pdt_abc123...",
+  "pushEnabled": true
+}
+```
+- **Errors:** `401` if not authenticated, `400` if validation fails
+
+### DELETE /api/push/register
+Unregister a device from push notifications.
+- **Auth:** Required
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "tokenId": "uuid-of-device-token"
+}
+```
+- **Response:** `{ "success": true }`
+- **Errors:** `401` if not authenticated, `400` if invalid UUID
+
+### Push Notification Flow
+
+1. Client initializes Firebase SDK and service worker
+2. Client requests notification permission
+3. Client gets FCM token and calls `POST /api/push/register`
+4. Server stores token in `push_device_tokens` table
+5. When notification created, server sends push via FCM HTTP v1 API
+6. FCM delivers to registered devices
+
+**Environment Variables Required:**
+- `FCM_PROJECT_ID`: Firebase project ID
+- `FCM_SERVICE_ACCOUNT_EMAIL`: Service account email
+- `FCM_PRIVATE_KEY`: Service account private key (PEM format)
 
 ---
 
