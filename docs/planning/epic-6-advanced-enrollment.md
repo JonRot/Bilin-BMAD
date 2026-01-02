@@ -187,11 +187,21 @@ Enhance PAUSADO with notifications, escalation, and paid-hold option.
 
 ---
 
-### Story 6.5: Cascade Impact Preview
+### Story 6.5: Cascade Impact Preview ✅ COMPLETE
 
 **Priority:** Medium
 **Estimate:** 5 points
 **Dependencies:** None
+**Status:** ✅ Implemented (Session 118)
+
+**Implementation:**
+- `src/lib/services/cascade-impact.ts` - Impact calculation service
+- `src/pages/api/enrollments/[id]/reschedule-preview.ts` - Preview API endpoint
+- `PUT /api/enrollments/[id]` - Added `acknowledge_impact` flag and impact preview
+- `src/scripts/enrollments-page-client.ts` - Confirmation dialog in edit handler
+- Impact types: SLOT_CONFLICT, RESCHEDULE_CONFLICT, TRAVEL_TIME_WARNING
+- Shows affected student names and impact descriptions
+- Admin must acknowledge to proceed with impactful changes
 
 **Description:**
 Show admin the impact of schedule changes before confirming.
@@ -413,7 +423,7 @@ Analyze impact when teacher or student moves to new location.
 | 6.2 AVISO Countdown | ✅ COMPLETE | 14-day auto-transition |
 | 6.3 FÉRIAS/Closures | ✅ COMPLETE | Extended to full closure system |
 | 6.4 Enhanced PAUSADO | ✅ COMPLETE | Day 18 reminder + admin escalation + dashboard badge + notifications |
-| 6.5 Cascade Impact | ⬜ NOT STARTED | |
+| 6.5 Cascade Impact | ✅ COMPLETE | Impact preview before schedule changes + confirmation dialog |
 | 6.6 Zone Matrix | ⬜ NOT STARTED | |
 | 6.7 AI Rescheduling | ⬜ NOT STARTED | |
 | 6.8 Group Pricing | ⬜ NOT STARTED | |

@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2025-12-30
+**Last Updated:** 2026-01-02
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 127+ total
+**Endpoints:** 128+ total
 
 ## Overview
 
@@ -143,8 +143,40 @@ Update enrollment fields.
 - **Auth:** Admin only
 - **CSRF:** Required
 - **Body:** Partial update (teacher_id, day_of_week, start_time, etc.)
-- **Response:** Updated enrollment
+  - `extend_availability`: boolean - Extend teacher availability if needed
+  - `acknowledge_impact`: boolean - Proceed despite cascade impact (Story 6.5)
+- **Response:** Updated enrollment OR `{ requires_confirmation: true, impact: CascadeImpact }` if changes affect other enrollments
 - **Errors:** `409 SLOT_CONFLICT` if new slot blocked
+
+### POST /api/enrollments/[id]/reschedule-preview
+Preview cascade impact of proposed schedule change (Story 6.5).
+- **Auth:** Admin only
+- **Body:**
+```json
+{
+  "day_of_week": 3,
+  "start_time": "14:00",
+  "duration_minutes": 60,
+  "teacher_id": "tch_xxx"
+}
+```
+- **Response:**
+```json
+{
+  "has_blocking_conflicts": true,
+  "has_impacts": true,
+  "affected_family_count": 2,
+  "affected_enrollments": [
+    {
+      "enrollment_id": "enr_xxx",
+      "student_name": "Maria",
+      "impact_type": "SLOT_CONFLICT",
+      "impact_description": "Maria já tem aula neste horário"
+    }
+  ],
+  "summary_message": "Esta alteração afeta 2 famílias..."
+}
+```
 
 ### PUT /api/enrollments/[id]/status
 Change enrollment status.
