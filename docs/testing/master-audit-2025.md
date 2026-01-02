@@ -225,7 +225,7 @@ These files demonstrate ideal patterns:
 - [x] Create unified response helpers (api-errors.ts)
 - [x] Standardize auth to requireApiAuth()/requireApiRole() everywhere (60+ endpoints)
 - [x] Standardize response patterns: errorResponse(), successResponse(), handleApiError()
-- [ ] Add Zod schemas to unvalidated endpoints (deferred - most endpoints already validated)
+- [x] Zod schemas on all endpoints (100% coverage with Zod v4, Portuguese messages)
 
 ### Phase 3: Component & CSS Cleanup - COMPLETE
 
