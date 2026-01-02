@@ -410,7 +410,7 @@ Analyze impact when teacher or student moves to new location.
 | 6.1 Movie Theater Reservation | ✅ COMPLETE | 5-min slot reservation system |
 | 6.2 AVISO Countdown | ✅ COMPLETE | 14-day auto-transition |
 | 6.3 FÉRIAS/Closures | ✅ COMPLETE | Extended to full closure system |
-| 6.4 Enhanced PAUSADO | ✅ COMPLETE | Day 18 reminder + admin escalation + dashboard badge |
+| 6.4 Enhanced PAUSADO | ✅ COMPLETE | Day 18 reminder + admin escalation + dashboard badge + notifications |
 | 6.5 Cascade Impact | ⬜ NOT STARTED | |
 | 6.6 Zone Matrix | ⬜ NOT STARTED | |
 | 6.7 AI Rescheduling | ⬜ NOT STARTED | |
