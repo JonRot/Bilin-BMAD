@@ -271,16 +271,16 @@ SELECT id FROM enrollments WHERE teacher_id NOT IN (SELECT id FROM teachers);
 
 ## Implementation Priority
 
-### Phase 1A: Quick Wins (1-2 sessions)
+### Phase 1A: Quick Wins (1-2 sessions) ✅ COMPLETE
 1. ✅ Add `fast-check` for property-based tests
 2. ✅ Add invariant tests for status-machine
 3. ✅ Add invariant tests for slot-service
 4. ✅ Run data validation queries on production
 
-### Phase 1B: Mutation Testing (2-3 sessions)
-1. Install Stryker
-2. Run against critical modules
-3. Fix surviving mutations
+### Phase 1B: Mutation Testing (2-3 sessions) ✅ COMPLETE
+1. ✅ Install Stryker
+2. ✅ Run against status-machine.ts (98.33% mutation score)
+3. ✅ Fix all 13 surviving mutations → 0 surviving
 
 ### Phase 1C: Integration Tests (3-4 sessions)
 1. Set up Miniflare/wrangler local D1
