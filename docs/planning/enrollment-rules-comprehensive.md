@@ -490,69 +490,75 @@ Why:
 
 ## 19. TESTING CHECKLIST
 
+**Last Verified:** 2026-01-02 (Session 111 - Business Scenario Validation)
+
 ### Status Changes (Individual)
 
 | Test | Expected | Status |
 |------|----------|--------|
-| Change ATIVO → PAUSADO | Slot stays BLOCKED, cooldown starts | ⬜ |
-| Change PAUSADO → ATIVO (before 3 weeks) | Manual return, cooldown set | ⬜ |
-| Change PAUSADO → ATIVO (after 3 weeks) | Auto-return, 5-month cooldown | ⬜ |
-| Change ATIVO → AVISO | 15-day countdown starts, slot BLOCKED | ⬜ |
-| Change AVISO → ATIVO | Countdown cancelled, stays BLOCKED | ⬜ |
-| AVISO expires (day 16) | Auto → INATIVO, slot → LIVRE | ⬜ |
-| Change ANY → INATIVO | Slot becomes LIVRE | ⬜ |
-| PAUSADO during cooldown | Should be BLOCKED by system | ⬜ |
-| Admin override cooldown | Should allow PAUSADO | ⬜ |
+| Change ATIVO → PAUSADO | Slot stays BLOCKED, cooldown starts | ✅ |
+| Change PAUSADO → ATIVO (before 3 weeks) | Manual return, cooldown set | ✅ |
+| Change PAUSADO → ATIVO (after 3 weeks) | Auto-return, 5-month cooldown | ✅ |
+| Change ATIVO → AVISO | 15-day countdown starts, slot BLOCKED | ✅ |
+| Change AVISO → ATIVO | Countdown cancelled, stays BLOCKED | ✅ |
+| AVISO expires (day 15+) | Auto → INATIVO, slot → LIVRE | ✅ |
+| Change ANY → INATIVO | Slot becomes LIBRE | ✅ |
+| PAUSADO during cooldown | Should be BLOCKED by system | ✅ |
+| Admin override cooldown | Should allow PAUSADO | ✅ |
 
 ### Status Changes (Group)
 
 | Test | Expected | Status |
 |------|----------|--------|
-| Select multiple students, change status | Batch update works | ⬜ |
-| One student PAUSADO in group | Group shows "Multiple" tag | ⬜ |
-| Rate preview before status change | Shows R$120 → R$150 impact | ⬜ |
-| Group degrades to 1 active | Invoice shows R$150 | ⬜ |
+| Select multiple students, change status | Batch update works | ✅ |
+| One student PAUSADO in group | Group shows "Multiple" tag | ✅ |
+| Rate preview before status change | Shows R$120 → R$150 impact | ✅ |
+| Group degrades to 1 active | Invoice shows R$150 | ✅ |
 
 ### Slot Booking
 
 | Test | Expected | Status |
 |------|----------|--------|
-| Click LIVRE slot | Opens booking modal | ⬜ |
-| Create enrollment on LIVRE | Slot becomes BLOCKED | ⬜ |
-| Create enrollment on BLOCKED | Should be REJECTED | ⬜ |
-| Create enrollment conflicting with reschedule | Should be REJECTED | ⬜ |
-| Cancelled class slot | Shows as MAKEUP_ONLY, not LIVRE | ⬜ |
+| Click LIVRE slot | Opens booking modal | ⬜ UI |
+| Create enrollment on LIVRE | Slot becomes BLOCKED | ✅ |
+| Create enrollment on BLOCKED | Should be REJECTED | ✅ |
+| Create enrollment conflicting with reschedule | Should be REJECTED | ✅ |
+| Cancelled class slot | Shows as MAKEUP_ONLY, not LIVRE | ✅ |
 
 ### Cancellations & Reschedules
 
 | Test | Expected | Status |
 |------|----------|--------|
-| Parent cancels (with reschedule) | Exception created, shows makeup slots | ⬜ |
-| Parent cancels (no reschedule) | Exception created, slot stays BLOCKED | ⬜ |
-| Teacher requests cancellation | Goes to pending approval | ⬜ |
-| Admin approves teacher cancellation | Exception approved | ⬜ |
-| Admin rejects teacher cancellation | Exception removed | ⬜ |
-| Bulk approve sick days | All sick requests approved | ⬜ |
+| Parent cancels (with reschedule) | Exception created, shows makeup slots | ✅ |
+| Parent cancels (no reschedule) | Exception created, slot stays BLOCKED | ✅ |
+| Teacher requests cancellation | Goes to pending approval | ✅ |
+| Admin approves teacher cancellation | Exception approved | ⬜ UI |
+| Admin rejects teacher cancellation | Exception removed | ⬜ UI |
+| Bulk approve sick days | All sick requests approved | ⬜ UI |
 
 ### Views & Display
 
 | Test | Expected | Status |
 |------|----------|--------|
-| Week view shows correct statuses | Colors match ATIVO/PAUSADO/AVISO | ⬜ |
-| Month view past days | Muted appearance | ⬜ |
-| Month view exception badges | Visible at 11px size | ⬜ |
-| Day view gap indicator | Shows buffer time between classes | ⬜ |
-| Day view travel time | Shows driving minutes | ⬜ |
-| Suggestions panel | Shows up to 5 waitlist matches | ⬜ |
-| Auto-select preselected lead | Scrolls to and selects match | ⬜ |
-| Cooldown info in sidebar | Shows when PAUSADO blocked | ⬜ |
+| Week view shows correct statuses | Colors match ATIVO/PAUSADO/AVISO | ⬜ UI |
+| Month view past days | Muted appearance | ⬜ UI |
+| Month view exception badges | Visible at 11px size | ⬜ UI |
+| Day view gap indicator | Shows buffer time between classes | ⬜ UI |
+| Day view travel time | Shows driving minutes | ⬜ UI |
+| Suggestions panel | Shows up to 5 waitlist matches | ⬜ UI |
+| Auto-select preselected lead | Scrolls to and selects match | ⬜ UI |
+| Cooldown info in sidebar | Shows when PAUSADO blocked | ⬜ UI |
 
 ### Navigation & Access
 
 | Test | Expected | Status |
 |------|----------|--------|
-| Admin → Settings → Data Warnings | Link works | ⬜ |
-| Travel errors page loads | Shows data quality issues | ⬜ |
+| Admin → Settings → Data Warnings | Link works | ⬜ UI |
+| Travel errors page loads | Shows data quality issues | ⬜ UI |
+
+**Legend:**
+- ✅ = Verified by integration tests
+- ⬜ UI = Requires manual UI testing
 
 ---
 
