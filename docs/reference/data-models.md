@@ -22,7 +22,7 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 | **Travel** | travel_time_cache, travel_time_errors |
 | **Notifications** | notifications, push_device_tokens |
 | **Parent Links** | parent_links |
-| **Teacher Credits** | teacher_credits |
+| **Teacher Credits** | teacher_credits, teacher_credit_events |
 
 ## Entity Relationship Diagram
 
@@ -755,12 +755,59 @@ WHERE status = 'PAUSADO'
 - Each teacher has exactly one credit record
 - Existing teachers are grandfathered at ELITE tier (score 950)
 - New teachers start at NEW tier (score 300)
-- Scores updated based on performance events (Phase 2 feature)
+- Scores updated based on performance events (see teacher_credit_events)
 - Rates are used for teacher earnings, NOT client billing
 
 ---
 
-### 22. slot_reservations
+### 22. teacher_credit_events
+
+**Purpose:** Audit log of all teacher credit score changes for gamification
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | Event ID (tce_xxx) |
+| teacher_id | TEXT | NOT NULL, FK | References teachers(id) |
+| event_type | TEXT | NOT NULL | CLASS_COMPLETED, PARENT_FEEDBACK_POSITIVE, etc. |
+| points_change | INTEGER | NOT NULL | Points added/deducted (+5, -15, etc.) |
+| score_before | INTEGER | NOT NULL | Score before this event |
+| score_after | INTEGER | NOT NULL | Score after this event |
+| tier_before | TEXT | NOT NULL | Tier before this event |
+| tier_after | TEXT | NOT NULL | Tier after this event (may differ if threshold crossed) |
+| reference_id | TEXT | | ID of related entity (completion_id, feedback_id) |
+| reference_type | TEXT | | completion, feedback, manual, system |
+| notes | TEXT | | Optional notes for manual adjustments |
+| created_by | TEXT | | user_id or 'system' |
+| created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+
+**Event Types:**
+| Type | Points | Trigger |
+|------|--------|---------|
+| CLASS_COMPLETED | +5 | Teacher marks class complete |
+| CLASS_CONFIRMED_EARLY | +3 | Confirmation >24h before class |
+| CLASS_CONFIRMED_LATE | -2 | Confirmation <2h before class |
+| PARENT_FEEDBACK_POSITIVE | +10 | 4-5 star feedback |
+| PARENT_FEEDBACK_NEGATIVE | -15 | 1-2 star feedback |
+| PUNCTUALITY_BONUS | +2 | Started on time |
+| PUNCTUALITY_PENALTY | -5 | Started late |
+| TIER_ADJUSTMENT | varies | Manual admin adjustment |
+| INITIAL_SCORE | varies | Score when teacher record created |
+
+**Indexes:**
+- On `teacher_id` for teacher history queries
+- On `event_type` for filtering
+- On `created_at` for chronological queries
+- On `(reference_type, reference_id)` for duplicate prevention
+
+**Business Rules:**
+- Events are append-only (no updates/deletes)
+- Score is always clamped to 0-1000
+- Tier boundaries checked after each event
+- INITIAL_SCORE created automatically for new teachers
+
+---
+
+### 23. slot_reservations
 
 **Purpose:** Movie theater pattern for slot booking - prevents concurrent double-booking by temporarily reserving slots
 
