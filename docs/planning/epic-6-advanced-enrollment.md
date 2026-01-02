@@ -1,9 +1,10 @@
 # Epic 6: Advanced Enrollment Features
 
-**Status:** draft
+**Status:** partially-complete
 **Priority:** Phase 2 (Post-MVP)
 **Dependencies:** Epic 2 (Enrollment Management), Epic 3 (Schedule & Class Instances)
 **Reference:** `docs/planning/enrollment-rules-comprehensive.md`
+**Last Updated:** 2026-01-01
 
 ---
 
@@ -22,11 +23,18 @@ This epic implements the advanced enrollment features identified in brainstormin
 
 ## Stories
 
-### Story 6.1: Movie Theater Slot Reservation System
+### Story 6.1: Movie Theater Slot Reservation System ✅ COMPLETE
 
 **Priority:** High
 **Estimate:** 8 points
 **Dependencies:** None
+**Status:** ✅ Implemented in MVP
+
+**Implementation:**
+- `src/lib/services/slot-reservation-service.ts` - Full 5-min reservation logic
+- `src/lib/repositories/d1/slot-reservation.ts` - Database layer
+- `src/pages/api/slots/reserve.ts` - API endpoint
+- `RESERVATION_DURATION_SECONDS = 300` (5 minutes)
 
 **Description:**
 Implement 5-minute slot reservation to prevent concurrent admin double-booking.
@@ -57,14 +65,21 @@ CREATE TABLE slot_reservations (
 
 ---
 
-### Story 6.2: AVISO Status with 15-Day Countdown
+### Story 6.2: AVISO Status with 14-Day Countdown ✅ COMPLETE
 
 **Priority:** High
 **Estimate:** 8 points
 **Dependencies:** Story 2.2 (Status Machine)
+**Status:** ✅ Implemented in MVP (14 days per business rules)
+
+**Implementation:**
+- `src/lib/services/aviso-automator.ts` - Auto-transition logic
+- `src/lib/services/status-machine.ts` - `isAvisoExpired()`, `getAvisoDaysRemaining()`, `calculateAvisoExpiry()`
+- `AVISO_MAX_DAYS = 14` in constants
+- Lazy evaluation on enrollment access
 
 **Description:**
-Implement AVISO status with automatic 15-day countdown and termination.
+Implement AVISO status with automatic 14-day countdown and termination.
 
 **Acceptance Criteria:**
 - [ ] Admin can set enrollment to AVISO status
@@ -86,11 +101,20 @@ Implement AVISO status with automatic 15-day countdown and termination.
 
 ---
 
-### Story 6.3: FÉRIAS Tag System
+### Story 6.3: FÉRIAS Tag System ✅ COMPLETE (Extended to Full Closures)
 
 **Priority:** High
 **Estimate:** 5 points
 **Dependencies:** None
+**Status:** ✅ Implemented in MVP - Extended to full closure system
+
+**Implementation:**
+- `src/pages/admin/closures.astro` - Full admin UI
+- `src/pages/api/system/closures.ts` - API endpoints
+- `src/lib/repositories/d1/closure.ts` - Database layer
+- `src/lib/validation/closure.ts` - Zod schemas
+- Closure types: FERIAS, HOLIDAY, WEATHER, EMERGENCY, CUSTOM
+- City-specific targeting support
 
 **Description:**
 Implement FÉRIAS as a system-wide tag (not status) that affects class generation.
@@ -123,11 +147,23 @@ CREATE TABLE system_settings (
 
 ---
 
-### Story 6.4: Enhanced PAUSADO Automation
+### Story 6.4: Enhanced PAUSADO Automation 🟡 PARTIALLY COMPLETE
 
 **Priority:** Medium
 **Estimate:** 8 points
 **Dependencies:** Story 2.4 (PAUSADO Automator)
+**Status:** 🟡 Core implemented, notifications/escalation remaining
+
+**Implemented:**
+- `src/lib/services/pausado-automator.ts` - 21-day auto-transition
+- `pausado_cooldown_until` field - 30-day cooldown enforcement
+- `src/pages/api/parent/pausado-request.ts` - Parent pause requests
+- `src/pages/admin/pausado-approvals.astro` - Admin approval queue
+
+**Remaining:**
+- Day 18 reminder notification
+- Escalation notifications after day 21
+- "Pay to Hold" option
 
 **Description:**
 Enhance PAUSADO with notifications, escalation, and paid-hold option.
@@ -300,11 +336,25 @@ Automatically suggest best matches when slots become available.
 
 ---
 
-### Story 6.10: Teacher Credit Gamification
+### Story 6.10: Teacher Credit Gamification 🟡 PARTIALLY COMPLETE
 
 **Priority:** Low
 **Estimate:** 13 points
 **Dependencies:** None
+**Status:** 🟡 Foundation implemented, tracking remaining
+
+**Implemented:**
+- `src/lib/services/teacher-credits.ts` - Tier system and rate calculation
+- Tiers: NEW (R$79), STANDARD (R$85), PREMIUM (R$90), ELITE (R$95)
+- `getTierFromScore()`, `getRatesForTier()`, `calculateTotalEarnings()`
+- Grandfathered existing teachers at ELITE tier (score: 950)
+- Score event types defined (CLASS_COMPLETED, PUNCTUALITY_BONUS, etc.)
+
+**Remaining:**
+- Credit history table and tracking
+- Event-triggered score updates
+- Teacher dashboard with tier/progress display
+- Leaderboards
 
 **Description:**
 Implement teacher credit system with tiers and pay rates.
@@ -352,33 +402,46 @@ Analyze impact when teacher or student moves to new location.
 
 ---
 
-## Story Prioritization
+## Implementation Status Summary
 
-### Phase 2A (February 2025)
+| Story | Status | Notes |
+|-------|--------|-------|
+| 6.1 Movie Theater Reservation | ✅ COMPLETE | 5-min slot reservation system |
+| 6.2 AVISO Countdown | ✅ COMPLETE | 14-day auto-transition |
+| 6.3 FÉRIAS/Closures | ✅ COMPLETE | Extended to full closure system |
+| 6.4 Enhanced PAUSADO | 🟡 PARTIAL | Core logic done, notifications pending |
+| 6.5 Cascade Impact | ⬜ NOT STARTED | |
+| 6.6 Zone Matrix | ⬜ NOT STARTED | |
+| 6.7 AI Rescheduling | ⬜ NOT STARTED | |
+| 6.8 Group Pricing | ⬜ NOT STARTED | |
+| 6.9 Waitlist Auto-Match | ⬜ NOT STARTED | |
+| 6.10 Teacher Credits | 🟡 PARTIAL | Tier/rate system done, tracking pending |
+| 6.11 Relocation Analysis | ⬜ NOT STARTED | |
+
+## Remaining Story Prioritization
+
+### Phase 2A (Next Sprint)
+| Story | Points | Priority | Notes |
+|-------|--------|----------|-------|
+| 6.4 Enhanced PAUSADO (remaining) | 3 | Medium | Just notifications |
+| 6.5 Cascade Impact | 5 | Medium | |
+| **Total** | **8** | | |
+
+### Phase 2B (Following Sprint)
 | Story | Points | Priority |
 |-------|--------|----------|
-| 6.1 Movie Theater Reservation | 8 | High |
-| 6.2 AVISO Countdown | 8 | High |
-| 6.3 FÉRIAS Tag | 5 | High |
-| **Total** | **21** | |
-
-### Phase 2B (March 2025)
-| Story | Points | Priority |
-|-------|--------|----------|
-| 6.4 Enhanced PAUSADO | 8 | Medium |
-| 6.5 Cascade Impact | 5 | Medium |
 | 6.9 Waitlist Auto-Match | 8 | Medium |
-| **Total** | **21** | |
+| 6.10 Teacher Credits (remaining) | 5 | Low |
+| **Total** | **13** | |
 
-### Phase 2C (Q2 2025)
+### Phase 2C (Future)
 | Story | Points | Priority |
 |-------|--------|----------|
 | 6.6 Zone Matrix | 13 | Medium |
 | 6.7 AI Rescheduling | 13 | Low |
 | 6.8 Group Pricing | 8 | Low |
-| 6.10 Teacher Credits | 13 | Low |
 | 6.11 Relocation Analysis | 5 | Low |
-| **Total** | **52** | |
+| **Total** | **39** | |
 
 ---
 
