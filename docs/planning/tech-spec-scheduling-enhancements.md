@@ -1,7 +1,7 @@
 # Tech-Spec: Scheduling Enhancements (Buffer Times + Time-Off Requests)
 
 **Created:** 2025-12-12
-**Status:** Ready for Development
+**Status:** ✅ COMPLETE (Implemented Dec 2025)
 **Author:** BMAD Workflow + Jonathan
 
 ---
@@ -106,8 +106,8 @@ const TIME_ROUNDING_MINUTES = 15; // Was 5
 ```
 
 **Acceptance Criteria:**
-- [ ] When travel time is 11 min from 16:30, suggested start is 16:45 (not 16:41)
-- [ ] All slot suggestions use 15-minute boundaries
+- [x] When travel time is 11 min from 16:30, suggested start is 16:45 (not 16:41)
+- [x] All slot suggestions use 15-minute boundaries
 
 ---
 
@@ -151,9 +151,9 @@ Add filter dropdown:
 - Needs Data (missing location)
 
 **Acceptance Criteria:**
-- [ ] Leads without lat/lon are NOT shown in waitlist suggestions
-- [ ] Leads page shows "Needs Location" badge for incomplete leads
-- [ ] Admin can filter to see only leads needing attention
+- [x] Leads without lat/lon are NOT shown in waitlist suggestions
+- [x] Leads page shows "Needs Location" badge for incomplete leads
+- [x] Admin can filter to see only leads needing attention
 
 ---
 
@@ -185,8 +185,8 @@ CREATE INDEX idx_time_off_dates ON teacher_time_off_requests(start_date, end_dat
 ```
 
 **Acceptance Criteria:**
-- [ ] Migration runs successfully
-- [ ] Indexes created for common queries
+- [x] Migration runs successfully
+- [x] Indexes created for common queries
 
 ---
 
@@ -226,11 +226,11 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 ```
 
 **Acceptance Criteria:**
-- [ ] Teacher can GET their own requests
-- [ ] Teacher can POST new requests
-- [ ] Admin can GET all pending requests
-- [ ] Admin can approve/reject with notes
-- [ ] CSRF protected on POST
+- [x] Teacher can GET their own requests
+- [x] Teacher can POST new requests
+- [x] Admin can GET all pending requests
+- [x] Admin can approve/reject with notes
+- [x] CSRF protected on POST
 
 ---
 
@@ -274,10 +274,10 @@ Add modal:
 Show pending requests with status badges.
 
 **Acceptance Criteria:**
-- [ ] Button visible on teacher schedule page
-- [ ] Modal opens with date range picker
-- [ ] Form submits and shows success message
-- [ ] Pending requests shown with status badge
+- [x] Button visible on teacher schedule page
+- [x] Modal opens with date range picker
+- [x] Form submits and shows success message
+- [x] Pending requests shown with status badge
 
 ---
 
@@ -305,11 +305,11 @@ Add nav link under "Approvals" dropdown:
 ```
 
 **Acceptance Criteria:**
-- [ ] Page accessible at /admin/time-off-approvals
-- [ ] Shows all pending requests
-- [ ] Approve button works
-- [ ] Reject requires reason
-- [ ] Nav link added to Approvals dropdown
+- [x] Page accessible at /admin/time-off-approvals
+- [x] Shows all pending requests
+- [x] Approve button works
+- [x] Reject requires reason
+- [x] Nav link added to Approvals dropdown
 
 ---
 
@@ -333,8 +333,8 @@ const approvedTimeOff = await db.prepare(`
 ```
 
 **Acceptance Criteria:**
-- [ ] Classes during approved time-off show as "Teacher Off" or similar
-- [ ] Slots during time-off are not suggested for new bookings
+- [x] Classes during approved time-off show as "Teacher Off" or similar
+- [x] Slots during time-off are not suggested for new bookings
 
 ---
 
@@ -399,18 +399,16 @@ export const TIME_OFF_TYPE_LABELS: Record<string, string> = {
 
 ## Summary
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| 1. Buffer Time Rounding | 15 min | P0 |
-| 2. Ready for Matching Filter | 1 hour | P0 |
-| 3. Time-Off Database Schema | 30 min | P1 |
-| 4. Time-Off Request API | 2 hours | P1 |
-| 5. Teacher Time-Off UI | 2 hours | P1 |
-| 6. Admin Approvals Page | 2 hours | P1 |
-| 7. Block Classes During Time-Off | 1 hour | P1 |
-
-**Total Estimated Effort:** ~8 hours
+| Task | Status | Implementation |
+|------|--------|----------------|
+| 1. Buffer Time Rounding | ✅ | `constants/matching.ts` - TIME_ROUNDING_MINUTES: 15 |
+| 2. Ready for Matching Filter | ✅ | `waitlist-matcher.ts:205-207` + leads page badges |
+| 3. Time-Off Database Schema | ✅ | `teacher_time_off_requests` table |
+| 4. Time-Off Request API | ✅ | `api/teacher/time-off.ts`, `api/admin/time-off-approvals.ts` |
+| 5. Teacher Time-Off UI | ✅ | Modal on teacher schedule page |
+| 6. Admin Approvals Page | ✅ | `admin/time-off-approvals.astro` |
+| 7. Block Classes During Time-Off | ✅ | `schedule-generator.ts` - TEACHER_OFF status |
 
 ---
 
-**Ready for Development!**
+**✅ ALL TASKS COMPLETE - Implemented December 2025**
