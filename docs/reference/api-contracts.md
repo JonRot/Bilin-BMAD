@@ -1,6 +1,6 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2026-01-02
+**Last Updated:** 2026-01-03
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
 **Endpoints:** 128+ total
@@ -19,6 +19,7 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | Teachers | 12 | CRUD, availability, time-off, day-zones |
 | Users | 6+ | Management, roles |
 | Leads | 6+ | Pipeline, matching, conversion |
+| Offers | 5 | Waitlist auto-match offers |
 | Schedule | 4 | Generation, views |
 | Slots | 5 | Availability grid, reservations, matches |
 | System | 5 | Closures, exceptions |
@@ -522,6 +523,86 @@ Update lead status.
 - **Auth:** Admin only
 - **CSRF:** Required
 - **Body:** `{ "status": "WAITLIST", "reason": "..." }`
+
+---
+
+## Offers API (Story 6.9)
+
+Slot offers manage the waitlist auto-match workflow, sending offers to families when slots become available.
+
+### GET /api/offers
+List pending offers.
+- **Auth:** Admin only
+- **Query Params:** `teacher_id` (optional, filter by teacher)
+- **Response:**
+```json
+{
+  "offers": [
+    {
+      "id": "off_xxx",
+      "teacher_id": "tea_xxx",
+      "lead_id": "lea_xxx",
+      "day_of_week": 1,
+      "start_time": "09:00",
+      "status": "pending",
+      "match_score": 85,
+      "student_name": "Sofia",
+      "teacher_name": "Prof. Maria",
+      "expires_at": 1735984800
+    }
+  ],
+  "stats": {
+    "pending": 5,
+    "accepted": 12,
+    "declined": 3,
+    "expired": 2,
+    "ghost": 1
+  }
+}
+```
+
+### POST /api/offers
+Create a new offer from a suggestion.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "teacher_id": "tea_xxx",
+  "lead_id": "lea_xxx",
+  "day_of_week": 1,
+  "start_time": "09:00",
+  "duration_minutes": 60,
+  "match_score": 85,
+  "match_reason": { "type": "WAITLIST_FIT", "description": "..." }
+}
+```
+- **Response:** `201 Created` with offer details
+
+### GET /api/offers/[id]
+Get offer details.
+- **Auth:** Admin only
+- **Response:** Full offer with lead and teacher details
+
+### PUT /api/offers/[id]
+Update offer status (accept/decline/ghost).
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "action": "accept",
+  "enrollment_id": "enr_xxx"
+}
+```
+- **Actions:** `accept` (requires enrollment_id), `decline` (optional reason), `ghost`
+- **Response:** Updated offer
+
+### DELETE /api/offers/[id]
+Cancel a pending offer.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Response:** Cancelled offer with status = 'cancelled'
 
 ---
 
