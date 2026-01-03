@@ -460,6 +460,26 @@ These features were built during implementation but aren't in the original PRD. 
 
 ## Recent Changes
 
+### 2026-01-03: Story 6.9 Waitlist Auto-Match Complete (Session 120)
+
+**Slot Offer System with Teacher Approval:**
+- Offers workflow: `pending_teacher` → teacher approves → `pending` → family accepts → `accepted`
+- Teacher approval UI on `/teacher/schedule` page
+- Admin panels: "Aguardando Professora" and "Aguardando Família" sections
+- Accept action auto-creates student + enrollment
+- Decline/ghost tracking for lead prioritization
+
+**New API Endpoints:**
+- `POST /api/offers` - Create offer from suggestion
+- `GET /api/offers` - List offers by teacher/status
+- `PUT /api/offers/[id]` - Actions: teacher_approve, teacher_reject, accept, decline, ghost
+
+**Database Migration:**
+- `037_slot_offers.sql` - slot_offers table
+- `038_offer_teacher_approval.sql` - Added pending_teacher, rejected_teacher statuses
+
+---
+
 ### 2025-12-27: Teacher Invoice UX Redesign (Session 39)
 
 **Major UX Overhaul of `/teacher/invoice`:**

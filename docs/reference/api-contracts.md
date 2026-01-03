@@ -585,18 +585,27 @@ Get offer details.
 - **Response:** Full offer with lead and teacher details
 
 ### PUT /api/offers/[id]
-Update offer status (accept/decline/ghost).
-- **Auth:** Admin only
+Update offer status.
+- **Auth:** Teacher (for teacher actions) or Admin (for admin actions)
 - **CSRF:** Required
 - **Body:**
 ```json
 {
-  "action": "accept",
-  "enrollment_id": "enr_xxx"
+  "action": "teacher_approve",
+  "reason": "optional rejection reason"
 }
 ```
-- **Actions:** `accept` (requires enrollment_id), `decline` (optional reason), `ghost`
-- **Response:** Updated offer
+
+**Teacher Actions (requires teacher role):**
+- `teacher_approve` - Approve offer, moves to `pending` status
+- `teacher_reject` - Reject offer with optional reason
+
+**Admin Actions (requires admin role):**
+- `accept` - Accept offer, auto-creates student + enrollment
+- `decline` - Family declined with optional reason
+- `ghost` - Mark lead as unresponsive
+
+**Response:** Updated offer with new status
 
 ### DELETE /api/offers/[id]
 Cancel a pending offer.

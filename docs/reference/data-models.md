@@ -842,6 +842,50 @@ WHERE status = 'PAUSADO'
 
 ---
 
+### 24. slot_offers
+
+**Purpose:** Offers sent to waitlist families when slots become available (Story 6.9)
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | Offer ID (off_xxx format) |
+| teacher_id | TEXT | NOT NULL, FK | References teachers(id) |
+| lead_id | TEXT | NOT NULL, FK | References leads(id) |
+| day_of_week | INTEGER | NOT NULL, CHECK 0-6 | Day of the offered slot |
+| start_time | TEXT | NOT NULL | Start time HH:MM |
+| duration_minutes | INTEGER | NOT NULL, DEFAULT 60 | Class duration |
+| status | TEXT | NOT NULL, DEFAULT 'pending_teacher' | Offer status |
+| match_score | INTEGER | NOT NULL, DEFAULT 0 | AI match score (0-100) |
+| match_reason | TEXT | | JSON with score breakdown |
+| created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+| teacher_responded_at | INTEGER | | When teacher approved/rejected |
+| sent_at | INTEGER | | When notification sent to family |
+| responded_at | INTEGER | | When family responded |
+| expires_at | INTEGER | | Auto-expire timestamp (7 days after sent) |
+| notification_count | INTEGER | NOT NULL, DEFAULT 0 | Follow-up count |
+| last_notification_at | INTEGER | | Last follow-up timestamp |
+| enrollment_id | TEXT | FK | Created enrollment (if accepted) |
+| created_by | TEXT | | Admin who created offer |
+| notes | TEXT | | Internal notes |
+
+**Status Values:**
+- `pending_teacher` - Awaiting teacher approval (initial state)
+- `rejected_teacher` - Teacher rejected the match
+- `pending` - Teacher approved, awaiting family response
+- `accepted` - Family accepted, enrollment created
+- `declined` - Family explicitly declined
+- `expired` - No response within 7 days
+- `ghost` - Marked as unresponsive (deprioritized)
+- `cancelled` - Admin cancelled the offer
+
+**Indexes:**
+- `idx_slot_offers_teacher_status` - (teacher_id, status)
+- `idx_slot_offers_lead_status` - (lead_id, status)
+- `idx_slot_offers_expires` - (expires_at) WHERE status = 'pending'
+- `idx_slot_offers_pending_teacher` - (teacher_id, status) WHERE status = 'pending_teacher'
+
+---
+
 ## Database Triggers
 
 The following triggers enforce business rules and data integrity:
