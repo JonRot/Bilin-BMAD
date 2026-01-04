@@ -265,13 +265,14 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 
 ## Application Routes
 
-### Admin Routes (`/admin/*`) - 19 Pages
+### Admin Routes (`/admin/*`) - 20 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
 | `/admin` | Dashboard with stats, pending approvals, recent leads | - |
 | `/admin/enrollments` | Enrollment management, edit modal, PAUSADO countdown | FR1-9, FR41 |
 | `/admin/leads` | Lead pipeline, matching, conversion | FR30-36 |
+| `/admin/invoices` | Billing dashboard: revenue, payroll, margins, parent/teacher breakdown | Extra |
 | `/admin/approvals` | Change request approvals (email, phone, address, etc.) | FR14 |
 | `/admin/availability-approvals` | Teacher availability submissions + day zones | - |
 | `/admin/closures` | Holidays, FÉRIAS, weather, emergency closures | - |

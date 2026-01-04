@@ -82,6 +82,7 @@ leads --> (converts to) students + enrollments
 | active | INTEGER | NOT NULL, DEFAULT 1 | Active status |
 | join_date | TEXT | | Date teacher joined |
 | contract_date | TEXT | | Contract signing date |
+| contract_end | TEXT | | Contract end date (auto-set when inactive) |
 | notes | TEXT | | Admin notes |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |

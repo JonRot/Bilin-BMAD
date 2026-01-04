@@ -1034,6 +1034,150 @@ Bulk update lead statuses from spreadsheet export.
 
 ---
 
+## Admin Invoice APIs
+
+### GET /api/admin/invoices/summary
+Monthly invoice summary with revenue, payroll, and margin.
+- **Auth:** Admin only
+- **Query Params:** `year` (default: current), `month` (default: current)
+- **Response:**
+```json
+{
+  "year": 2026,
+  "month": 1,
+  "revenue": 15000,
+  "payroll": 9500,
+  "margin": 5500,
+  "marginPercent": 36.67,
+  "totalClasses": 85,
+  "individualClasses": 50,
+  "groupClasses": 35,
+  "groupStudents": 78,
+  "cancelledStudent": 5,
+  "cancelledTeacher": 2,
+  "cancelledAdmin": 1,
+  "noShows": 3,
+  "pausadoCount": 4,
+  "avisoCount": 2,
+  "comparison": {
+    "revenueChange": 1200,
+    "revenuePercent": 8.7,
+    "payrollChange": 500,
+    "payrollPercent": 5.5,
+    "classesChange": 5,
+    "classesPercent": 6.2,
+    "prevRevenue": 13800,
+    "prevPayroll": 9000,
+    "prevClasses": 80
+  }
+}
+```
+- **Notes:**
+  - Revenue = parent billing (R$150 individual, R$120 group per student)
+  - Payroll = teacher earnings (tiered rates by teacher tier)
+  - Margin = revenue - payroll
+  - Comparison is null if no data for previous month
+
+### GET /api/admin/invoices/parents
+Parent billing breakdown for a given month.
+- **Auth:** Admin only
+- **Query Params:** `year`, `month`
+- **Response:**
+```json
+{
+  "year": 2026,
+  "month": 1,
+  "parents": [
+    {
+      "parentEmail": "joh***@email.com",
+      "parentName": "João Silva",
+      "studentCount": 2,
+      "students": [
+        {
+          "studentId": "stu_xxx",
+          "studentName": "Sofia",
+          "teacherId": "tea_xxx",
+          "teacherName": "Maria",
+          "language": "Inglês",
+          "dayOfWeek": 1,
+          "startTime": "14:00",
+          "status": "ATIVO",
+          "completed": 4,
+          "noShows": 1,
+          "cancelledStudent": 0,
+          "cancelledTeacher": 0,
+          "cancelledAdmin": 0,
+          "individualClasses": 3,
+          "groupClasses": 2,
+          "individualTotal": 450,
+          "groupTotal": 240,
+          "totalAmount": 690
+        }
+      ],
+      "totalDue": 1380,
+      "paymentStatus": "PENDENTE"
+    }
+  ],
+  "totalFamilies": 25,
+  "totalRevenue": 15000
+}
+```
+- **Notes:** Parent emails are masked for display (e.g., `joh***@email.com`)
+
+### GET /api/admin/invoices/teachers
+Teacher payroll breakdown for a given month.
+- **Auth:** Admin only
+- **Query Params:** `year`, `month`
+- **Response:**
+```json
+{
+  "year": 2026,
+  "month": 1,
+  "teachers": [
+    {
+      "teacherId": "tea_xxx",
+      "teacherName": "Maria Santos",
+      "tier": "ELITE",
+      "tierLabel": "Elite",
+      "creditScore": 950,
+      "individualRate": 95,
+      "groupRate": 70,
+      "pixKey": "****1234",
+      "individualClasses": 20,
+      "groupClasses": 10,
+      "groupStudents": 25,
+      "noShows": 2,
+      "cancelledTeacher": 1,
+      "cancelledStudent": 2,
+      "individualTotal": 1900,
+      "groupTotal": 1750,
+      "totalEarnings": 3650,
+      "statusImpacts": [
+        {
+          "studentId": "stu_xxx",
+          "studentName": "Lucas",
+          "status": "PAUSADO",
+          "dayOfWeek": 3,
+          "startTime": "15:00",
+          "language": "Inglês"
+        }
+      ],
+      "activeEnrollments": 15,
+      "pausadoCount": 1,
+      "avisoCount": 0
+    }
+  ],
+  "totalTeachers": 8,
+  "totalPayroll": 9500
+}
+```
+- **Notes:**
+  - PIX keys are masked (only last 4 digits shown)
+  - Group earnings = groupRate × groupStudents (deduplicated by time slot)
+  - statusImpacts shows students affecting teacher income
+
+---
+
 ## Student APIs
 
 ### GET /api/students
