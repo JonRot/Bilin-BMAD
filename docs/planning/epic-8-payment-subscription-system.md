@@ -1,6 +1,6 @@
 # Epic 8: Payment & Subscription System
 
-**Status:** In Progress (2/12 Stories Complete)
+**Status:** In Progress (3/12 Stories Complete)
 **Priority:** Phase 2 (Post-MVP)
 **Dependencies:** Epic 6 (Advanced Enrollment), Epic 7 (Rock-Solid Scheduling)
 **Reference:** `docs/planning/tech-spec-payment-subscription-system.md`
@@ -107,20 +107,27 @@ Run database migration to create subscription tables and sync existing parents a
 **Priority:** Critical
 **Estimate:** 8 points
 **Dependencies:** Story 8.2
-**Status:** Pending
+**Status:** ✅ Complete
 
 **Description:**
 Implement core subscription service with Stripe integration.
 
 **Acceptance Criteria:**
 
-- [ ] `SubscriptionService` class with CRUD operations
-- [ ] `StripeService` class for Stripe API calls
-- [ ] Create subscription flow (with Stripe subscription creation)
-- [ ] Cancel subscription flow (with Stripe cancellation)
-- [ ] Pause/resume subscription support
-- [ ] Plan change (upgrade/downgrade) support
-- [ ] Unit tests with mocked Stripe API
+- [x] `SubscriptionService` class with CRUD operations
+- [x] `StripeService` class for Stripe API calls
+- [x] Create subscription flow (with Stripe subscription creation)
+- [x] Cancel subscription flow (with Stripe cancellation)
+- [x] Pause/resume subscription support
+- [x] Plan change (upgrade/downgrade) support
+- [x] Unit tests with mocked Stripe API (22 tests)
+
+**Implementation Notes:**
+- `StripeService` wraps all Stripe SDK calls for subscriptions
+- `SubscriptionService` orchestrates between Stripe and local database
+- Supports both Stripe-connected and local-only modes (for testing)
+- Reschedule credits granted automatically on subscription activation
+- 3 new repositories: subscription, subscription-plan, reschedule-credit
 
 **Key Methods:**
 

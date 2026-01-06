@@ -10,13 +10,19 @@
 
 **Latest Deployment:** <https://eduschedule-app.pages.dev>
 
-**Implementation Stats (as of 2025-12-26):**
-- **26 pages** (17 admin, 5 teacher, 4 parent) - 9 beyond original PRD
-- **80+ API endpoints** across 12 categories
+**Implementation Stats (as of 2026-01-06):**
+- **28 pages** (20 admin, 5 teacher, 4 parent + cancel-choice, location-change)
+- **100+ API endpoints** across 14 categories
 - **31 reusable components** with full design system compliance
-- **24 business services** with repository pattern
-- **22 database tables** (11 added via migrations beyond original spec)
-- **17 client-side TypeScript modules** in `src/scripts/` (~13,900 lines)
+- **30+ business services** with repository pattern
+- **35+ database tables** (20+ added via migrations)
+- **17 client-side TypeScript modules** in `src/scripts/`
+- **50 database migrations** applied
+
+**Phase 2 Progress:**
+- ✅ **Epic 6 Complete** - Advanced Enrollment (11/11 stories)
+- 🔄 **Epic 7 In Progress** - Rock-Solid Scheduling (7/9 stories)
+- 🔄 **Epic 8 In Progress** - Payment System (3/12 stories)
 
 ---
 
@@ -39,12 +45,10 @@
 | Set up local dev | [Development Guide](./reference/development-guide.md) |
 | Understand BILIN business rules | [Business Context](./reference/business-context.md) |
 | **Understand enrollment rules deeply** | [Enrollment Rules Comprehensive](./planning/enrollment-rules-comprehensive.md) |
-| **See foundational business decisions** | [Brainstorming Session 2025-12-06](./reference/brainstorming-session-2025-12-06.md) |
+| **See foundational business decisions** | [Brainstorming Session 2025-12-06](./archive/brainstorming-session-2025-12-06-COMPLETE.md) |
 | **Plan Phase 2 features** | [Scheduling Improvements](./planning/brainstorm-scheduling-improvements.md) |
 | **Phase 2: AI optimization** | [Booking Optimizer Architecture](./planning/architecture-booking-optimizer.md) |
 | **Phase 2: Payment/Billing** | [Payment & Subscription Tech Spec](./planning/tech-spec-payment-subscription-system.md) |
-| **Run QA tests** | [Enrollments Test Checklist](./testing/enrollments-test-checklist.md) |
-| **Review page audit** | [Page Audit 2025-12-20](./testing/page-audit-2025-12-20.md) |
 | **Master Audit (consolidated)** | [Master Audit 2025](./testing/master-audit-2025.md) |
 
 ---
@@ -242,8 +246,6 @@ docs/                                 # PROJECT-LEVEL DOCUMENTATION
 │   └── notification-mapping.md              # Notification types and triggers
 │
 ├── testing/                          # Test plans and checklists
-│   ├── enrollments-test-checklist.md
-│   ├── page-audit-2025-12-20.md      # Comprehensive page audit (92 issues)
 │   └── master-audit-2025.md          # Consolidated audit report (150+ issues tracked)
 │
 └── archive/                          # Historical summary
@@ -254,7 +256,9 @@ eduschedule-app/docs/                 # APP OPERATIONAL DOCUMENTATION
 ├── TESTING-CHECKLIST.md              # Pre-deployment QA checklist
 ├── admin-quick-guide-cancellations.md  # Admin user guide
 └── setup-guides/
-    └── GOOGLE_CALENDAR_OAUTH_SETUP.md  # OAuth setup reference
+    ├── GOOGLE_CALENDAR_OAUTH_SETUP.md  # Google OAuth setup
+    ├── STRIPE_SETUP.md                 # Stripe payment integration
+    └── SUPERSIGN_SETUP.md              # SuperSign contract signing
 
 eduschedule-app/                      # APP ROOT (non-docs operational files)
 ├── CLAUDE.md                         # AI assistant instructions
@@ -384,35 +388,73 @@ All architecture decisions follow the [Edge Architecture Spec](./claude-edge-arc
 
 ---
 
-## Database Tables (18 Total)
+## Database Tables (35+ Total)
 
-### Core Tables (Originally Documented - 9)
+### Core Tables (9)
 
-| Table | Purpose | Key Fields |
-|-------|---------|------------|
-| `users` | User accounts | email, name, role (admin/teacher/parent) |
-| `teachers` | Teacher profiles | nickname, full_name, languages, teaching_cities, home_lat/lon |
-| `students` | Student profiles | name, status, teacher_id, parent_*_encrypted, lat/lon |
-| `enrollments` | Recurring class commitments | student_id, teacher_id, day_of_week, start_time, status |
-| `enrollment_exceptions` | Cancellations, reschedules | enrollment_id, exception_date, exception_type, rescheduled_to_* |
-| `class_completions` | Proof of delivery | enrollment_id, class_date, status, notes, actual_rate |
-| `system_closures` | Holidays, FÉRIAS | closure_type, start_date, end_date, city_id |
-| `leads` | Pre-enrollment pipeline | parent_*, student_*, neighborhood, availability_windows |
-| `audit_log` | Security events | user_id, action, resource_type, metadata |
+| Table | Purpose |
+|-------|---------|
+| `users` | User accounts (admin/teacher/parent) |
+| `teachers` | Teacher profiles, languages, teaching cities |
+| `students` | Student profiles, parent info (encrypted) |
+| `enrollments` | Recurring class commitments |
+| `enrollment_exceptions` | Cancellations, reschedules, holidays |
+| `class_completions` | Class delivery proof + notes |
+| `system_closures` | Holidays, FÉRIAS, weather closures |
+| `leads` | Pre-enrollment pipeline |
+| `audit_log` | Security and compliance events |
 
-### Support Tables (Added via Migrations - 9)
+### Scheduling & Travel (7)
 
-| Table | Purpose | Migration |
-|-------|---------|-----------|
-| `sessions` | Server-side session storage | schema.sql |
-| `parent_links` | Link OAuth emails to students | schema.sql |
-| `teacher_availability` | Declared availability slots | schema.sql |
-| `teacher_day_zones` | City/zone per day for travel optimization | schema.sql |
-| `notifications` | User notification system | 001 |
-| `travel_time_cache` | Cached driving times (30-day expiry) | travel-cache.sql |
-| `travel_time_errors` | Travel calculation error tracking | 005 |
-| `teacher_time_off_requests` | Teacher vacation/sick requests | 008 |
-| `enrollment_status_history` | Status transition audit trail | 016 |
+| Table | Purpose |
+|-------|---------|
+| `teacher_availability` | Declared LIVRE slots |
+| `teacher_day_zones` | Per-day city/zone assignments |
+| `slot_reservations` | 5-minute slot holds |
+| `slot_offers` | Waitlist slot offers |
+| `travel_time_cache` | Cached driving times (30-day expiry) |
+| `travel_time_errors` | Geocoding error tracking |
+| `zone_travel_matrix` | Pre-calculated zone-to-zone times |
+
+### Notifications & History (4)
+
+| Table | Purpose |
+|-------|---------|
+| `notifications` | User notification system |
+| `enrollment_status_history` | Status transition audit trail |
+| `teacher_time_off_requests` | Vacation/sick requests |
+| `pausado_requests` | Parent pause requests |
+
+### Payment & Subscription (7) - Epic 8
+
+| Table | Purpose |
+|-------|---------|
+| `subscription_plans` | Plan templates (monthly/semester/annual) |
+| `subscriptions` | Active student subscriptions |
+| `stripe_customers` | User → Stripe customer mapping |
+| `reschedule_credits` | Monthly reschedule credits |
+| `one_time_payments` | PIX/Boleto payments |
+| `payment_transactions` | Payment audit log |
+
+### Cancellation Billing (4) - Epic 7
+
+| Table | Purpose |
+|-------|---------|
+| `cancellation_charges` | Late cancellation fees |
+| `cancellation_pending_choices` | Group rate change choices |
+| `location_change_requests` | Location host workflow |
+| `location_change_responses` | Parent approval responses |
+
+### Other Tables (6)
+
+| Table | Purpose |
+|-------|---------|
+| `sessions` | Server-side session storage |
+| `parent_links` | Link OAuth emails to students |
+| `change_requests` | Profile change approvals |
+| `teacher_credits` | Gamification points |
+| `teacher_credit_events` | Credit event history |
+| `address_cache` | Geocoded address cache |
 
 ### Key Status Values
 
@@ -463,6 +505,36 @@ These features were built during implementation but aren't in the original PRD. 
 ---
 
 ## Recent Changes
+
+### 2026-01-06: Epic 6 Complete + Epic 7/8 Progress (Sessions 140-148)
+
+**Epic 6 Complete (11/11 Stories):**
+- ✅ Story 6.11: Relocation Impact Analysis - Impact preview when teacher/student moves
+- ✅ Story 6.10: Teacher Credit Gamification - Tier system with progress tracking
+- ✅ Story 6.9: Waitlist Auto-Matching - Ghost tracking + offer status
+- ✅ Story 6.8: Group Class Dynamic Pricing - Rate change notifications
+- ✅ Story 6.7: AI-Powered Rescheduling Suggestions - Smart slot suggestions
+
+**Epic 7 Progress (7/9 Stories):**
+- ✅ Cancellation System Redesign - 24h billing, sick exemptions, group cascade
+- ✅ Parent Cancel-Class integration with GroupCancellationService
+- ✅ Location change workflow for group classes
+- ⏳ Story 7.7: Parent Reschedule Slot Picker (pending)
+- ⏳ Story 7.8: Makeup Class Tracking UI (pending)
+
+**Epic 8 Progress (3/12 Stories):**
+- ✅ Story 8.1: Stripe SDK Integration - Products, prices, webhook skeleton
+- ✅ Story 8.2: Database Migration - 6 new payment tables, customer sync
+- ✅ Story 8.3: Subscription Service Layer - StripeService + SubscriptionService
+
+**New Features:**
+- `/parent/cancel-choice.astro` - Rate change decision UI
+- `/parent/location-change.astro` - Location approval UI
+- `GroupCancellationService` - 24h billing + sick exemptions
+- `LocationChangeService` - Location host workflow
+- SuperSign API research for contract signing
+
+---
 
 ### 2026-01-03: Story 6.9 Waitlist Auto-Match Complete (Session 120)
 
@@ -661,4 +733,4 @@ docs/index.md (documentation map - THIS FILE)
 
 ---
 
-**Last Updated:** 2025-12-29 (Synced table counts to 22, added slot_reservations)
+**Last Updated:** 2026-01-06 (Epic 6 complete, Epic 7/8 progress, 35+ tables documented)
