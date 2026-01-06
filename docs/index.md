@@ -223,6 +223,7 @@ docs/                                 # PROJECT-LEVEL DOCUMENTATION
 │   ├── enrollment-rules-comprehensive.md  # Detailed business rules reference
 │   ├── epic-6-advanced-enrollment.md      # Phase 2: Advanced features
 │   ├── epic-7-rock-solid-scheduling.md    # Phase 2: Notifications, reliability
+│   ├── epic-8-payment-subscription-system.md  # Phase 2: Stripe billing integration
 │   ├── architecture-booking-optimizer.md  # Phase 2: AI scheduling optimization
 │   ├── brainstorm-scheduling-improvements.md  # Phase 2+ roadmap (Cal.com analysis)
 │   ├── tech-spec-scheduling-enhancements.md   # Buffer times + time-off spec
@@ -615,7 +616,7 @@ Where to find and store different types of information:
 | **API endpoints** | `reference/api-contracts.md` | Code: `src/pages/api/` |
 | **UI patterns** | `reference/design-system-architecture.md` | Code: `src/components/` |
 | **System flows** | `reference/application-flows-v3.md` | Code: `src/lib/services/` |
-| **Phase 2 roadmap** | `planning/epic-6-*.md`, `epic-7-*.md` | `planning/architecture-booking-optimizer.md` |
+| **Phase 2 roadmap** | `planning/epic-6-*.md`, `epic-7-*.md`, `epic-8-*.md` | `planning/architecture-booking-optimizer.md` |
 | **Session context** | `../eduschedule-app/project-context.md` | This file |
 | **Cloudflare patterns** | `../eduschedule-app/CLOUDFLARE_CODING_STANDARDS.md` | - |
 | **Project history** | `archive/ARCHIVE-HISTORY.md` | - |
