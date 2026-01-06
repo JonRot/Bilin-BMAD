@@ -1,9 +1,9 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2025-12-30
+**Last Updated:** 2026-01-05
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
-**Tables:** 23 total (11 core + 12 via migrations)
+**Tables:** 24 total (11 core + 13 via migrations)
 
 ## Overview
 
@@ -19,7 +19,7 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 | **Status Tracking** | enrollment_status_history |
 | **Time-Off** | teacher_time_off_requests |
 | **Pausado Requests** | pausado_requests |
-| **Travel** | travel_time_cache, travel_time_errors |
+| **Travel** | travel_time_cache, travel_time_errors, zone_travel_matrix |
 | **Notifications** | notifications, push_device_tokens |
 | **Parent Links** | parent_links |
 | **Teacher Credits** | teacher_credits, teacher_credit_events |
@@ -167,6 +167,9 @@ leads --> (converts to) students + enrollments
 | pausado_reason | TEXT | | Reason for pause |
 | pausado_cooldown_until | INTEGER | | Unix timestamp when cooldown ends |
 | recurrence_start_date | TEXT | NOT NULL | When enrollment began (YYYY-MM-DD) |
+| class_mode | TEXT | | 'Presencial', 'Online', or 'Híbrido' |
+| plan_type | TEXT | DEFAULT 'Semanal' | 'Semanal' or 'Quinzenal' |
+| quinzenal_week | INTEGER | DEFAULT 1 | 1 or 2 for bi-weekly scheduling |
 | google_calendar_event_id | TEXT | | Linked calendar event |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
@@ -336,6 +339,10 @@ ATIVO <--> PAUSADO --> CANCELADO
 | converted_to_enrollment_id | TEXT | FK | After conversion |
 | converted_at | INTEGER | | Conversion timestamp |
 | jotform_submission_id | TEXT | | JotForm sync tracking |
+| **Returning Student** | | | |
+| source_student_id | TEXT | FK | Original student if returning |
+| is_returning | INTEGER | NOT NULL, DEFAULT 0 | True if returning student |
+| priority_tier | INTEGER | NOT NULL, DEFAULT 2 | 1=returning (priority), 2=new |
 | **Metadata** | | | |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
@@ -348,10 +355,17 @@ AGUARDANDO --> EM_ANALISE --> WAITLIST --> CONTRACTED
 ```
 
 **Conversion Flow:** When a class is scheduled with a teacher, the lead automatically converts:
-1. Student record created (all fields preserved)
+1. Student record created (all fields preserved) OR reused if returning student
 2. Enrollment record created (day, time, teacher, language)
 3. Parent links created (both parents can log in via OAuth)
 4. Lead status → CONTRACTED
+5. For returning students: student status reactivated (ATIVO), contract_end cleared
+
+**Returning Student Flow:** When a student becomes INATIVO:
+1. Auto-creates a priority lead (source_student_id links to original)
+2. Lead shows "↩ Retornando" badge on leads page
+3. Sorted first (priority_tier=1) for faster re-matching
+4. Conversion reuses existing student record (no duplicate)
 
 ---
 
@@ -623,7 +637,36 @@ WHERE status = 'PAUSADO'
 
 ---
 
-### 18. notifications
+### 18. zone_travel_matrix
+
+**Purpose:** Pre-calculated zone-to-zone travel times for cost optimization (Story 6.6)
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | Zone pair ID |
+| from_zone | TEXT | NOT NULL | Source zone name |
+| to_zone | TEXT | NOT NULL | Destination zone name |
+| avg_travel_minutes | INTEGER | NOT NULL | Average driving time |
+| distance_km | REAL | | Approximate distance |
+| buffer_minutes | INTEGER | NOT NULL | Recommended scheduling buffer |
+| is_same_zone | INTEGER | NOT NULL, DEFAULT 0 | 1 if same zone |
+| is_adjacent | INTEGER | NOT NULL, DEFAULT 0 | 1 if zones share border |
+| calculated_at | INTEGER | NOT NULL | When calculated |
+| last_verified_at | INTEGER | | When admin verified |
+| verified_by | TEXT | | Admin who verified |
+
+**Index:** UNIQUE on (from_zone, to_zone)
+
+**Notes:**
+- Contains 49 entries (7 zones × 7 zones)
+- Same-zone pairs use 10-minute default travel time
+- Different-zone pairs calculated via LocationIQ API (one-time ~$0.50 cost)
+- Buffer times: same zone = 5min, adjacent = 15min, different = 25min
+- Eliminates ~90% of API calls for travel time lookups
+
+---
+
+### 19. notifications
 
 **Purpose:** In-app notification system
 

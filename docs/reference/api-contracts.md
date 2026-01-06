@@ -1250,6 +1250,25 @@ List completed classes for a student with completion details.
 }
 ```
 
+### GET /api/students/[id]/enrollments-summary
+Get enrollment-derived data for student edit modal display (read-only fields).
+- **Auth:** Admin, Teacher, Parent
+- **Response:**
+```json
+{
+  "status": "ATIVO",
+  "teachers": [
+    { "id": "tch_xxx", "nickname": "Maria" }
+  ],
+  "languages": ["English", "Spanish"],
+  "classModes": ["Presencial", "Online"],
+  "planTypes": ["Semanal"],
+  "enrollmentCount": 2,
+  "hasActiveEnrollment": true
+}
+```
+- **Notes:** Status is derived from active enrollments (ATIVO > PAUSADO > AVISO). Excludes WAITLIST and INATIVO enrollments. classModes and planTypes are unique values from all active enrollments.
+
 ### GET /api/students/[id]/exceptions
 List all exceptions for a student's enrollments.
 - **Auth:** Admin, Teacher (own students), Parent (own children)
@@ -1329,6 +1348,12 @@ Create time-off request.
 - **Auth:** Teacher (own)
 - **CSRF:** Required
 - **Body:** `{ "start_date", "end_date", "reason" }`
+
+### GET /api/teachers/[id]/class-mode-enrollments
+Get which class modes have active enrollments for a teacher.
+- **Auth:** Admin only
+- **Response:** `{ "teacherId", "hasActiveEnrollments": { "individual": bool, "group": bool, "online": bool }, "totalActive": number }`
+- Used to prevent unchecking teaching preferences when active enrollments exist
 
 ---
 
@@ -2155,6 +2180,108 @@ Calculate travel time matrix for multiple locations.
 - **Auth:** Admin only
 - **Query Params:** `origins`, `destinations`
 - **Response:** Matrix of travel times
+
+---
+
+## Zone Matrix APIs
+
+Pre-calculated zone-to-zone travel times for cost optimization. Uses zone centroids instead of individual location lookups. Reduces LocationIQ API costs by ~90%.
+
+### GET /api/admin/zone-matrix
+List all zone matrix entries.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "entries": [
+    {
+      "id": "zm_xxx",
+      "from_zone": "Centro",
+      "to_zone": "Norte",
+      "avg_travel_minutes": 35,
+      "distance_km": 18.5,
+      "buffer_minutes": 25,
+      "is_same_zone": false,
+      "is_adjacent": false,
+      "calculated_at": 1735689600
+    }
+  ],
+  "count": 49,
+  "populated": true,
+  "expectedCount": 49
+}
+```
+
+### DELETE /api/admin/zone-matrix
+Clear all zone matrix entries (for repopulation).
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "success": true,
+  "message": "Zone matrix cleared",
+  "entriesDeleted": 49
+}
+```
+
+### POST /api/admin/zone-matrix/populate
+One-time population of zone matrix using LocationIQ API. Calculates travel times between all 7 zone centroids (49 pairs).
+- **Auth:** Admin only
+- **Cost:** ~$0.50 (42 API calls for different-zone pairs)
+- **Response:**
+```json
+{
+  "success": true,
+  "message": "Zone matrix populated successfully",
+  "entriesCreated": 49,
+  "apiCallsMade": 42,
+  "estimatedCost": "~$0.50"
+}
+```
+- **Notes:**
+  - Returns 409 Conflict if matrix already populated
+  - Same-zone pairs use 10min default (no API call)
+  - Run DELETE first to repopulate
+
+### GET /api/admin/zone-matrix/lookup
+Look up travel info between zones or neighborhoods.
+- **Auth:** Admin only
+- **Query Params (zone pair):** `from_zone`, `to_zone`
+- **Query Params (neighborhood pair):** `from_neighborhood`, `to_neighborhood`
+- **Response (zone query):**
+```json
+{
+  "query": { "type": "zone", "from": "Centro", "to": "Norte" },
+  "result": {
+    "fromZone": "Centro",
+    "toZone": "Norte",
+    "avgTravelMinutes": 35,
+    "bufferMinutes": 25,
+    "isSameZone": false,
+    "isAdjacent": false,
+    "source": "matrix"
+  }
+}
+```
+- **Response (neighborhood query):**
+```json
+{
+  "query": { "type": "neighborhood", "from": "Ingleses", "to": "Lagoa da Conceição" },
+  "mappedZones": { "from": "Norte", "to": "Leste" },
+  "result": {
+    "fromZone": "Norte",
+    "toZone": "Leste",
+    "avgTravelMinutes": 40,
+    "bufferMinutes": 25,
+    "isSameZone": false,
+    "isAdjacent": false,
+    "source": "matrix"
+  }
+}
+```
+- **Notes:**
+  - Returns 400 if no query parameters provided
+  - Neighborhoods are mapped to zones via `ZONES` constant
 
 ---
 
