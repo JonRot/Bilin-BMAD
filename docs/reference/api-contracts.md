@@ -1955,9 +1955,15 @@ Get counts of all pending items for admin badge display.
   "availabilityApprovals": 1,
   "timeOffRequests": 1,
   "cancellations": 3,
+  "unreadNotifications": 5,
+  "groupsAtRisk": 2,
+  "degradedGroups": 1,
   "total": 7
 }
 ```
+- **Story 6.8 Fields:**
+  - `groupsAtRisk`: Groups with exactly 2 ATIVO members (fragile - if one leaves, rate changes)
+  - `degradedGroups`: Groups with 1 ATIVO but other non-ATIVO members (paying individual rate)
 
 ### GET /api/teacher/pending-counts
 Get teacher's pending request counts.
