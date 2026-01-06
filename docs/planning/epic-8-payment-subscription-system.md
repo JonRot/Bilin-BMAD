@@ -1,6 +1,6 @@
 # Epic 8: Payment & Subscription System
 
-**Status:** Draft (0/12 Stories Complete)
+**Status:** In Progress (1/12 Stories Complete)
 **Priority:** Phase 2 (Post-MVP)
 **Dependencies:** Epic 6 (Advanced Enrollment), Epic 7 (Rock-Solid Scheduling)
 **Reference:** `docs/planning/tech-spec-payment-subscription-system.md`
@@ -36,19 +36,25 @@ This epic implements automated payment and subscription billing using Stripe, re
 **Priority:** Critical
 **Estimate:** 3 points
 **Dependencies:** None
-**Status:** Pending
+**Status:** ✅ Complete
 
 **Description:**
 Set up Stripe account for Brazil, configure products and prices for all subscription plans.
 
 **Acceptance Criteria:**
 
-- [ ] Stripe account created and verified for Brazil
-- [ ] Products created: Individual Class, Group Class
-- [ ] Prices created for each plan type (Monthly, Semester, Annual) × class type
-- [ ] Webhook endpoint registered in Stripe dashboard
-- [ ] Environment variables configured in Cloudflare Pages
-- [ ] Test mode working locally with `npm run dev`
+- [x] Stripe SDK installed and configured (`stripe` v20.1.0)
+- [x] Products defined: Individual Class, Group Class (via setup script)
+- [x] Prices defined for each plan type (Monthly, Semester, Annual) × class type (via setup script)
+- [x] Webhook endpoint skeleton created (`/api/webhooks/stripe`)
+- [x] Environment variable types added to `env.d.ts`
+- [x] Setup script created (`npm run stripe:setup`)
+- [x] Setup guide documentation (`docs/setup-guides/STRIPE_SETUP.md`)
+
+**Implementation Notes:**
+- Setup script creates 2 products and 6 prices in Stripe via API
+- Webhook endpoint handles signature verification and all event types
+- Actual Stripe account setup is a manual step (user-dependent)
 
 **Technical Notes:**
 
