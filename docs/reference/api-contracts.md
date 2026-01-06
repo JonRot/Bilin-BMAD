@@ -2159,6 +2159,78 @@ Reject cancellation.
 - **CSRF:** Required
 - **Body:** `{ "reason": "..." }`
 
+### GET /api/cancellations/pending-choice
+Get parent's pending rate change choices (when group goes 2→1).
+- **Auth:** Parent
+- **Response:**
+```json
+{
+  "pendingChoices": [{
+    "id": "pc_xxx",
+    "enrollment_id": "enr_xxx",
+    "class_date": "2024-06-20",
+    "original_rate": 120,
+    "new_rate": 150,
+    "choice_deadline": 1718870400,
+    "student_name": "João Silva"
+  }]
+}
+```
+
+### POST /api/cancellations/pending-choice
+Submit parent's rate change decision.
+- **Auth:** Parent
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "pending_choice_id": "pc_xxx",
+  "choice": "CONTINUE"  // or "CANCEL"
+}
+```
+- **Billing:** If CANCEL and past deadline, parent is billed at new rate
+
+### GET /api/cancellations/auto-resolve
+Trigger auto-resolution of expired pending choices and location change requests.
+- **Auth:** Admin or Cron
+- **Response:** `{ "resolved": 3, "message": "..." }`
+
+### POST /api/cancellations/auto-resolve
+Same as GET, for cron services that require POST.
+- **Auth:** Admin or Cron
+
+### GET /api/location-change/[id]/respond
+Get location change request details for parent response.
+- **Auth:** Parent (must be participant)
+- **Response:**
+```json
+{
+  "request": {
+    "id": "lcr_xxx",
+    "class_date": "2024-06-20",
+    "new_location_address": "123 New Street",
+    "travel_minutes": 25,
+    "approval_deadline": 1718870400,
+    "responses": [{
+      "student_name": "João",
+      "response": "approve"
+    }]
+  },
+  "myResponseId": "lcrsp_xxx",
+  "alreadyResponded": false
+}
+```
+
+### POST /api/location-change/[id]/respond
+Submit parent's location change approval/decline.
+- **Auth:** Parent (must be participant)
+- **CSRF:** Required
+- **Body:** `{ "response": "approve" }` or `{ "response": "decline" }`
+- **Behavior:**
+  - If ALL approve → Location change finalized, class continues
+  - If ANY decline → Class cancelled for ALL (no charge)
+  - If expired → Class cancelled for ALL
+
 ---
 
 ## Change Request APIs

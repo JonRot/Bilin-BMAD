@@ -1,9 +1,9 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2026-01-05
+**Last Updated:** 2026-01-06
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
-**Tables:** 24 total (11 core + 13 via migrations)
+**Tables:** 28 total (11 core + 17 via migrations)
 
 ## Overview
 
@@ -15,7 +15,7 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 |----------|--------|
 | **Core** | users, teachers, students, enrollments, enrollment_exceptions, class_completions, system_closures, leads, change_requests, audit_log, sessions |
 | **Availability** | teacher_availability, teacher_day_zones |
-| **Scheduling** | slot_reservations |
+| **Scheduling** | slot_reservations, slot_offers |
 | **Status Tracking** | enrollment_status_history |
 | **Time-Off** | teacher_time_off_requests |
 | **Pausado Requests** | pausado_requests |
@@ -23,6 +23,7 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 | **Notifications** | notifications, push_device_tokens |
 | **Parent Links** | parent_links |
 | **Teacher Credits** | teacher_credits, teacher_credit_events |
+| **Cancellation Billing** | cancellation_pending_choices, cancellation_charges, location_change_requests, location_change_responses |
 
 ## Entity Relationship Diagram
 
@@ -927,6 +928,100 @@ WHERE status = 'PAUSADO'
 - `idx_slot_offers_lead_status` - (lead_id, status)
 - `idx_slot_offers_expires` - (expires_at) WHERE status = 'pending'
 - `idx_slot_offers_pending_teacher` - (teacher_id, status) WHERE status = 'pending_teacher'
+
+---
+
+### 25. cancellation_pending_choices
+
+Tracks pending rate change choices when a group class goes from 2→1 students.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Prefixed UUID (pc_xxx) |
+| enrollment_id | TEXT FK | Remaining student's enrollment |
+| triggered_by_enrollment_id | TEXT FK | Enrollment that cancelled |
+| class_date | TEXT | Class date (YYYY-MM-DD) |
+| original_rate | INTEGER | Rate before cancellation (e.g., 120) |
+| new_rate | INTEGER | New individual rate (e.g., 150) |
+| choice_deadline | INTEGER | Unix timestamp, 24h before class |
+| choice_made | TEXT | 'CONTINUE', 'CANCEL', or NULL |
+| location_feasible | INTEGER | 1 if travel to location is feasible |
+| location_change_required | INTEGER | 1 if location host cancelled |
+| notified_at | INTEGER | When parent was notified |
+| responded_at | INTEGER | When parent responded (or NULL) |
+| auto_resolved | INTEGER | 1 if auto-resolved to CONTINUE |
+| created_at | INTEGER | Unix timestamp |
+
+**Indexes:**
+- `idx_pending_choices_deadline` - (choice_deadline) WHERE choice_made IS NULL
+
+---
+
+### 26. cancellation_charges
+
+Tracks billable cancellation charges for invoicing.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Prefixed UUID (chg_xxx) |
+| exception_id | TEXT FK | Related enrollment_exception |
+| enrollment_id | TEXT FK | Enrollment that was cancelled |
+| student_id | TEXT FK | Student being billed |
+| class_date | TEXT | Class date (YYYY-MM-DD) |
+| amount | INTEGER | Charge amount in BRL |
+| reason | TEXT | 'late_cancellation', 'no_show', etc. |
+| invoice_id | TEXT | Invoice ID when added (or NULL) |
+| created_at | INTEGER | Unix timestamp |
+
+**Indexes:**
+- `idx_cancellation_charges_pending` - (invoice_id) WHERE invoice_id IS NULL
+
+---
+
+### 27. location_change_requests
+
+Tracks location change workflow when location host cancels.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Prefixed UUID (lcr_xxx) |
+| triggered_by_exception_id | TEXT FK | Exception that triggered this |
+| class_date | TEXT | Class date (YYYY-MM-DD) |
+| group_id | TEXT FK | Group being relocated |
+| old_location_student_id | TEXT FK | Original host (who cancelled) |
+| new_location_student_id | TEXT FK | Suggested new host |
+| new_location_address | TEXT | Display address for parents |
+| travel_minutes | INTEGER | Travel time to new location |
+| status | TEXT | 'pending', 'approved', 'rejected', 'expired' |
+| approval_deadline | INTEGER | Unix timestamp, 24h before class |
+| approved_at | INTEGER | When all parents approved (or NULL) |
+| rejected_at | INTEGER | When any parent declined (or NULL) |
+| created_at | INTEGER | Unix timestamp |
+
+**Indexes:**
+- `idx_location_change_pending` - (status, approval_deadline) WHERE status = 'pending'
+
+---
+
+### 28. location_change_responses
+
+Tracks individual parent responses to location changes.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Prefixed UUID (lcrsp_xxx) |
+| request_id | TEXT FK | Parent location_change_request |
+| enrollment_id | TEXT FK | Parent's enrollment |
+| student_id | TEXT FK | Parent's student |
+| parent_email | TEXT | Parent's email address |
+| response | TEXT | 'approve', 'decline', or NULL |
+| responded_at | INTEGER | When parent responded (or NULL) |
+| created_at | INTEGER | Unix timestamp |
+
+**Behavior:**
+- ALL must approve → Location change finalized
+- ANY decline → Class cancelled for ALL (no charge)
+- Expired without all approvals → Class cancelled for ALL
 
 ---
 
