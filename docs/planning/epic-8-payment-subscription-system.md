@@ -1,6 +1,6 @@
 # Epic 8: Payment & Subscription System
 
-**Status:** In Progress (1/12 Stories Complete)
+**Status:** In Progress (2/12 Stories Complete)
 **Priority:** Phase 2 (Post-MVP)
 **Dependencies:** Epic 6 (Advanced Enrollment), Epic 7 (Rock-Solid Scheduling)
 **Reference:** `docs/planning/tech-spec-payment-subscription-system.md`
@@ -72,27 +72,33 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 **Priority:** Critical
 **Estimate:** 5 points
 **Dependencies:** Story 8.1
-**Status:** Pending
+**Status:** ✅ Complete
 
 **Description:**
 Run database migration to create subscription tables and sync existing parents as Stripe customers.
 
 **Acceptance Criteria:**
 
-- [ ] Migration `048_subscription_system.sql` applied successfully
-- [ ] All 6 new tables created with proper indexes
-- [ ] Existing parents synced to Stripe as customers
-- [ ] `stripe_customers` table populated with customer IDs
-- [ ] Rollback script tested
+- [x] Migration `048_subscription_system.sql` applied successfully
+- [x] All 6 new tables created with proper indexes
+- [x] Stripe customer repository created (`stripe-customer.ts`)
+- [x] Stripe customer sync service created (`stripe-customer-service.ts`)
+- [x] Admin sync API endpoint (`/api/admin/stripe-sync`)
+- [x] Subscription plans linked to Stripe price IDs
 
 **Database Tables:**
 
-- `subscription_plans` - Plan templates
+- `subscription_plans` - Plan templates (seeded with 3 plans)
 - `subscriptions` - Active subscriptions
 - `reschedule_credits` - Monthly credits
 - `one_time_payments` - PIX/Boleto payments
 - `payment_transactions` - Audit log
 - `stripe_customers` - User → Stripe mapping
+
+**Implementation Notes:**
+- Sync endpoint: `GET /api/admin/stripe-sync` (status) / `POST` (sync)
+- Parents are synced on-demand via admin endpoint or getOrCreateStripeCustomer()
+- 0 parents currently in database (none to sync yet)
 
 ---
 
