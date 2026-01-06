@@ -42,6 +42,7 @@
 | **See foundational business decisions** | [Brainstorming Session 2025-12-06](./reference/brainstorming-session-2025-12-06.md) |
 | **Plan Phase 2 features** | [Scheduling Improvements](./planning/brainstorm-scheduling-improvements.md) |
 | **Phase 2: AI optimization** | [Booking Optimizer Architecture](./planning/architecture-booking-optimizer.md) |
+| **Phase 2: Payment/Billing** | [Payment & Subscription Tech Spec](./planning/tech-spec-payment-subscription-system.md) |
 | **Run QA tests** | [Enrollments Test Checklist](./testing/enrollments-test-checklist.md) |
 | **Review page audit** | [Page Audit 2025-12-20](./testing/page-audit-2025-12-20.md) |
 | **Master Audit (consolidated)** | [Master Audit 2025](./testing/master-audit-2025.md) |
@@ -224,7 +225,8 @@ docs/                                 # PROJECT-LEVEL DOCUMENTATION
 │   ├── epic-7-rock-solid-scheduling.md    # Phase 2: Notifications, reliability
 │   ├── architecture-booking-optimizer.md  # Phase 2: AI scheduling optimization
 │   ├── brainstorm-scheduling-improvements.md  # Phase 2+ roadmap (Cal.com analysis)
-│   └── tech-spec-scheduling-enhancements.md   # Buffer times + time-off spec
+│   ├── tech-spec-scheduling-enhancements.md   # Buffer times + time-off spec
+│   └── tech-spec-payment-subscription-system.md  # Phase 2: Stripe billing integration
 │
 ├── reference/                        # Technical specifications
 │   ├── application-flows-v3.md       # 🔑 AI-OPTIMIZED FLOWS (Mermaid + YAML)
