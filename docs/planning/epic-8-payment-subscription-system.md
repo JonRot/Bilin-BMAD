@@ -1,6 +1,6 @@
 # Epic 8: Payment & Subscription System
 
-**Status:** In Progress (3/12 Stories Complete)
+**Status:** In Progress (4/12 Stories Complete)
 **Priority:** Phase 2 (Post-MVP)
 **Dependencies:** Epic 6 (Advanced Enrollment), Epic 7 (Rock-Solid Scheduling)
 **Reference:** `docs/planning/tech-spec-payment-subscription-system.md`
@@ -148,23 +148,30 @@ class SubscriptionService {
 **Priority:** Critical
 **Estimate:** 5 points
 **Dependencies:** Story 8.3
-**Status:** Pending
+**Status:** ✅ Complete
 
 **Description:**
 Implement webhook endpoint to handle Stripe events for payment status updates.
 
 **Acceptance Criteria:**
 
-- [ ] `POST /api/webhooks/stripe` endpoint created
-- [ ] Webhook signature verification implemented
-- [ ] Handle `customer.subscription.created` - create local record
-- [ ] Handle `customer.subscription.updated` - update status/dates
-- [ ] Handle `customer.subscription.deleted` - mark cancelled
-- [ ] Handle `invoice.paid` - update payment status
-- [ ] Handle `invoice.payment_failed` - mark past_due, send notification
-- [ ] Handle `payment_intent.succeeded` - mark one-time payment complete
-- [ ] Idempotency for duplicate webhook delivery
-- [ ] Error logging for failed webhook processing
+- [x] `POST /api/webhooks/stripe` endpoint created
+- [x] Webhook signature verification implemented
+- [x] Handle `customer.subscription.created` - create local record
+- [x] Handle `customer.subscription.updated` - update status/dates
+- [x] Handle `customer.subscription.deleted` - mark cancelled
+- [x] Handle `invoice.paid` - update payment status
+- [x] Handle `invoice.payment_failed` - mark past_due, send notification
+- [x] Handle `payment_intent.succeeded` - mark one-time payment complete
+- [x] Idempotency for duplicate webhook delivery
+- [x] Error logging for failed webhook processing
+
+**Implementation Notes:**
+- `StripeWebhookService` class handles all webhook events with idempotency checks
+- `payment-transaction.ts` repository for payment audit logging
+- `one-time-payment.ts` repository for PIX/Boleto payments
+- Full test coverage (35 tests) for all webhook handlers
+- Auto-grants reschedule credits when subscription becomes active
 
 **Security:**
 
