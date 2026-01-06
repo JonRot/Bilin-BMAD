@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2026-01-03
+**Last Updated:** 2026-01-06
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 128+ total
+**Endpoints:** 129+ total
 
 ## Overview
 
@@ -291,6 +291,79 @@ Approve/reject teacher cancellation.
 - **Auth:** Admin only
 - **CSRF:** Required
 - **Body:** `{ "action": "approve" }` or `{ "action": "reject" }`
+
+---
+
+## Reschedule Suggestions API (Story 6.7)
+
+### GET /api/enrollments/[id]/suggestions
+Get AI-powered reschedule suggestions for a cancelled class.
+- **Auth:** Admin only
+- **Query Params:**
+  - `date` (required): Original class date being rescheduled (YYYY-MM-DD)
+  - `weeks` (optional): Number of weeks to look ahead (1-4, default 2)
+  - `limit` (optional): Maximum suggestions to return (1-20, default 10)
+- **Response:**
+```json
+{
+  "suggestions": [
+    {
+      "type": "SAME_TEACHER_FREE",
+      "date": "2026-01-08",
+      "day_of_week": 3,
+      "start_time": "09:00",
+      "end_time": "10:00",
+      "teacher_id": "tea_xxx",
+      "teacher_name": "Maria S.",
+      "score": 92,
+      "score_breakdown": {
+        "travel_efficiency": 0.95,
+        "parent_preference": 0.85,
+        "time_proximity": 0.90,
+        "conflict_free": true
+      },
+      "reason": "Same teacher, fits existing route on Wednesday",
+      "warnings": []
+    }
+  ],
+  "cancelled_slots": [
+    {
+      "type": "OTHER_CANCELLED",
+      "enrollment_id": "enr_yyy",
+      "student_name": "João P.",
+      "date": "2026-01-08",
+      "start_time": "14:00",
+      "end_time": "15:00",
+      "teacher_id": "tea_xxx",
+      "teacher_name": "Maria S.",
+      "score": 78,
+      "score_breakdown": { ... },
+      "reason": "Cancelled by teacher, same neighborhood",
+      "warnings": []
+    }
+  ],
+  "enrollment": {
+    "id": "enr_xxx",
+    "student_name": "Sofia",
+    "teacher_id": "tea_xxx",
+    "teacher_name": "Maria S.",
+    "day_of_week": 1,
+    "start_time": "14:00"
+  }
+}
+```
+- **Suggestion Types:**
+  - `SAME_TEACHER_FREE`: Teacher's available (LIVRE) slots
+  - `OTHER_CANCELLED`: Cancelled slots from other students nearby
+  - `EXTRA_SLOT`: Additional makeup slots outside regular schedule
+- **Score Algorithm:**
+  - Travel efficiency (40%): How well slot fits teacher's route
+  - Parent preference (30%): Matches parent's availability windows
+  - Time proximity (20%): Closer to original date = higher score
+  - Conflict-free bonus (10%): No scheduling conflicts
+- **Errors:**
+  - `400 VALIDATION_ERROR`: Invalid enrollment ID or query params
+  - `404 NOT_FOUND`: Enrollment not found
 
 ---
 
