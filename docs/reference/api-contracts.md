@@ -750,11 +750,13 @@ Get smart student matches for a free slot.
 ```
 
 ### GET /api/slots/suggestions
-Get ghosted waitlist suggestions for LIVRE slots.
+Get waitlist suggestions for LIVRE slots with ghost/offer status (Story 6.9).
 - **Auth:** Admin only
 - **Query Params:**
   - `teacherId` (required): Teacher ID
   - `dayOfWeek`: Day of week (optional, returns all days if omitted)
+  - `startTime`: Filter to specific slot start time HH:MM (optional)
+  - `limit`: Max matches per slot (default: 5, max: 20)
   - `minScore`: Minimum match score (default: 60)
 - **Response:**
 ```json
@@ -768,13 +770,24 @@ Get ghosted waitlist suggestions for LIVRE slots.
       "duration_minutes": 120,
       "suggestions": [
         {
+          "lead_id": "wl_xxx",
           "waitlist_id": "wl_xxx",
           "student_name": "João",
           "score": 85,
+          "score_breakdown": {
+            "language": true,
+            "zone": true,
+            "schedule": true,
+            "travel": "close"
+          },
+          "neighborhood": "Centro",
+          "language": "English",
           "suggested_start": "14:00",
           "suggested_end": "15:00",
           "travel_from_prev_minutes": 15,
-          "is_sequential_fit": true
+          "is_sequential_fit": true,
+          "has_pending_offer": false,
+          "is_ghost": false
         }
       ]
     }
@@ -783,7 +796,7 @@ Get ghosted waitlist suggestions for LIVRE slots.
   "totalSuggestions": 12
 }
 ```
-- **Notes:** Returns top waitlist matches with travel time calculations for sequential scheduling
+- **Notes:** Returns top waitlist matches with travel time calculations, ghost status, and pending offer detection for one-click offer creation
 
 ---
 
