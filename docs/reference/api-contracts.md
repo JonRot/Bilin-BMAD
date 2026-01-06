@@ -3,7 +3,7 @@
 **Last Updated:** 2026-01-06
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 129+ total
+**Endpoints:** 130+ total
 
 ## Overview
 
@@ -24,7 +24,7 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | Slots | 5 | Availability grid, reservations, matches |
 | System | 5 | Closures, exceptions |
 | Calendar | 4 | Google Calendar sync |
-| Admin | 20+ | Approvals, geocoding, settings, utilities |
+| Admin | 21+ | Approvals, geocoding, relocation analysis, settings, utilities |
 | Parent | 6 | Dashboard, cancellations, pausado, feedback |
 | Notifications | 5 | List, read, read-all, push registration |
 | Change Requests | 5 | CRUD, approve/reject |
@@ -996,6 +996,63 @@ Validate location data integrity.
 - **Auth:** Admin only
 - **CSRF:** Required
 - **Notes:** Checks for invalid or inconsistent location data
+
+### POST /api/admin/relocation-preview
+Preview impact of teacher/student address change before applying.
+- **Auth:** Admin only
+- **Body:**
+```json
+{
+  "entityType": "teacher|student",
+  "entityId": "xxx",
+  "newAddress": "Rua...",
+  "newLat": -27.5954,
+  "newLon": -48.5480,
+  "newNeighborhood": "Centro"
+}
+```
+- **Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "entityType": "teacher",
+    "entityId": "xxx",
+    "entityName": "Teacher Name",
+    "oldLocation": { "lat": -27.59, "lon": -48.55, "neighborhood": "Trindade", "zone": "CENTRAL" },
+    "newLocation": { "lat": -27.60, "lon": -48.54, "neighborhood": "Centro", "zone": "CENTRAL" },
+    "totalEnrollments": 5,
+    "affectedEnrollments": 2,
+    "unaffectedEnrollments": 3,
+    "impacts": [
+      {
+        "enrollmentId": "enr_xxx",
+        "studentId": "stu_xxx",
+        "studentName": "Student Name",
+        "teacherId": "tea_xxx",
+        "teacherName": "Teacher Name",
+        "oldTravelMinutes": 25,
+        "newTravelMinutes": 50,
+        "travelChange": 25,
+        "impactType": "OUT_OF_RANGE",
+        "severity": "critical",
+        "otherPartyLocation": { "neighborhood": "Ingleses", "zone": "NORTH" }
+      }
+    ],
+    "suggestions": [
+      {
+        "enrollmentId": "enr_xxx",
+        "suggestionType": "TRANSFER_TEACHER",
+        "alternativeTeacherId": "tea_yyy",
+        "alternativeTeacherName": "Alt Teacher",
+        "alternativeTravelMinutes": 20,
+        "reason": "Transfer to Alt Teacher (20min travel)"
+      }
+    ]
+  }
+}
+```
+- **Notes:** Used to preview relocation impact before updating teacher/student address. Called automatically when address changes in PUT /api/teachers/[id] or PUT /api/students/[id].
 
 ### POST /api/admin/import-students
 Import students from CSV data.
@@ -2542,6 +2599,7 @@ Process deletion request (admin only).
 | `NOT_FOUND` | 404 | Resource not found |
 | `SLOT_CONFLICT` | 409 | Enrollment slot blocked |
 | `PAUSADO_BLOCKED` | 422 | PAUSADO cooldown active |
+| `RELOCATION_IMPACT` | 422 | Address change affects enrollments (requires acknowledgment) |
 | `VALIDATION_ERROR` | 400 | Input validation failed |
 | `RATE_LIMITED` | 429 | Too many requests |
 
