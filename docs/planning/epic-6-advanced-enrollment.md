@@ -1,10 +1,10 @@
 # Epic 6: Advanced Enrollment Features
 
-**Status:** partially-complete
+**Status:** 10/11 Stories Complete (91%)
 **Priority:** Phase 2 (Post-MVP)
 **Dependencies:** Epic 2 (Enrollment Management), Epic 3 (Schedule & Class Instances)
 **Reference:** `docs/planning/enrollment-rules-comprehensive.md`
-**Last Updated:** 2026-01-01
+**Last Updated:** 2026-01-06
 
 ---
 
@@ -424,10 +424,10 @@ Analyze impact when teacher or student moves to new location.
 | 6.3 FÉRIAS/Closures | ✅ COMPLETE | Extended to full closure system |
 | 6.4 Enhanced PAUSADO | ✅ COMPLETE | Day 18 reminder + admin escalation + dashboard badge + notifications |
 | 6.5 Cascade Impact | ✅ COMPLETE | Impact preview before schedule changes + confirmation dialog |
-| 6.6 Zone Matrix | ⬜ NOT STARTED | |
-| 6.7 AI Rescheduling | ⬜ NOT STARTED | |
-| 6.8 Group Pricing | ⬜ NOT STARTED | |
-| 6.9 Waitlist Auto-Match | ⬜ NOT STARTED | |
+| 6.6 Zone Matrix | ✅ COMPLETE | Session 135 - Zone-based travel estimation + cost optimization |
+| 6.7 AI Rescheduling | ✅ COMPLETE | Session 137 - Smart slot suggestions for reschedules |
+| 6.8 Group Pricing | ✅ COMPLETE | Session 138 - Rate notifications + degraded/at-risk indicators |
+| 6.9 Waitlist Auto-Match | ✅ COMPLETE | Session 136 - Ghost tracking + offer status + score breakdown |
 | 6.10 Teacher Credits | ✅ COMPLETE | Tier display + event tracking + completion integration |
 | 6.11 Relocation Analysis | ⬜ NOT STARTED | |
 
