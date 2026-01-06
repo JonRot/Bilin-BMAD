@@ -1,6 +1,6 @@
 # Epic 6: Advanced Enrollment Features
 
-**Status:** 10/11 Stories Complete (91%)
+**Status:** ✅ 11/11 Stories Complete (100%)
 **Priority:** Phase 2 (Post-MVP)
 **Dependencies:** Epic 2 (Enrollment Management), Epic 3 (Schedule & Class Instances)
 **Reference:** `docs/planning/enrollment-rules-comprehensive.md`
@@ -393,23 +393,32 @@ Implement teacher credit system with tiers and pay rates.
 
 ---
 
-### Story 6.11: Relocation Impact Analysis
+### Story 6.11: Relocation Impact Analysis ✅ COMPLETE
 
 **Priority:** Low
 **Estimate:** 5 points
 **Dependencies:** Story 6.6 (Zone Matrix)
+**Status:** ✅ Implemented Session 139
+
+**Implementation:**
+- `src/lib/services/relocation-impact-service.ts` - Core analysis logic
+- `src/pages/api/admin/relocation-preview.ts` - Preview API endpoint
+- `src/pages/api/teachers/[id].ts` - Integrated impact check
+- `src/pages/api/students/[id].ts` - Integrated impact check
+- `src/scripts/users-page-client.ts` - Modal handling
+- `src/pages/admin/users.astro` - Impact modal UI
 
 **Description:**
 Analyze impact when teacher or student moves to new location.
 
 **Acceptance Criteria:**
-- [ ] Teacher move: Calculate which students now OUT OF RANGE
-- [ ] Generate report: "8 of 12 students affected"
-- [ ] For each affected: suggest transfer to another teacher OR waitlist
-- [ ] Student move: Check if current teacher can still reach them
-- [ ] Check if teacher has cluster in new area (could reschedule)
-- [ ] If all fail → Find other teacher or Waitlist/INATIVO
-- [ ] 30-day notice required for teacher moves
+- [x] Teacher move: Calculate which students now OUT OF RANGE
+- [x] Generate report: "X of Y enrollments affected"
+- [x] For each affected: suggest transfer to another teacher OR waitlist
+- [x] Student move: Check if current teacher can still reach them
+- [x] Check if teacher has cluster in new area (could reschedule)
+- [x] If all fail → Find other teacher or Waitlist/INATIVO
+- [x] Analysis only mode (30-day notice deferred per user choice)
 
 **Rules Reference:** Section 14
 
@@ -429,32 +438,26 @@ Analyze impact when teacher or student moves to new location.
 | 6.8 Group Pricing | ✅ COMPLETE | Session 138 - Rate notifications + degraded/at-risk indicators |
 | 6.9 Waitlist Auto-Match | ✅ COMPLETE | Session 136 - Ghost tracking + offer status + score breakdown |
 | 6.10 Teacher Credits | ✅ COMPLETE | Tier display + event tracking + completion integration |
-| 6.11 Relocation Analysis | ⬜ NOT STARTED | |
+| 6.11 Relocation Analysis | ✅ COMPLETE | Session 139 - Impact preview + acknowledgment flow |
 
-## Remaining Story Prioritization
+## Completion Summary
 
-### Phase 2A (Next Sprint)
-| Story | Points | Priority | Notes |
-|-------|--------|----------|-------|
-| 6.4 Enhanced PAUSADO (remaining) | 3 | Medium | Just notifications |
-| 6.5 Cascade Impact | 5 | Medium | |
-| **Total** | **8** | | |
+**All 11 stories in Epic 6 are now complete!**
 
-### Phase 2B (Following Sprint)
-| Story | Points | Priority |
-|-------|--------|----------|
-| 6.9 Waitlist Auto-Match | 8 | Medium |
-| 6.10 Teacher Credits (remaining) | 5 | Low |
-| **Total** | **13** | |
-
-### Phase 2C (Future)
-| Story | Points | Priority |
-|-------|--------|----------|
-| 6.6 Zone Matrix | 13 | Medium |
-| 6.7 AI Rescheduling | 13 | Low |
-| 6.8 Group Pricing | 8 | Low |
-| 6.11 Relocation Analysis | 5 | Low |
-| **Total** | **39** | |
+| Story | Points | Session |
+|-------|--------|---------|
+| 6.1 Movie Theater Reservation | 8 | MVP |
+| 6.2 AVISO Countdown | 8 | MVP |
+| 6.3 FÉRIAS/Closures | 5 | MVP |
+| 6.4 Enhanced PAUSADO | 5 | Sessions 127-128 |
+| 6.5 Cascade Impact | 5 | Session 129 |
+| 6.6 Zone Matrix | 13 | Session 135 |
+| 6.7 AI Rescheduling | 13 | Session 137 |
+| 6.8 Group Pricing | 8 | Session 138 |
+| 6.9 Waitlist Auto-Match | 8 | Session 136 |
+| 6.10 Teacher Credits | 5 | Session 134 |
+| 6.11 Relocation Analysis | 5 | Session 139 |
+| **Total** | **83 points** | |
 
 ---
 
