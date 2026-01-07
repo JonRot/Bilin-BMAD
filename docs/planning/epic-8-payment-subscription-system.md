@@ -1,6 +1,6 @@
 # Epic 8: Payment & Subscription System
 
-**Status:** In Progress (4/12 Stories Complete)
+**Status:** In Progress (5/12 Stories Complete)
 **Priority:** Phase 2 (Post-MVP)
 **Dependencies:** Epic 6 (Advanced Enrollment), Epic 7 (Rock-Solid Scheduling)
 **Reference:** `docs/planning/tech-spec-payment-subscription-system.md`
@@ -191,22 +191,30 @@ const event = stripe.webhooks.constructEvent(
 **Priority:** High
 **Estimate:** 5 points
 **Dependencies:** Story 8.3
-**Status:** Pending
+**Status:** ✅ Complete
 
 **Description:**
 Create REST API endpoints for subscription management.
 
 **Acceptance Criteria:**
 
-- [ ] `GET /api/subscriptions` - List (admin: all, parent: own)
-- [ ] `GET /api/subscriptions/[id]` - Get details
-- [ ] `POST /api/subscriptions` - Create new subscription
-- [ ] `PUT /api/subscriptions/[id]` - Update (change plan)
-- [ ] `DELETE /api/subscriptions/[id]` - Cancel
-- [ ] `POST /api/subscriptions/[id]/pause` - Pause
-- [ ] `POST /api/subscriptions/[id]/resume` - Resume
-- [ ] Proper role-based access control
-- [ ] Zod validation schemas
+- [x] `GET /api/subscriptions` - List (admin: all, parent: own)
+- [x] `GET /api/subscriptions/[id]` - Get details
+- [x] `POST /api/subscriptions` - Create new subscription
+- [x] `PUT /api/subscriptions/[id]` - Update (change plan)
+- [x] `DELETE /api/subscriptions/[id]` - Cancel
+- [x] `POST /api/subscriptions/[id]/pause` - Pause
+- [x] `POST /api/subscriptions/[id]/resume` - Resume
+- [x] Proper role-based access control
+- [x] Zod validation schemas
+
+**Implementation Notes:**
+- `SubscriptionQuerySchema`, `CreateSubscriptionSchema`, `UpdateSubscriptionSchema`, `PauseSubscriptionSchema`, `CancelSubscriptionSchema` validation schemas
+- Admin sees all subscriptions; parents see only their children's subscriptions
+- Teachers have no access to subscription endpoints
+- CSRF token validation on all write operations
+- Rate limiting applied to all endpoints
+- Test coverage: 43 tests across 4 test files
 
 ---
 
