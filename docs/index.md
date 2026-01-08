@@ -10,19 +10,19 @@
 
 **Latest Deployment:** <https://eduschedule-app.pages.dev>
 
-**Implementation Stats (as of 2026-01-06):**
-- **28 pages** (20 admin, 5 teacher, 4 parent + cancel-choice, location-change)
-- **100+ API endpoints** across 14 categories
-- **31 reusable components** with full design system compliance
+**Implementation Stats (as of 2026-01-07):**
+- **36 pages** (22 admin, 6 teacher, 8 parent)
+- **132 API endpoints** across 15 categories
+- **37 reusable components** with full design system compliance
 - **30+ business services** with repository pattern
 - **35+ database tables** (20+ added via migrations)
 - **17 client-side TypeScript modules** in `src/scripts/`
-- **50 database migrations** applied
+- **55 database migrations** applied
 
 **Phase 2 Progress:**
 - ✅ **Epic 6 Complete** - Advanced Enrollment (11/11 stories)
-- 🔄 **Epic 7 In Progress** - Rock-Solid Scheduling (7/9 stories)
-- 🔄 **Epic 8 In Progress** - Payment System (3/12 stories)
+- ✅ **Epic 7 Complete** - Rock-Solid Scheduling (9/9 stories, WhatsApp deferred)
+- 🔄 **Epic 8 In Progress** - Payment System (11/12 stories)
 
 ---
 
@@ -272,7 +272,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 
 ## Application Routes
 
-### Admin Routes (`/admin/*`) - 20 Pages
+### Admin Routes (`/admin/*`) - 22 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
@@ -296,6 +296,10 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/admin/travel-errors` | Geocoding/route calculation error resolution | Extra |
 | `/admin/re-encrypt` | Data re-encryption tool for key rotation | Extra |
 | `/admin/import-data` | Bulk student import from JSON | Extra |
+| `/admin/resolve-errors` | Error resolution and data cleanup tool | Extra |
+| `/admin/billing` | Subscription overview: MRR, ARR, churn rate, subscription stats | Epic 8 |
+| `/admin/billing/subscriptions` | Subscription list with filters, search, bulk actions | Epic 8 |
+| `/admin/billing/transactions` | Transaction history with CSV export | Epic 8 |
 
 ### Teacher Routes (`/teacher/*`) - 6 Pages
 
@@ -308,7 +312,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/teacher/profile` | Profile info, banking (PIX/CPF), change requests | - |
 | `/teacher/invoice` | Monthly earnings: tier display, class-by-class breakdown, summary stats | FR23 |
 
-### Parent Routes (`/parent/*`) - 4 Pages
+### Parent Routes (`/parent/*`) - 8 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
@@ -316,6 +320,10 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/parent/profile` | Parent profile: account info, contact details, change requests | - |
 | `/parent/students` | Consolidated dashboard: BILIN pillars, skill ratings, class history with status, student info | FR25-27 |
 | `/parent/invoice` | Monthly billing: per-class breakdown, group rates, total due | FR29 |
+| `/parent/cancel-choice` | Rate change decision UI when group class drops to 1 student | Epic 7 |
+| `/parent/location-change` | Location approval UI when host cancels group class | Epic 7 |
+| `/parent/billing` | Subscription overview: current plan, payment methods, payment history | Epic 8 |
+| `/parent/billing/subscribe` | New subscription flow: student → class type → plan → payment | Epic 8 |
 
 ### Common Routes - 1 Page
 
@@ -323,14 +331,14 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 |-------|---------|---------|
 | `/notifications` | Notification center: filter by type/status, mark read, pagination | Extra |
 
-### API Routes (`/api/*`) - 100+ Endpoints
+### API Routes (`/api/*`) - 131 Endpoints
 
 | Category | Count | Key Endpoints | Purpose |
 |----------|-------|---------------|---------|
 | Auth | 6 | `/login`, `/logout`, `/csrf`, `/microsoft/*` | OAuth login, logout, CSRF, Microsoft SSO |
 | Admin | 16 | `/cancellations`, `/time-off-approvals`, `/geocode-*`, `/travel-errors/*` | Cancellation approval, time-off, geocoding, analytics |
 | Enrollments | 11 | `/[id]`, `/[id]/status`, `/[id]/exceptions/*`, `/[id]/completions/*` | CRUD, status, exceptions, completions |
-| Leads | 5 | `/[id]`, `/[id]/matches`, `/[id]/convert`, `/[id]/status` | Pipeline, matching, conversion |
+| Leads | 8 | `/[id]`, `/[id]/matches`, `/[id]/convert`, `/[id]/send-contract`, `/[id]/mark-signed` | Pipeline, matching, conversion, contracts |
 | Schedule | 2 | `/[teacherId]`, `/student/[studentId]` | Generated schedules |
 | Slots | 3 | `/[teacherId]`, `/matches`, `/suggestions` | Availability queries, matching |
 | Availability | 2 | `/index`, `/approvals` | Teacher availability CRUD |
@@ -341,8 +349,13 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | Change Requests | 4 | `/index`, `/count`, `/[id]/approve`, `/[id]/reject` | Change request workflow |
 | System | 1 | `/closures` | System closure management |
 | Calendar | 1 | `/events` | Google Calendar sync |
-| Webhooks | 1 | `/jotform` | JotForm lead import |
+| Webhooks | 2 | `/jotform`, `/stripe` | JotForm lead import, Stripe payment events |
 | Public | 1 | `/register` | Public registration (no auth) |
+| Subscriptions | 7 | `/subscriptions`, `/[id]`, `/[id]/pause`, `/[id]/resume` | Subscription CRUD and lifecycle |
+| Payment Methods | 5 | `/payment-methods`, `/[id]`, `/[id]/default` | Card/Boleto management |
+| Billing | 1 | `/billing/portal-session` | Stripe Customer Portal |
+| Completions | 3 | `/pending-confirmation`, `/[id]/confirm`, `/[id]/report-issue` | Teacher class confirmation |
+| Cron | 2 | `/auto-complete`, `/payment-grace` | Scheduled jobs |
 
 ---
 
@@ -515,17 +528,19 @@ These features were built during implementation but aren't in the original PRD. 
 - ✅ Story 6.8: Group Class Dynamic Pricing - Rate change notifications
 - ✅ Story 6.7: AI-Powered Rescheduling Suggestions - Smart slot suggestions
 
-**Epic 7 Progress (7/9 Stories):**
+**Epic 7 Complete (9/9 Stories, WhatsApp deferred):**
 - ✅ Cancellation System Redesign - 24h billing, sick exemptions, group cascade
 - ✅ Parent Cancel-Class integration with GroupCancellationService
 - ✅ Location change workflow for group classes
-- ⏳ Story 7.7: Parent Reschedule Slot Picker (pending)
-- ⏳ Story 7.8: Makeup Class Tracking UI (pending)
+- ✅ Story 7.7: Parent Reschedule Slot Picker - Multi-step modal with slot picker
+- ✅ Story 7.8: Makeup Class Tracking UI - Visual indicators in teacher/parent/admin views
 
-**Epic 8 Progress (3/12 Stories):**
-- ✅ Story 8.1: Stripe SDK Integration - Products, prices, webhook skeleton
-- ✅ Story 8.2: Database Migration - 6 new payment tables, customer sync
-- ✅ Story 8.3: Subscription Service Layer - StripeService + SubscriptionService
+**Epic 8 Progress (11/12 Stories):**
+- ✅ Story 8.1-8.6: Stripe SDK, Database, Service Layer, Webhooks, API, Payment Methods
+- ✅ Story 8.8: Parent Subscription UI - Billing pages, plan selector, payment methods
+- ✅ Story 8.9-8.10: Auto-Completion Cron + Teacher Confirmation UI
+- ✅ Story 8.11-8.12: Admin Billing Dashboard + Payment Reminders
+- ⏳ Story 8.7: PIX One-Time Payments (pending)
 
 **New Features:**
 - `/parent/cancel-choice.astro` - Rate change decision UI
@@ -733,4 +748,4 @@ docs/index.md (documentation map - THIS FILE)
 
 ---
 
-**Last Updated:** 2026-01-06 (Epic 6 complete, Epic 7/8 progress, 35+ tables documented)
+**Last Updated:** 2026-01-07 (Epic 8 at 11/12, page counts corrected to 36, API count 131)
