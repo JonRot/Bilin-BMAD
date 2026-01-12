@@ -2,7 +2,7 @@
 
 **Author:** Jonathan
 **Date:** 2025-12-07
-**Last Updated:** 2025-12-17
+**Last Updated:** 2026-01-12
 **Project Level:** Medium-High Complexity
 **Target Scale:** 12 teachers, 89 students, ~100 users
 **Status:** ✅ **MVP COMPLETE** - All 52 Functional Requirements Implemented
@@ -15,7 +15,10 @@ This document provides the complete epic and story breakdown for Bilin (EduSched
 
 **✅ MVP Status:** All Epics 1-5 are complete, covering 100% of MVP functional requirements. The Data Model Hardening Plan (21 issues across 6 phases) has also been completed, ensuring production-ready data integrity, performance, and compliance.
 
-**Epic 6:** Remains in Draft status for Phase 2+ advanced features (movie theater reservations, AI rescheduling, zone matrix, etc.).
+**Phase 2 Status:** Epics 6-8 implement advanced features beyond MVP:
+- **Epic 6:** ✅ Complete (11/11 stories) - Advanced Enrollment Features
+- **Epic 7:** ✅ Complete (9/9 stories, WhatsApp deferred) - Rock-Solid Scheduling
+- **Epic 8:** ✅ Complete (11/12 stories, PIX deferred) - Payment & Subscription System
 
 ### Context Validation
 
@@ -35,9 +38,14 @@ This document provides the complete epic and story breakdown for Bilin (EduSched
 | 3 | Schedule & Class Instances | Teachers see reliable schedules from enrollments | FR10-FR18, FR19-FR24 | Done |
 | 4 | Parent Experience | Parents can view child's classes and history | FR25-FR29 | Done |
 | 5 | Lead Pipeline | Admin can convert leads to enrollments | FR30-FR36 | Done |
-| **6** | **Advanced Enrollment Features** | **Double-booking prevention, AVISO/FÉRIAS automation, AI suggestions** | **Phase 2+** | **Draft** |
+| **6** | **Advanced Enrollment Features** | **Double-booking prevention, AVISO/FÉRIAS automation, AI suggestions** | **Phase 2** | **Done** |
+| **7** | **Rock-Solid Scheduling** | **Reliable cancellation/reschedule flows with notifications** | **Phase 2** | **Done** |
+| **8** | **Payment & Subscription System** | **Automated billing with Stripe integration** | **Phase 2** | **Done** |
 
-**Epic 6 Details:** See [`epic-6-advanced-enrollment.md`](./epic-6-advanced-enrollment.md) - 11 stories covering movie theater reservation, AVISO countdown, FÉRIAS tag, zone matrix, AI rescheduling, group pricing, waitlist auto-matching, teacher credits, and relocation analysis.
+**Phase 2 Epic Details:**
+- **Epic 6:** [`epic-6-advanced-enrollment.md`](./epic-6-advanced-enrollment.md) - 11 stories: slot reservations, AVISO countdown, closures, zone matrix, AI rescheduling, group pricing, waitlist matching, teacher credits, relocation analysis
+- **Epic 7:** [`epic-7-rock-solid-scheduling.md`](./epic-7-rock-solid-scheduling.md) - 9 stories: parent/teacher cancellation flows, closures, notifications, reschedule picker, makeup tracking (WhatsApp deferred)
+- **Epic 8:** [`epic-8-payment-subscription-system.md`](./epic-8-payment-subscription-system.md) - 12 stories: Stripe integration, subscriptions, payment methods, auto-completion, billing dashboard
 
 ---
 

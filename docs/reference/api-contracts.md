@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2026-01-06
+**Last Updated:** 2026-01-07
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 130+ total
+**Endpoints:** 132 total
 
 ## Overview
 
@@ -15,24 +15,29 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 |----------|-----------|-------------|
 | Authentication | 7 | Google/Microsoft OAuth, sessions, CSRF |
 | Enrollments | 14 | CRUD, status, groups, exceptions, completions |
-| Students | 8+ | CRUD, search, class history |
+| Students | 8 | CRUD, search, class history, enrollments summary |
 | Teachers | 12 | CRUD, availability, time-off, day-zones |
-| Users | 6+ | Management, roles |
-| Leads | 6+ | Pipeline, matching, conversion |
+| Users | 6 | Management, roles |
+| Leads | 8 | Pipeline, matching, conversion, contracts |
 | Offers | 5 | Waitlist auto-match offers |
 | Schedule | 4 | Generation, views |
 | Slots | 5 | Availability grid, reservations, matches |
 | System | 5 | Closures, exceptions |
 | Calendar | 4 | Google Calendar sync |
-| Admin | 21+ | Approvals, geocoding, relocation analysis, settings, utilities |
-| Parent | 6 | Dashboard, cancellations, pausado, feedback |
+| Admin | 25 | Approvals, geocoding, relocation, settings, stripe sync |
+| Parent | 7 | Dashboard, cancellations, pausado, feedback, reschedule |
 | Notifications | 5 | List, read, read-all, push registration |
 | Change Requests | 5 | CRUD, approve/reject |
 | Settings | 6 | App configuration, theme |
 | Locations | 2 | Autocomplete, reverse geocode |
 | Travel Time | 2 | Calculate, matrix |
-| Webhooks | 1 | JotForm integration |
+| Webhooks | 2 | JotForm, Stripe |
 | LGPD | 7 | Consent, data export, deletion |
+| Subscriptions | 7 | CRUD, pause, resume |
+| Payment Methods | 5 | CRUD, set default |
+| Billing | 1 | Stripe Customer Portal |
+| Completions | 3 | Teacher confirmation, report issues |
+| Cron | 2 | Auto-completion, payment grace |
 
 ## Authentication
 
@@ -569,6 +574,13 @@ Update lead details.
 - **Body:** Any fields from UpdateLeadSchema (student_name, parent_name, phone, address fields, lat, lon, etc.)
 - **Response:** Updated lead object
 - **Errors:** `404 NOT_FOUND`, `400 VALIDATION_ERROR`
+
+### DELETE /api/leads/[id]
+Delete a lead permanently.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Response:** `{ deleted: true, id: "<lead_id>" }`
+- **Errors:** `404 NOT_FOUND`, `400 VALIDATION_ERROR` (cannot delete CONTRACTED leads)
 
 ### GET /api/leads/[id]/matches
 Get suggested teacher matches.
@@ -2651,6 +2663,153 @@ Process deletion request (admin only).
 
 ---
 
+## Subscription APIs (Epic 8)
+
+### GET /api/subscriptions
+Lists subscriptions. Admin sees all; parents see only their children's subscriptions.
+- **Auth:** Admin, Parent
+- **Query:** `?status=active&student_id=xxx`
+- **Response:** `{ subscriptions: Subscription[] }`
+
+### POST /api/subscriptions
+Creates a new subscription for a student.
+- **Auth:** Admin, Parent
+- **Body:** `{ student_id, plan_id, payment_method, enrollment_id? }`
+- **Response:** `201 { subscription: Subscription, client_secret?: string }`
+
+### GET /api/subscriptions/[id]
+Gets subscription details.
+- **Auth:** Admin, Parent (own children only)
+- **Response:** `{ subscription: Subscription }`
+
+### PUT /api/subscriptions/[id]
+Updates subscription (change plan).
+- **Auth:** Admin, Parent
+- **Body:** `{ plan_id }`
+- **Response:** `{ subscription: Subscription }`
+
+### DELETE /api/subscriptions/[id]
+Cancels a subscription.
+- **Auth:** Admin, Parent
+- **Body:** `{ reason?, cancel_immediately? }`
+- **Response:** `{ success: true }`
+
+### POST /api/subscriptions/[id]/pause
+Pauses a subscription.
+- **Auth:** Admin, Parent
+- **Body:** `{ pause_end?: number }`
+- **Response:** `{ subscription: Subscription }`
+
+### POST /api/subscriptions/[id]/resume
+Resumes a paused subscription.
+- **Auth:** Admin, Parent
+- **Response:** `{ subscription: Subscription }`
+
+---
+
+## Payment Methods APIs (Epic 8)
+
+### GET /api/payment-methods
+Lists saved payment methods for the current user.
+- **Auth:** Admin, Parent
+- **Response:** `{ payment_methods: PaymentMethod[], default_payment_method_id?: string }`
+
+### POST /api/payment-methods
+Creates a SetupIntent for adding a new payment method.
+- **Auth:** Admin, Parent
+- **Response:** `{ client_secret: string }`
+
+### GET /api/payment-methods/[id]
+Gets payment method details.
+- **Auth:** Admin, Parent
+- **Response:** `{ payment_method: PaymentMethod }`
+
+### DELETE /api/payment-methods/[id]
+Removes a saved payment method.
+- **Auth:** Admin, Parent
+- **Response:** `{ success: true }`
+
+### POST /api/payment-methods/[id]/default
+Sets a payment method as the default.
+- **Auth:** Admin, Parent
+- **Response:** `{ success: true }`
+
+---
+
+## Billing APIs (Epic 8)
+
+### POST /api/billing/portal-session
+Creates a Stripe Customer Portal session for self-service management.
+- **Auth:** Parent
+- **Body:** `{ return_url?: string }`
+- **Response:** `{ url: string }`
+
+---
+
+## Completions APIs (Epic 8)
+
+### GET /api/completions/pending-confirmation
+Gets classes pending teacher confirmation.
+- **Auth:** Teacher
+- **Response:** `{ completions: PendingConfirmation[] }`
+
+### POST /api/completions/[id]/confirm
+Teacher confirms an auto-completed class.
+- **Auth:** Teacher
+- **Body:** `{ notes?: string }`
+- **Response:** `{ success: true }`
+
+### POST /api/completions/[id]/report-issue
+Teacher reports an issue with auto-completed class.
+- **Auth:** Teacher
+- **Body:** `{ issue_type: 'NO_SHOW' | 'EARLY_END', reason: string, notes?: string }`
+- **Response:** `{ success: true }`
+
+---
+
+## Cron APIs (Epic 8)
+
+### POST /api/cron/auto-complete
+Auto-marks classes as completed (called by external cron service).
+- **Auth:** `x-cron-secret` header
+- **Response:** `{ processed: number, confirmed: number }`
+
+### POST /api/cron/payment-grace
+Enforces payment grace periods and sends reminders.
+- **Auth:** `x-cron-secret` header
+- **Response:** `{ reminders_sent: number, subscriptions_paused: number }`
+
+---
+
+## Webhook APIs
+
+### POST /api/webhooks/jotform
+Handles JotForm form submissions for lead intake.
+- **Auth:** JotForm signature
+- **Body:** JotForm submission payload
+- **Response:** `200 OK`
+
+### POST /api/webhooks/stripe
+Handles Stripe webhook events for subscription and payment updates.
+- **Auth:** Stripe webhook signature (`stripe-signature` header)
+- **Events Handled:**
+  - `customer.subscription.created/updated/deleted`
+  - `invoice.paid/payment_failed`
+  - `payment_intent.succeeded`
+- **Response:** `200 OK`
+
+---
+
+## Parent APIs (Additional)
+
+### POST /api/parent/reschedule-class
+Reschedules a class to a different time slot.
+- **Auth:** Parent
+- **Body:** `{ class_instance_id, new_date, new_time, reason? }`
+- **Response:** `{ success: true, makeup_class_id: string }`
+
+---
+
 ## Error Response Format
 
 ```json
@@ -2690,4 +2849,4 @@ Process deletion request (admin only).
 
 ---
 
-**Last Updated:** 2025-12-30
+**Last Updated:** 2026-01-07

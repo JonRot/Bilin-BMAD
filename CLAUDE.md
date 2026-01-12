@@ -96,6 +96,34 @@ bmad-demo/
 
 ---
 
+## CRITICAL: Astro CSS Rules
+
+> **WARNING:** Breaking these rules will cause CSS to silently fail!
+
+### `:global()` - ONLY in `<style>` blocks
+
+```css
+/* ✅ CORRECT - Inside <style> block in .astro file */
+<style>
+  :global(.dynamic-class) { color: red; }
+</style>
+
+/* ❌ WRONG - In imported CSS file (src/styles/*.css) */
+/* This outputs literally as `:global(.class)` = INVALID CSS! */
+:global(.my-class) { color: red; }
+```
+
+**Rule:** `:global()` is an Astro-specific syntax that ONLY works inside `<style>` blocks in `.astro` files. When used in imported CSS files (`import './styles.css'`), it is NOT processed and outputs as literal text, breaking all affected selectors.
+
+### When to use what:
+
+| Location | Scoping | Use `:global()`? |
+|----------|---------|------------------|
+| `<style>` in .astro file | Scoped by default | Yes, to escape scoping |
+| Imported CSS file (`import '*.css'`) | Global by default | **NEVER** - already global |
+
+---
+
 ## MANDATORY Design System Rules
 
 > **CRITICAL:** Never hardcode styles. Always use CSS variables.
@@ -155,11 +183,16 @@ Before ending any session:
 
 **MVP COMPLETE** - All 52 FRs implemented, data model hardened, production-ready.
 
-- **26 pages** (17 admin, 4 teacher, 5 parent)
-- **80+ API endpoints**
-- **18 database tables**
+- **36 pages** (22 admin, 6 teacher, 8 parent)
+- **132 API endpoints**
+- **35+ database tables**
 - **Production:** https://eduschedule-app.pages.dev
+
+**Phase 2 Progress:**
+- Epic 6: 11/11 Complete (Advanced Enrollment)
+- Epic 7: 9/9 Complete (Rock-Solid Scheduling, WhatsApp deferred)
+- Epic 8: 11/12 Complete (Payment System)
 
 ---
 
-**Last Updated:** 2025-12-17
+**Last Updated:** 2026-01-08

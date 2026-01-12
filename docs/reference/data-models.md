@@ -1,9 +1,9 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2026-01-06
+**Last Updated:** 2026-01-07
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
-**Tables:** 28 total (11 core + 17 via migrations)
+**Tables:** 39 total (11 core + 28 via migrations)
 
 ## Overview
 
@@ -15,15 +15,17 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 |----------|--------|
 | **Core** | users, teachers, students, enrollments, enrollment_exceptions, class_completions, system_closures, leads, change_requests, audit_log, sessions |
 | **Availability** | teacher_availability, teacher_day_zones |
-| **Scheduling** | slot_reservations, slot_offers |
+| **Scheduling** | slot_reservations, slot_offers, makeup_classes |
 | **Status Tracking** | enrollment_status_history |
 | **Time-Off** | teacher_time_off_requests |
 | **Pausado Requests** | pausado_requests |
-| **Travel** | travel_time_cache, travel_time_errors, zone_travel_matrix |
+| **Travel** | travel_time_cache, travel_time_errors, zone_travel_matrix, address_cache |
 | **Notifications** | notifications, push_device_tokens |
 | **Parent Links** | parent_links |
 | **Teacher Credits** | teacher_credits, teacher_credit_events |
 | **Cancellation Billing** | cancellation_pending_choices, cancellation_charges, location_change_requests, location_change_responses |
+| **Payment & Subscription** | subscription_plans, subscriptions, stripe_customers, reschedule_credits, one_time_payments, payment_transactions |
+| **LGPD Compliance** | lgpd_consent, lgpd_deletion_requests, lgpd_export_requests |
 
 ## Entity Relationship Diagram
 
@@ -107,7 +109,9 @@ leads --> (converts to) students + enrollments
 | student_needs | TEXT | | About the student (interests, needs) |
 | teacher_id | TEXT | FOREIGN KEY | Assigned teacher ID |
 | teacher_nickname | TEXT | | Denormalized teacher name |
-| class_mode | TEXT | | Presencial Individual, Dupla/Grupo, Online |
+| class_location | TEXT | CHECK | 'Presencial' or 'Online' |
+| class_format | TEXT | CHECK | 'Individual' or 'Grupo' |
+| class_mode | TEXT | | @deprecated - use class_location + class_format |
 | plan_type | TEXT | | Semanal, Quinzenal, Trimestral |
 | level | TEXT | | Student proficiency level |
 | **Primary Parent** | | | |
@@ -168,7 +172,9 @@ leads --> (converts to) students + enrollments
 | pausado_reason | TEXT | | Reason for pause |
 | pausado_cooldown_until | INTEGER | | Unix timestamp when cooldown ends |
 | recurrence_start_date | TEXT | NOT NULL | When enrollment began (YYYY-MM-DD) |
-| class_mode | TEXT | | 'Presencial', 'Online', or 'Híbrido' |
+| class_location | TEXT | CHECK | 'Presencial' or 'Online' |
+| class_format | TEXT | CHECK | 'Individual' or 'Grupo' |
+| class_mode | TEXT | | @deprecated - use class_location + class_format |
 | plan_type | TEXT | DEFAULT 'Semanal' | 'Semanal' or 'Quinzenal' |
 | quinzenal_week | INTEGER | DEFAULT 1 | 1 or 2 for bi-weekly scheduling |
 | google_calendar_event_id | TEXT | | Linked calendar event |
@@ -327,7 +333,8 @@ ATIVO <--> PAUSADO --> CANCELADO
 | lat | REAL | | Latitude |
 | lon | REAL | | Longitude |
 | **Preferences** | | | |
-| class_mode | TEXT | | Presencial, Online, Ambos |
+| class_format | TEXT | CHECK | 'Individual' or 'Grupo' |
+| class_mode | TEXT | | @deprecated - location preference |
 | language | TEXT | | English, Spanish, etc. |
 | availability_windows | TEXT | | JSON array of time slots |
 | **Referral** | | | |
@@ -1022,6 +1029,268 @@ Tracks individual parent responses to location changes.
 - ALL must approve → Location change finalized
 - ANY decline → Class cancelled for ALL (no charge)
 - Expired without all approvals → Class cancelled for ALL
+
+---
+
+## Payment & Subscription Tables (Epic 8)
+
+### 29. subscription_plans
+
+**Purpose:** Templates for different billing options (Monthly, Semester, Annual)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Plan identifier (e.g., 'plan_monthly') |
+| name | TEXT | Display name ('Mensal', 'Semestral', 'Anual') |
+| slug | TEXT UNIQUE | URL-safe identifier ('monthly', 'semester', 'annual') |
+| billing_interval | TEXT | Always 'month' |
+| billing_interval_count | INTEGER | 1, 6, or 12 months |
+| discount_percent | INTEGER | 0, 10, or 15 |
+| reschedule_credits_per_month | INTEGER | Default 1 |
+| stripe_product_id | TEXT | Stripe product ID |
+| stripe_price_id_individual | TEXT | Stripe price for individual classes |
+| stripe_price_id_group | TEXT | Stripe price for group classes |
+| is_active | INTEGER | Whether plan is available |
+| created_at, updated_at | INTEGER | Unix timestamps |
+
+**Seed Data:** 3 plans seeded (monthly, semester, annual)
+
+---
+
+### 30. stripe_customers
+
+**Purpose:** Links users to Stripe customer accounts
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Internal ID |
+| user_id | TEXT FK | Reference to users table |
+| stripe_customer_id | TEXT UNIQUE | Stripe customer ID (cus_xxx) |
+| default_payment_method | TEXT | 'credit_card' or 'boleto' |
+| stripe_payment_method_id | TEXT | Default payment method in Stripe |
+| email | TEXT | Customer email for Stripe |
+| created_at, updated_at | INTEGER | Unix timestamps |
+
+**Indexes:** `idx_stripe_customers_user`, `idx_stripe_customers_stripe`
+
+---
+
+### 31. subscriptions
+
+**Purpose:** Active subscriptions for students
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Internal ID |
+| student_id | TEXT FK | Reference to students |
+| enrollment_id | TEXT FK | Reference to enrollments |
+| plan_id | TEXT FK | Reference to subscription_plans |
+| stripe_subscription_id | TEXT UNIQUE | Stripe subscription ID |
+| stripe_customer_id | TEXT | Stripe customer ID |
+| payment_method | TEXT | 'credit_card', 'boleto', 'pix' |
+| status | TEXT | 'pending', 'active', 'paused', 'cancelled', 'past_due', 'trialing' |
+| current_period_start | INTEGER | Period start timestamp |
+| current_period_end | INTEGER | Period end timestamp |
+| cancel_at_period_end | INTEGER | Whether to cancel at period end |
+| cancelled_at | INTEGER | When cancelled |
+| cancellation_reason | TEXT | Why cancelled |
+| pause_start, pause_end | INTEGER | Pause period timestamps |
+| base_amount_centavos | INTEGER | Monthly amount before discount |
+| discount_amount_centavos | INTEGER | Discount amount |
+| final_amount_centavos | INTEGER | Amount after discount |
+| classes_per_week | INTEGER | Classes included per week |
+| trial_end | INTEGER | Trial end timestamp |
+| metadata | TEXT | JSON for additional data |
+| created_at, updated_at | INTEGER | Unix timestamps |
+
+**Indexes:** student, enrollment, status, stripe_subscription_id, period_end
+
+---
+
+### 32. reschedule_credits
+
+**Purpose:** Monthly reschedule credits for subscription plans
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Internal ID |
+| subscription_id | TEXT FK | Reference to subscriptions |
+| enrollment_id | TEXT FK | Reference to enrollments |
+| month_year | TEXT | 'YYYY-MM' format |
+| credits_granted | INTEGER | Credits given (default 1) |
+| credits_used | INTEGER | Credits consumed |
+| expires_at | INTEGER | When credits expire |
+| created_at | INTEGER | Unix timestamp |
+
+**Indexes:** subscription, lookup (subscription + month_year), expiry
+
+---
+
+### 33. one_time_payments
+
+**Purpose:** PIX/Boleto one-time payments for pay-per-class
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Internal ID |
+| student_id | TEXT FK | Reference to students |
+| enrollment_id | TEXT FK | Reference to enrollments |
+| completion_id | TEXT FK | Reference to class_completions |
+| stripe_payment_intent_id | TEXT UNIQUE | Stripe PaymentIntent ID |
+| stripe_invoice_id | TEXT | Stripe Invoice ID |
+| payment_method | TEXT | 'pix', 'boleto', 'credit_card' |
+| amount_centavos | INTEGER | Payment amount |
+| fee_centavos | INTEGER | Stripe fee |
+| net_centavos | INTEGER | After fees |
+| status | TEXT | 'pending', 'processing', 'succeeded', 'failed', 'refunded', 'expired' |
+| pix_qr_code | TEXT | PIX QR code data |
+| pix_copy_paste | TEXT | PIX copy-paste code |
+| pix_expiration | INTEGER | PIX expiry timestamp |
+| boleto_url | TEXT | Boleto PDF URL |
+| boleto_barcode | TEXT | Boleto barcode |
+| boleto_expiration | INTEGER | Boleto due date |
+| paid_at | INTEGER | When paid |
+| failure_reason | TEXT | Why payment failed |
+| refunded_at | INTEGER | When refunded |
+| refund_amount_centavos | INTEGER | Refund amount |
+| metadata | TEXT | JSON for additional data |
+| created_at, updated_at | INTEGER | Unix timestamps |
+
+**Indexes:** student, status, stripe_payment_intent_id, completion
+
+---
+
+### 34. payment_transactions
+
+**Purpose:** Audit log for all payment events
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Internal ID |
+| subscription_id | TEXT FK | Reference to subscriptions |
+| one_time_payment_id | TEXT FK | Reference to one_time_payments |
+| student_id | TEXT FK | Reference to students |
+| stripe_payment_intent_id | TEXT | Stripe PaymentIntent ID |
+| stripe_invoice_id | TEXT | Stripe Invoice ID |
+| stripe_charge_id | TEXT | Stripe Charge ID |
+| type | TEXT | 'subscription', 'one_time', 'refund', 'adjustment' |
+| payment_method | TEXT | 'credit_card', 'boleto', 'pix' |
+| amount_centavos | INTEGER | Transaction amount |
+| fee_centavos | INTEGER | Stripe fee |
+| net_centavos | INTEGER | After fees |
+| status | TEXT | 'pending', 'succeeded', 'failed', 'refunded' |
+| failure_reason | TEXT | Why transaction failed |
+| description | TEXT | Human-readable description |
+| metadata | TEXT | JSON for additional data |
+| created_at | INTEGER | Unix timestamp |
+
+**Indexes:** subscription, one_time, student, status, created_at, type
+
+---
+
+## Scheduling Tables (Additional)
+
+### 35. makeup_classes
+
+**Purpose:** Tracks rescheduled makeup classes
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Internal ID |
+| enrollment_id | TEXT FK | Reference to enrollments |
+| original_date | TEXT | Original cancelled date (YYYY-MM-DD) |
+| makeup_date | TEXT | New makeup date (YYYY-MM-DD) |
+| makeup_time | TEXT | New makeup time (HH:MM) |
+| status | TEXT | 'SCHEDULED', 'COMPLETED', 'CANCELLED', 'NO_SHOW' |
+| source_exception_id | TEXT FK | Reference to enrollment_exceptions |
+| completed_at | INTEGER | When marked complete |
+| notes | TEXT | Admin/teacher notes |
+| created_at, updated_at | INTEGER | Unix timestamps |
+
+**Indexes:** enrollment, status, makeup_date, original_date
+
+---
+
+## Travel Tables (Additional)
+
+### 36. address_cache
+
+**Purpose:** Cache address autocomplete queries for performance
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INTEGER PK | Auto-increment ID |
+| query_hash | TEXT UNIQUE | Hash of query for lookup |
+| query_text | TEXT | Original query text |
+| query_type | TEXT | 'address' or 'cep' |
+| results_json | TEXT | Cached results |
+| hit_count | INTEGER | How many times accessed |
+| created_at | INTEGER | Unix timestamp |
+| last_accessed_at | INTEGER | Last access timestamp |
+
+**Indexes:** query_hash, created_at
+
+---
+
+## LGPD Compliance Tables
+
+### 37. lgpd_consent
+
+**Purpose:** Track user consent for data processing (LGPD compliance)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Internal ID |
+| user_id | TEXT FK | Reference to users |
+| consent_type | TEXT | 'data_processing', 'marketing', 'third_party_sharing', 'analytics' |
+| granted | INTEGER | 0 = revoked, 1 = granted |
+| granted_at | INTEGER | When consent was granted |
+| revoked_at | INTEGER | When consent was revoked |
+| ip_address | TEXT | IP at time of consent |
+| user_agent | TEXT | Browser/device info |
+| created_at, updated_at | INTEGER | Unix timestamps |
+
+**Indexes:** user, consent_type, unique(user_id, consent_type)
+
+---
+
+### 38. lgpd_deletion_requests
+
+**Purpose:** Track data deletion/anonymization requests
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Internal ID |
+| user_id | TEXT FK | Reference to users |
+| user_email | TEXT | Preserved email for record-keeping |
+| request_type | TEXT | 'full_deletion', 'anonymization', 'partial_deletion' |
+| status | TEXT | 'pending', 'approved', 'completed', 'rejected' |
+| categories | TEXT | JSON array of categories (for partial) |
+| reason | TEXT | User's reason for request |
+| admin_notes | TEXT | Admin notes on decision |
+| processed_by | TEXT FK | Admin who processed |
+| processed_at | INTEGER | When processed |
+| created_at, updated_at | INTEGER | Unix timestamps |
+
+**Indexes:** user, status
+
+---
+
+### 39. lgpd_export_requests
+
+**Purpose:** Track data portability requests
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Internal ID |
+| user_id | TEXT FK | Reference to users |
+| status | TEXT | 'pending', 'processing', 'ready', 'downloaded', 'expired' |
+| file_path | TEXT | Path to generated export file |
+| expires_at | INTEGER | When download link expires |
+| downloaded_at | INTEGER | When user downloaded |
+| created_at, updated_at | INTEGER | Unix timestamps |
+
+**Indexes:** user, status
 
 ---
 

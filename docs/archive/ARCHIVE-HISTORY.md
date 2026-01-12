@@ -210,3 +210,41 @@ eduschedule-app/
 **Archive Consolidated:** 2025-12-17
 **Total Files Removed:** 46
 **Knowledge Preserved:** This summary + code as source of truth
+
+---
+
+## Archive Cleanup - 2026-01-07
+
+### Files Deleted (redundant/outdated)
+
+| File | Reason |
+|------|--------|
+| `enrollments-test-checklist-OUTDATED.md` | Marked outdated, tests now in codebase |
+| `business-rules-validation-plan-MERGED.md` | Content merged into other docs |
+| `phase1-validation-plan-COMPLETE.md` | One-time validation, complete |
+| `Lista de espera.json` | Old seed data, no longer needed |
+
+### Files Moved to Archive (completed work)
+
+| File | Original Location | Reason |
+|------|-------------------|--------|
+| `tech-spec-scheduling-enhancements-COMPLETE.md` | planning/ | Buffer times + time-off implemented |
+| `travel-errors-improvement-plan-COMPLETE.md` | planning/ | Phase 1 complete |
+| `makeup-class-tracking-SUPERSEDED.md` | reference/ | Now in data-models.md + Epic 7 |
+| `teacher-cancellation-workflow-SUPERSEDED.md` | reference/ | Now documented in Epic 7 |
+
+### Current Archive Contents
+
+```
+archive/
+├── ARCHIVE-HISTORY.md                              ← This file
+├── brainstorming-session-2025-12-06-COMPLETE.md    ← Historical brainstorm
+├── comprehensive-diagnostic-2025-12-30-COMPLETE.md ← System diagnostic
+├── session-history.md                              ← Sessions 1-123
+├── makeup-class-tracking-SUPERSEDED.md             ← Now in Epic 7
+├── teacher-cancellation-workflow-SUPERSEDED.md     ← Now in Epic 7
+├── tech-spec-scheduling-enhancements-COMPLETE.md   ← Implemented Dec 2025
+└── travel-errors-improvement-plan-COMPLETE.md      ← Phase 1 done
+```
+
+**Cleanup By:** Claude (Opus 4.5) - Session 165

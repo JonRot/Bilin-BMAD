@@ -1,10 +1,10 @@
 # Epic 8: Payment & Subscription System
 
-**Status:** In Progress (11/12 Stories Complete)
+**Status:** ✅ Complete (11/12 Stories Complete, PIX deferred)
 **Priority:** Phase 2 (Post-MVP)
 **Dependencies:** Epic 6 (Advanced Enrollment), Epic 7 (Rock-Solid Scheduling)
 **Reference:** `docs/planning/tech-spec-payment-subscription-system.md`
-**Last Updated:** 2026-01-07
+**Last Updated:** 2026-01-12
 
 ---
 

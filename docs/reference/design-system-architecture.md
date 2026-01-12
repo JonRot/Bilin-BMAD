@@ -193,6 +193,9 @@ export const COLORS = {
   infoLight: '#E5F6FD',
   infoDark: '#1E40AF',
 
+  // Status-specific colors
+  noShow: BILIN_BRAND.coral,         // #F69897 - Soft coral for absences
+
   // Neutral Scale (Based on BILIN warm tones)
   gray: {
     50: '#FAF8F6',                   // Warmest light
@@ -749,15 +752,46 @@ import { COLORS, SPACING, FONT_SIZES, SHADOWS, BORDER_RADIUS, TRANSITIONS, Z_IND
 | **StatusBadge** | ✅ Exists | Status indicators | status, variant |
 | **Toast** | ✅ Exists | Notifications | type, message, duration |
 | **CheckboxGroup** | ✅ Exists | Checkbox grid | name, options, columns |
-| **Button** | 🆕 Create | Action buttons | variant, size, disabled, loading |
-| **Modal** | 🆕 Create | Dialog overlays | open, onClose, title, size |
-| **Table** | 🆕 Create | Data tables | columns, data, sortable |
-| **EmptyState** | 🆕 Create | No data placeholders | icon, title, description |
-| **Grid** | 🆕 Create | Layout grid | columns, gap, responsive |
-| **Container** | 🆕 Create | Page container | maxWidth, padding |
-| **Divider** | 🆕 Create | Visual separator | orientation, spacing |
-| **Avatar** | 🆕 Create | User avatar | src, name, size |
-| **Tabs** | 🆕 Create | Tab navigation | tabs, activeTab, onChange |
+| **Button** | ✅ Exists | Action buttons | variant, size, disabled, loading |
+| **Modal** | ✅ Exists | Dialog overlays | id, title, size, showClose |
+| **Table** | ✅ Exists | Data tables | striped, hoverable, bordered, compact, stickyHeader |
+| **EmptyState** | ✅ Exists | No data placeholders | icon, iconName, iconColor, message, description |
+| **StatsCard** | ✅ Exists | Dashboard KPI cards | label, value, icon, iconName, iconColor, variant, gradient, trend, trendValue |
+| **DashboardIcon** | ✅ NEW | SVG icons for dashboards (40+ icons) | name, size, color, class |
+| **FilterableTable** | ✅ Exists | Table with search/filter/sort/pagination | id, columns, data, searchPlaceholder, filterOptions, pageSize |
+| **StepperModal** | ✅ Exists | Multi-step modal dialog | id, title, steps, size, backText, nextText, finishText |
+
+#### Dashboard Icon Component (NEW)
+
+| Icon Category | Available Icons |
+|---------------|-----------------|
+| **People** | teacher, student, child, family, person, users |
+| **Schedule** | calendar, calendar-check, calendar-x, clock, hourglass, timer |
+| **Actions** | check, check-circle, x, x-circle, edit, pause, play, stop, refresh |
+| **Status** | warning, alert, info, success, sparkle, star, sun |
+| **Money** | dollar, credit-card, receipt, wallet |
+| **Location** | map-pin, home, car, route |
+| **Education** | book, clipboard, notebook, graduation |
+| **Communication** | envelope, megaphone, bell, message |
+| **Analytics** | chart, trending-up, trending-down, bar-chart |
+| **UI** | arrow-right, chevron-right, chevron-down, dots-vertical, menu |
+
+#### Skeleton Loading Components
+
+| Component | Purpose | Props |
+|-----------|---------|-------|
+| **SkeletonText** | Text placeholder with pulse animation | lines, width, size |
+| **SkeletonAvatar** | Avatar/profile image placeholder | size, shape |
+| **SkeletonCard** | Card component placeholder | variant (default, stats, user, action, compact), showImage |
+| **SkeletonTable** | Table rows placeholder | rows, cols, showHeader |
+| **SkeletonGrid** | Grid/calendar placeholder | rows, cols, variant (default, calendar, availability, cards), gap |
+
+#### Notification Components
+
+| Component | Purpose | Props |
+|-----------|---------|-------|
+| **NotificationBell** | Notification dropdown in Nav | unreadCount, notifications |
+| **NotificationIcon** | SVG icons for 33 notification types | type, size, class |
 
 ### Button Component Specification
 

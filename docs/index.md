@@ -10,19 +10,19 @@
 
 **Latest Deployment:** <https://eduschedule-app.pages.dev>
 
-**Implementation Stats (as of 2026-01-07):**
-- **36 pages** (22 admin, 6 teacher, 8 parent)
-- **132 API endpoints** across 15 categories
-- **37 reusable components** with full design system compliance
+**Implementation Stats (as of 2026-01-10):**
+- **37 pages** (23 admin, 6 teacher, 8 parent)
+- **134 API endpoints** across 16 categories
+- **40+ reusable components** with full design system compliance
 - **30+ business services** with repository pattern
-- **35+ database tables** (20+ added via migrations)
+- **38+ database tables** (21+ added via migrations)
 - **17 client-side TypeScript modules** in `src/scripts/`
-- **55 database migrations** applied
+- **58 database migrations** applied
 
 **Phase 2 Progress:**
 - ✅ **Epic 6 Complete** - Advanced Enrollment (11/11 stories)
 - ✅ **Epic 7 Complete** - Rock-Solid Scheduling (9/9 stories, WhatsApp deferred)
-- 🔄 **Epic 8 In Progress** - Payment System (11/12 stories)
+- ✅ **Epic 8 Complete** - Payment System (11/12 stories, PIX deferred)
 
 ---
 
@@ -300,6 +300,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/admin/billing` | Subscription overview: MRR, ARR, churn rate, subscription stats | Epic 8 |
 | `/admin/billing/subscriptions` | Subscription list with filters, search, bulk actions | Epic 8 |
 | `/admin/billing/transactions` | Transaction history with CSV export | Epic 8 |
+| `/admin/backups` | Backup management with manual backups and restore | Extra |
 
 ### Teacher Routes (`/teacher/*`) - 6 Pages
 
@@ -331,7 +332,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 |-------|---------|---------|
 | `/notifications` | Notification center: filter by type/status, mark read, pagination | Extra |
 
-### API Routes (`/api/*`) - 131 Endpoints
+### API Routes (`/api/*`) - 134 Endpoints
 
 | Category | Count | Key Endpoints | Purpose |
 |----------|-------|---------------|---------|
@@ -518,6 +519,52 @@ These features were built during implementation but aren't in the original PRD. 
 ---
 
 ## Recent Changes
+
+### 2026-01-10: Backup Management & Student Status UX (Session 179)
+
+**Backup Management System:**
+- Created Kinsta-style backup management page at `/admin/backups`
+- Four backup types: Full, Core Data, Configuration, Financial
+- Manual backup creation with descriptions
+- Backup history with restore functionality
+- Integration with existing GitHub Actions daily backup
+
+**Student Status 3-Dot Menu:**
+- Replaced checkbox-based status controls with 3-dot action menu on student cards
+- Menu shows status options with current status disabled
+- Immediate status application on menu selection
+- Larger student cards (56px), avatars (40px), fonts (16px)
+
+**New Features:**
+- `backup_metadata` table for tracking manual backups
+- `POST /api/backups` - Create manual backup
+- `GET /api/backups` - List all backups
+- `GET /api/backups/status` - Get backup status and statistics
+- `POST /api/backups/restore` - Restore from backup
+
+---
+
+### 2026-01-10: Class Format & Location Improvements (Sessions 177-178)
+
+**Location/Format Change Modals:**
+- Added confirmation flows for class location and format changes in enrollment edit modal
+- Location change notification system with date picker for effective date
+- Format change validation (prevents group → individual if >1 active member)
+- Online badge displayed for Online classes (blue video camera icon)
+- Online classes skip travel time calculations
+
+**Format Consistency Fixes:**
+- Fixed data consistency between `class_format` and `group_id` in enrollments table
+- Updated add-to-group/remove-from-group APIs to maintain consistency
+- Fixed 18+ enrollments with inconsistent data
+
+**Class Mode Refactoring:**
+- Split legacy `class_mode` into two separate fields: `class_location` and `class_format`
+- Added type guards: `isOnline()`, `isPresencial()`, `isGroup()`, `isIndividual()`
+- Migration 057 with CHECK constraints
+- Updated all services, repositories, components, and tests
+
+---
 
 ### 2026-01-06: Epic 6 Complete + Epic 7/8 Progress (Sessions 140-148)
 
@@ -748,4 +795,4 @@ docs/index.md (documentation map - THIS FILE)
 
 ---
 
-**Last Updated:** 2026-01-07 (Epic 8 at 11/12, page counts corrected to 36, API count 131)
+**Last Updated:** 2026-01-10 (Epic 8 Complete, 37 pages, 134 API endpoints, 58 migrations)
