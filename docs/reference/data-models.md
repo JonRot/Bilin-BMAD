@@ -138,6 +138,12 @@ leads --> (converts to) students + enrollments
 | availability_windows | TEXT | | JSON array of preferred times |
 | referral_source | TEXT | | How did they find us |
 | referral_detail | TEXT | | Referral details |
+| **Trial Tracking** | | | |
+| trial_started_at | INTEGER | | When AULA_TESTE trial began |
+| trial_contract_status | TEXT | | NULL, 'PENDING', 'ACCEPTED', 'DECLINED' |
+| trial_contract_sent_at | INTEGER | | When contract extension was sent |
+| trial_contract_responded_at | INTEGER | | When parent responded |
+| trial_contract_type | TEXT | | 'MONTHLY', 'SEMESTER', 'ANNUAL' |
 | **Metadata** | | | |
 | notes | TEXT | | Admin notes |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
@@ -145,6 +151,14 @@ leads --> (converts to) students + enrollments
 | archived_at | INTEGER | | Soft delete timestamp |
 
 **Status Values:** `ATIVO`, `AULA_TESTE`, `PAUSADO`, `AVISO`, `INATIVO` (uppercase, syncs with enrollment status)
+
+**Trial Period (AULA_TESTE):**
+- New students from lead conversion start with `AULA_TESTE` status
+- Trial period is 30 days from `trial_started_at`
+- Warning sent 7 days before trial ends
+- Contract types: MONTHLY (flexible), SEMESTER (6-month, 10% discount), ANNUAL (12-month, 15% discount)
+- On acceptance: status → ATIVO, contract dates set
+- On decline: status → INATIVO
 
 **Second Parent Login:** Both parent emails can log in via Google/Microsoft OAuth. The system auto-creates `parent_links` entries during Lead→Student conversion.
 
@@ -244,7 +258,7 @@ ATIVO <--> PAUSADO --> CANCELADO
 
 ### 6. class_completions
 
-**Purpose:** Proof of delivery for invoicing + BILIN learning feedback
+**Purpose:** Proof of delivery for invoicing + BILIN learning feedback + Historical Integrity
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -263,6 +277,11 @@ ATIVO <--> PAUSADO --> CANCELADO
 | group_members_snapshot | TEXT | NULL | JSON array of group members at completion time |
 | makeup_for_date | TEXT | NULL | Date this makeup class is for (YYYY-MM-DD) |
 | makeup_for_exception_id | TEXT | NULL, FK | Links to cancelled class exception |
+| feedback_status | TEXT | DEFAULT 'PENDING' | PENDING, SUBMITTED, SKIPPED |
+| feedback_submitted_at | INTEGER | NULL | Unix timestamp when feedback was submitted |
+| feedback_points_awarded | INTEGER | DEFAULT 0 | Points awarded for feedback timing (0 or 1) |
+| enrollment_snapshot | TEXT | NULL | JSON: enrollment state at completion time |
+| student_snapshot | TEXT | NULL | JSON: student state at completion time |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 
@@ -272,12 +291,19 @@ ATIVO <--> PAUSADO --> CANCELADO
 
 **Group Members Snapshot Format:** `[{"student_id": "xxx", "student_name": "Name", "enrollment_id": "yyy"}, ...]`
 
+**Enrollment Snapshot Format:** `{"teacher_id": "...", "teacher_nickname": "...", "hourly_rate": 95.0, ...}`
+
+**Student Snapshot Format:** `{"id": "...", "name": "...", "status": "ATIVO", "teacher_id": "...", "teacher_nickname": "..."}`
+
 **Indexes:**
 - `idx_completions_makeup_exception` on makeup_for_exception_id (partial)
 - `idx_completions_makeup_date` on makeup_for_date (partial)
 - `idx_completions_has_bilin_feedback` on (enrollment_id, class_date) WHERE bilin_pillars IS NOT NULL
+- `idx_completions_feedback_pending` on (feedback_status) WHERE feedback_status = 'PENDING'
 
 **Edit Window (FR16):** Teachers can edit notes within 7 days
+
+**Historical Integrity:** Records older than 30 days become read-only. Feedback submission earns +1 point if within 24h of class end, 0 points if later. -1 point if missed at invoice generation
 
 ---
 

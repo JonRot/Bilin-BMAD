@@ -3,7 +3,7 @@
 **Last Updated:** 2026-01-07
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 132 total
+**Endpoints:** 134 total
 
 ## Overview
 
@@ -37,7 +37,7 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | Payment Methods | 5 | CRUD, set default |
 | Billing | 1 | Stripe Customer Portal |
 | Completions | 3 | Teacher confirmation, report issues |
-| Cron | 2 | Auto-completion, payment grace |
+| Cron | 3 | Auto-completion, payment grace, feedback penalties |
 
 ## Authentication
 
@@ -1451,6 +1451,114 @@ List all exceptions for a student's enrollments.
 
 ---
 
+## Trial Contracts APIs
+
+Manage trial period tracking and contract extension workflow for AULA_TESTE students.
+
+### GET /api/trial-contracts
+List all students in trial period with status.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "trials": [{
+    "studentId": "stu_xxx",
+    "studentName": "João Silva",
+    "trialStartedAt": 1736640000,
+    "trialEndsAt": 1739232000,
+    "daysRemaining": 15,
+    "isExpired": false,
+    "isEndingSoon": false,
+    "contractStatus": null,
+    "contractType": null,
+    "statusMessage": "15 dias restantes no período de teste"
+  }],
+  "summary": {
+    "total": 5,
+    "active": 3,
+    "endingSoon": 1,
+    "expired": 1,
+    "pendingContract": 0
+  },
+  "categories": {
+    "endingSoon": ["stu_xxx"],
+    "expired": ["stu_yyy"],
+    "pendingContract": []
+  }
+}
+```
+
+### GET /api/trial-contracts/[studentId]
+Get trial status for a specific student.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "studentId": "stu_xxx",
+  "studentName": "João Silva",
+  "trialStartedAt": 1736640000,
+  "trialEndsAt": 1739232000,
+  "daysRemaining": 15,
+  "isExpired": false,
+  "isEndingSoon": false,
+  "contractStatus": null,
+  "statusMessage": "15 dias restantes no período de teste"
+}
+```
+
+### POST /api/trial-contracts/[studentId]
+Send contract extension offer to parent.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "contractType": "MONTHLY"  // or "SEMESTER", "ANNUAL"
+}
+```
+- **Response:**
+```json
+{
+  "message": "Contract extension sent successfully",
+  "studentId": "stu_xxx",
+  "studentName": "João Silva",
+  "contractType": "MONTHLY",
+  "sentAt": 1736640000,
+  "demoNote": "This is a DEMO contract. In production, this would integrate with an actual contract signing system."
+}
+```
+- **Notes:** Sets `trial_contract_status` to PENDING. Currently placeholder for future contract integration.
+
+### PUT /api/trial-contracts/[studentId]
+Accept or decline contract extension.
+- **Auth:** Admin only (future: parent portal)
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "action": "accept",  // or "decline"
+  "contractType": "SEMESTER"  // required for accept
+}
+```
+- **Response (accept):**
+```json
+{
+  "message": "Contract accepted. Student is now ATIVO.",
+  "newStatus": "ATIVO",
+  "contractType": "SEMESTER"
+}
+```
+- **Response (decline):**
+```json
+{
+  "message": "Contract declined. Student is now INATIVO.",
+  "newStatus": "INATIVO"
+}
+```
+- **Notes:** Accept transitions student status AULA_TESTE → ATIVO. Decline transitions to INATIVO.
+
+---
+
 ## Teacher APIs
 
 ### GET /api/teachers
@@ -1952,6 +2060,20 @@ Mark all user's notifications as read.
 - **Auth:** Required
 - **CSRF:** Required
 - **Response:** `{ "success": true, "markedAsRead": 5 }`
+
+### POST /api/notifications/read-by-type
+Mark all notifications of a specific type as read for the authenticated user.
+- **Auth:** Required
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "type": "ADMIN_CANCELLATION_ALERT"
+}
+```
+- **Response:** `{ "success": true, "updated": 3 }`
+- **Errors:** `400 VALIDATION_ERROR` if type not provided, `404 NOT_FOUND` if user not found
+- **Notes:** Used by cancellations page to auto-mark notifications as read when viewing
 
 ---
 
@@ -2765,6 +2887,55 @@ Teacher reports an issue with auto-completed class.
 - **Body:** `{ issue_type: 'NO_SHOW' | 'EARLY_END', reason: string, notes?: string }`
 - **Response:** `{ success: true }`
 
+### POST /api/completions/[id]/feedback
+Submit teacher feedback for a completed class.
+- **Auth:** Teacher
+- **Validation:** Class must be COMPLETED, not historically locked (>30 days), teacher must own enrollment
+- **Body:** `{ notes?: string, bilin_pillars?: BilinPillar[], skill_ratings?: SkillRatings }`
+- **Response:**
+  ```json
+  {
+    "completion": {
+      "id": "string",
+      "enrollment_id": "string",
+      "class_date": "YYYY-MM-DD",
+      "class_time": "HH:MM",
+      "feedback_status": "SUBMITTED",
+      "feedback_submitted_at": 1234567890,
+      "feedback_points_awarded": 1
+    },
+    "credit": {
+      "event_type": "FEEDBACK_ON_TIME" | "FEEDBACK_LATE",
+      "points": 0 | 1
+    }
+  }
+  ```
+
+### POST /api/completions/[id]/no-show
+Mark a class completion as NO_SHOW (student did not attend).
+- **Auth:** Teacher
+- **Validation:** Class must be in the past, not historically locked (>30 days), teacher must own enrollment
+- **Body:** `{ notes?: string }`
+- **Response:**
+  ```json
+  {
+    "completion": {
+      "id": "string",
+      "enrollment_id": "string",
+      "class_date": "YYYY-MM-DD",
+      "class_time": "HH:MM",
+      "status": "NO_SHOW",
+      "feedback_status": "SUBMITTED",
+      "feedback_submitted_at": 1234567890,
+      "feedback_points_awarded": 1
+    },
+    "credit": {
+      "event_type": "NO_SHOW_ON_TIME" | "NO_SHOW_LATE",
+      "points": 0 | 1
+    }
+  }
+  ```
+
 ---
 
 ## Cron APIs (Epic 8)
@@ -2778,6 +2949,16 @@ Auto-marks classes as completed (called by external cron service).
 Enforces payment grace periods and sends reminders.
 - **Auth:** `x-cron-secret` header
 - **Response:** `{ reminders_sent: number, subscriptions_paused: number }`
+
+### POST /api/cron/feedback-penalties
+Applies penalties for missed teacher feedback. Runs daily, marks PENDING feedback as SKIPPED after 30 days and applies -1 point penalty to teacher.
+- **Auth:** `x-cron-secret` header
+- **Schedule:** Daily (recommended 2:00 AM)
+- **Response:** `{ success: true, result: { processed: number, penaltiesApplied: number, errors: number } }`
+
+### GET /api/cron/feedback-penalties
+Returns endpoint documentation and status.
+- **Response:** `{ endpoint: string, method: string, description: string, schedule: string, feedbackDeadlineDays: 30 }`
 
 ---
 
