@@ -658,16 +658,44 @@ WHERE status = 'PAUSADO'
 
 ### 17. travel_time_errors
 
-**Purpose:** Track failed travel time API calls
+**Purpose:** Track travel time calculation issues for admin review and resolution
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | TEXT | PRIMARY KEY | Error ID |
-| origin | TEXT | NOT NULL | Origin that failed |
-| destination | TEXT | NOT NULL | Destination that failed |
-| error_code | TEXT | NOT NULL | API error code |
+| error_type | TEXT | NOT NULL, CHECK | Error classification (see below) |
+| context_type | TEXT | NOT NULL, CHECK | 'enrollment_travel', 'suggestion_preview', 'lead_matching' |
+| teacher_id | TEXT | FK | Related teacher |
+| student_id | TEXT | FK | Related student |
+| lead_id | TEXT | FK | Related lead |
+| enrollment_id | TEXT | FK | Related enrollment |
+| origin_description | TEXT | | e.g., "Student João's home (Trindade)" |
+| origin_lat | REAL | | Origin latitude |
+| origin_lon | REAL | | Origin longitude |
+| dest_description | TEXT | | e.g., "Student Maria's home (Centro)" |
+| dest_lat | REAL | | Destination latitude |
+| dest_lon | REAL | | Destination longitude |
 | error_message | TEXT | | Error details |
+| api_response | TEXT | | Raw API response if applicable |
+| calculated_minutes | INTEGER | | Calculated time (for anomalies) |
+| expected_minutes | INTEGER | | Expected time (for anomalies) |
+| status | TEXT | NOT NULL, DEFAULT 'PENDING' | 'PENDING', 'REVIEWED', 'RESOLVED', 'IGNORED' |
+| resolved_by | TEXT | | Admin who resolved |
+| resolved_at | INTEGER | | Resolution timestamp |
+| resolution_notes | TEXT | | Admin notes |
 | created_at | INTEGER | NOT NULL | Unix timestamp |
+
+**Error Types:**
+- `MISSING_ORIGIN_COORDS` - Origin location missing lat/lon
+- `MISSING_DEST_COORDS` - Destination location missing lat/lon
+- `API_ERROR` - Google Routes API failure
+- `ANOMALY_HIGH_TIME` - Travel time seems too high (> 60 min)
+- `ANOMALY_LOW_TIME` - Travel time seems too low (< 2 min for distant locations)
+- `GEOCODE_FAILED` - Address couldn't be geocoded
+- `COORDS_OUT_OF_REGION` - Coordinates too far from Florianópolis (> 150km)
+- `ESTIMATE_USED` - Tier 3 Haversine estimate used (API failed)
+
+**Indexes:** status, created_at, teacher_id, student_id
 
 ---
 
