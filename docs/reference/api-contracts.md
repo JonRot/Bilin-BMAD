@@ -1189,6 +1189,104 @@ Bulk update lead statuses from spreadsheet export.
 
 ---
 
+## Backup APIs
+
+### GET /api/backups
+List all backup records.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "backups": [
+    {
+      "id": "bkp_1234567890_abc123",
+      "backup_type": "full",
+      "description": "Backup Automático Diário - 16/01/2026",
+      "status": "completed",
+      "trigger_type": "scheduled",
+      "github_run_id": "12345678901",
+      "file_size": 1048576,
+      "created_at": 1737043200
+    }
+  ]
+}
+```
+
+### POST /api/backups
+Create a new manual backup (triggers GitHub Actions workflow).
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "backup_type": "full",
+  "description": "Manual backup before update",
+  "tables_included": ["all"]
+}
+```
+- **Response:** `{ "success": true, "backup_id": "bkp_xxx", "message": "Backup iniciado via GitHub Actions" }`
+
+### DELETE /api/backups/[id]
+Delete a backup record.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Notes:** Records GitHub run ID in `deleted_backup_runs` table to prevent re-sync
+- **Response:** `{ "success": true, "message": "Backup excluído com sucesso" }`
+
+### POST /api/backups/restore
+Restore database from a backup (triggers GitHub Actions workflow).
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "backup_id": "bkp_xxx",
+  "confirmation": true
+}
+```
+- **Response:**
+```json
+{
+  "message": "Restauração iniciada via GitHub Actions. Isso pode levar alguns minutos.",
+  "backup_id": "bkp_xxx",
+  "safety_backup_id": "safety_xxx",
+  "warning": "Um backup de segurança será criado automaticamente antes da restauração."
+}
+```
+- **Notes:** Creates a safety backup before restore. Monitor progress in GitHub Actions.
+
+### POST /api/backups/restore-webhook
+Webhook endpoint for GitHub Actions to report restore status.
+- **Auth:** GitHub webhook (X-GitHub-Event header required)
+- **Body:**
+```json
+{
+  "backup_id": "bkp_xxx",
+  "status": "completed",
+  "github_run_id": "12345678901",
+  "message": "Database restored successfully"
+}
+```
+- **Response:** `{ "success": true, "restore_log_id": "restore_xxx" }`
+
+### POST /api/backups/sync
+Sync GitHub workflow runs to backup_metadata table.
+- **Auth:** Admin only
+- **Notes:** Imports missing backup records from GitHub. Excludes deleted runs.
+- **Response:**
+```json
+{
+  "message": "Synced 5 backup(s) from GitHub",
+  "synced": 5,
+  "skipped": 0,
+  "total_in_github": 15,
+  "already_in_db": 8,
+  "deleted_excluded": 2
+}
+```
+
+---
+
 ## Admin Invoice APIs
 
 ### GET /api/admin/invoices/summary

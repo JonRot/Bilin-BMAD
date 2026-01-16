@@ -1348,6 +1348,46 @@ Tracks individual parent responses to location changes.
 
 ---
 
+## Backup Tables
+
+### 40. backup_metadata
+
+**Purpose:** Track database backup records and their metadata
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Backup ID (e.g., bkp_1234567890_abc123) |
+| backup_type | TEXT | 'full', 'core', 'config', 'financial', 'restore' |
+| description | TEXT | Human-readable description |
+| created_by | TEXT | User ID who created |
+| created_by_email | TEXT | Email of creator |
+| created_at | INTEGER | Unix timestamp |
+| status | TEXT | 'pending', 'in_progress', 'completed', 'failed' |
+| trigger_type | TEXT | 'manual', 'scheduled', 'restore', 'restore-safety' |
+| github_run_id | TEXT | GitHub Actions workflow run ID |
+| file_size | INTEGER | Size in bytes |
+| error_message | TEXT | Error details if failed |
+| notes | TEXT | Additional notes |
+
+**Indexes:** created_at DESC, status, trigger_type
+
+---
+
+### 41. deleted_backup_runs
+
+**Purpose:** Track deleted backup GitHub run IDs to prevent re-import after sync
+
+| Column | Type | Description |
+|--------|------|-------------|
+| github_run_id | TEXT PK | GitHub Actions run ID |
+| deleted_at | INTEGER | Unix timestamp when deleted |
+| deleted_by | TEXT | User ID who deleted |
+| deleted_by_email | TEXT | Email of deleter |
+
+**Indexes:** deleted_at DESC
+
+---
+
 ## Database Triggers
 
 The following triggers enforce business rules and data integrity:
@@ -1388,4 +1428,4 @@ Auto-update `updated_at` on record changes:
 
 ---
 
-**Last Updated:** 2025-12-30
+**Last Updated:** 2026-01-16
