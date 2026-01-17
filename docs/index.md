@@ -10,14 +10,14 @@
 
 **Latest Deployment:** <https://eduschedule-app.pages.dev>
 
-**Implementation Stats (as of 2026-01-15):**
-- **37 pages** (23 admin, 6 teacher, 8 parent)
-- **138 API endpoints** across 17 categories
-- **40+ reusable components** with full design system compliance
-- **30+ business services** with repository pattern
-- **38+ database tables** (21+ added via migrations)
+**Implementation Stats (as of 2026-01-17):**
+- **40 pages** (24 admin, 7 teacher, 8 parent, 1 common)
+- **154 API endpoints** across 17 categories
+- **73 reusable components** with full design system compliance
+- **75 business services** with repository pattern
+- **40+ database tables** (25+ added via migrations)
 - **17 client-side TypeScript modules** in `src/scripts/`
-- **69 database migrations** applied
+- **73 database migrations** applied
 
 **Phase 2 Progress:**
 - ✅ **Epic 6 Complete** - Advanced Enrollment (11/11 stories)
@@ -41,6 +41,7 @@
 | Build the iOS/Android wrapper | [Native Shell](../native-shell/) |
 | Build/debug API endpoints | [API Contracts](./reference/api-contracts.md) |
 | Modify database schema | [Data Models](./reference/data-models.md) |
+| **Change a cross-cutting feature** | [Feature Maps](./reference/feature-maps.md) |
 | Build UI components | [Design System](./reference/design-system-architecture.md) |
 | Set up local dev | [Development Guide](./reference/development-guide.md) |
 | Understand BILIN business rules | [Business Context](./reference/business-context.md) |
@@ -237,6 +238,7 @@ docs/                                 # PROJECT-LEVEL DOCUMENTATION
 │   ├── application-flows-v3.md       # 🔑 AI-OPTIMIZED FLOWS (Mermaid + YAML)
 │   ├── api-contracts.md              # REST API documentation (80+ endpoints)
 │   ├── data-models.md                # Database schema (22 tables)
+│   ├── feature-maps.md               # Cross-cutting feature impact maps
 │   ├── design-system-architecture.md # CSS variables, components ✅ Implemented
 │   ├── development-guide.md          # Setup instructions
 │   ├── business-context.md           # BILIN domain knowledge
@@ -272,7 +274,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 
 ## Application Routes
 
-### Admin Routes (`/admin/*`) - 22 Pages
+### Admin Routes (`/admin/*`) - 24 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
@@ -301,8 +303,9 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/admin/billing/subscriptions` | Subscription list with filters, search, bulk actions | Epic 8 |
 | `/admin/billing/transactions` | Transaction history with CSV export | Epic 8 |
 | `/admin/backups` | Backup management with manual backups and restore | Extra |
+| `/admin/profile-changes` | Profile change history and review (auto-approved) | Extra |
 
-### Teacher Routes (`/teacher/*`) - 6 Pages
+### Teacher Routes (`/teacher/*`) - 7 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
@@ -310,8 +313,9 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/teacher/schedule` | Weekly schedule: start/complete class, cancellation requests, time-off, earnings | FR19, FR22-23 |
 | `/teacher/student/[id]` | Student detail: class history with full editing (status, notes, BILIN, skills) | - |
 | `/teacher/availability` | LIVRE/BLOCKED grid: day-zone selectors, potential earnings calculation | FR20-21 |
-| `/teacher/profile` | Profile info, banking (PIX/CPF), change requests | - |
+| `/teacher/profile` | Profile info, banking (PIX/CPF), change requests, teaching preferences | - |
 | `/teacher/invoice` | Monthly earnings: tier display, class-by-class breakdown, summary stats | FR23 |
+| `/teacher/time-off` | Time-off request management and history | Extra |
 
 ### Parent Routes (`/parent/*`) - 8 Pages
 
@@ -332,7 +336,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 |-------|---------|---------|
 | `/notifications` | Notification center: filter by type/status, mark read, pagination | Extra |
 
-### API Routes (`/api/*`) - 134 Endpoints
+### API Routes (`/api/*`) - 154 Endpoints
 
 | Category | Count | Key Endpoints | Purpose |
 |----------|-------|---------------|---------|
@@ -402,7 +406,7 @@ All architecture decisions follow the [Edge Architecture Spec](./claude-edge-arc
 
 ---
 
-## Database Tables (35+ Total)
+## Database Tables (40+ Total)
 
 ### Core Tables (9)
 
@@ -512,13 +516,94 @@ These features were built during implementation but aren't in the original PRD. 
 |---------|----------------|---------|
 | **Notifications** | `notifications` table + bell UI | In-app notifications for cancellations, approvals |
 | **Group Billing** | `actual_rate`, `effective_group_size` | Variable pricing for group classes (2=R$110, 3+=R$90) |
-| **Travel Time Cache** | `travel_time_cache` table | 30-day cache for driving times (LocationIQ API) |
+| **Travel Time Cache** | `travel_time_cache` table | 30-day cache for driving times (Google Routes API) |
 | **City-Specific Closures** | `city_id` in closures | Different holidays for different cities |
 | **Makeup Tracking** | `makeup_for_exception_id` | Link makeup classes to original cancellation |
 
 ---
 
 ## Recent Changes
+
+### 2026-01-17: Address Fields Extended + Teacher Profile Enhancements
+
+**Address Fields Extended to Students and Leads:**
+- Added `address_number` and `address_complement` columns to students and leads tables
+- Updated forms to use separate address fields (CEP, state, number, complement)
+- Updated validation schemas and repositories
+
+**Teacher Profile Page Redesign (`/teacher/profile`):**
+- Full parity with admin edit modal: email, phone, birth date, address (with geocoding), languages, cities, teaching preferences, CPF, PIX key
+- Critical change warnings for address/language/city changes
+- Enrollment-based restrictions (grayed checkboxes) for active enrollments
+- Admin notification on profile changes via NotificationService
+
+**Location Services Standardization:**
+- Completely removed LocationIQ, standardized on Google APIs
+- Travel time now uses Google Routes Essentials (free tier)
+- All geocoding uses Google Geocoding API
+
+**Profile Changes Auto-Approval:**
+- `/admin/approvals` → `/admin/profile-changes` (auto-approve with history)
+- `/admin/pausado-approvals` shows history with timeline
+- Address change alerts with confirmation dialogs
+
+**Backup Restore via GitHub Actions:**
+- New `restore-backup.yml` workflow for database restoration
+- `deleted_backup_runs` table to track deleted backups
+- Restore webhook for status updates
+
+---
+
+### 2026-01-15: Travel Time System Upgrade + Performance Optimization
+
+**Google Routes API Integration:**
+- Switched to Google Routes Essentials API for travel time calculations
+- Tier 3 (estimate) visual indicator with orange/warning styling
+- Auto-error logging + super admin notifications for travel issues
+- Coordinate region validation (150km from Florianópolis)
+- New error types: `ESTIMATE_USED`, `COORDS_OUT_OF_REGION`
+
+**Performance Optimization (80% Faster):**
+- Admin enrollments page: 6.7s → 1.4s TTFB
+- On-demand suggestions loading (button instead of auto-load)
+- Added `findByIdsMinimal()` and `findAllMinimal()` to skip PII decryption
+- Parallelized page queries with `Promise.all()`
+- Batched travel time API calls
+
+---
+
+### 2026-01-13: Historical Integrity & Feedback System
+
+**Historical Integrity System:**
+- New tables: `student_status_history`, `teacher_availability_history`
+- Type 2 SCD pattern with valid_from/valid_to for point-in-time queries
+- Auto-triggers to capture status changes
+- Historical lock: Classes >30 days old cannot be edited
+
+**Teacher Feedback System:**
+- `feedback_status` (PENDING/SUBMITTED/SKIPPED) on class completions
+- Feedback bonus window (24h for +1 credit point)
+- New API: `POST /api/completions/[id]/feedback`, `POST /api/completions/[id]/no-show`
+- Cron endpoint for feedback penalties
+
+**Teacher Cancellations Auto-Approval:**
+- Cancellations auto-approved without admin review
+- Uses `system-auto` or `system-auto-sick` tags
+- Notifications sent immediately to admins and parents
+
+---
+
+### 2026-01-12: Trial Tracking System
+
+**AULA_TESTE Trial Period Tracking:**
+- New columns: `trial_started_at`, `trial_contract_status`, `trial_contract_sent_at`
+- 30-day trial period with 7-day warning
+- Contract types: MONTHLY, SEMESTER (10% off), ANNUAL (15% off)
+- Accept/Decline workflow transitions to ATIVO/INATIVO
+- "Aula Teste" tab in Users page for trial management
+- New APIs: `/api/trial-contracts` endpoints
+
+---
 
 ### 2026-01-10: Backup Management & Student Status UX (Session 179)
 
@@ -747,6 +832,7 @@ Where to find and store different types of information:
 | **How to build (architecture)** | `architecture.md` | `reference/api-contracts.md` |
 | **Business rules (enrollment)** | `planning/enrollment-rules-comprehensive.md` | `reference/business-context.md` |
 | **Database schema** | `reference/data-models.md` | Code: `database/migrations/` |
+| **Cross-cutting features** | `reference/feature-maps.md` | Change impact analysis |
 | **API endpoints** | `reference/api-contracts.md` | Code: `src/pages/api/` |
 | **UI patterns** | `reference/design-system-architecture.md` | Code: `src/components/` |
 | **System flows** | `reference/application-flows-v3.md` | Code: `src/lib/services/` |
@@ -795,4 +881,4 @@ docs/index.md (documentation map - THIS FILE)
 
 ---
 
-**Last Updated:** 2026-01-15 (Travel Time Error System Complete, 37 pages, 138 API endpoints, 69 migrations)
+**Last Updated:** 2026-01-17 (Address Fields Extended, 40 pages, 154 API endpoints, 73 migrations)

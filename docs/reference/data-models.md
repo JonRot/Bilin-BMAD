@@ -1,9 +1,9 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2026-01-07
+**Last Updated:** 2026-01-17
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
-**Tables:** 39 total (11 core + 28 via migrations)
+**Tables:** 44 total (11 core + 33 via migrations)
 
 ## Overview
 
@@ -14,9 +14,9 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 | Category | Tables |
 |----------|--------|
 | **Core** | users, teachers, students, enrollments, enrollment_exceptions, class_completions, system_closures, leads, change_requests, audit_log, sessions |
-| **Availability** | teacher_availability, teacher_day_zones |
+| **Availability** | teacher_availability, teacher_day_zones, teacher_availability_history |
 | **Scheduling** | slot_reservations, slot_offers, makeup_classes |
-| **Status Tracking** | enrollment_status_history |
+| **Status Tracking** | enrollment_status_history, student_status_history |
 | **Time-Off** | teacher_time_off_requests |
 | **Pausado Requests** | pausado_requests |
 | **Travel** | travel_time_cache, travel_time_errors, zone_travel_matrix, address_cache |
@@ -26,6 +26,8 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 | **Cancellation Billing** | cancellation_pending_choices, cancellation_charges, location_change_requests, location_change_responses |
 | **Payment & Subscription** | subscription_plans, subscriptions, stripe_customers, reschedule_credits, one_time_payments, payment_transactions |
 | **LGPD Compliance** | lgpd_consent, lgpd_deletion_requests, lgpd_export_requests |
+| **Data Quality** | data_issues |
+| **Backup System** | backup_metadata, deleted_backup_runs |
 
 ## Entity Relationship Diagram
 
@@ -78,10 +80,23 @@ leads --> (converts to) students + enrollments
 | phone | TEXT | | Teacher phone (ENCRYPTED) |
 | cpf_encrypted | TEXT | | Encrypted Brazilian CPF |
 | pix_key_encrypted | TEXT | | Encrypted PIX payment key |
-| address_encrypted | TEXT | | Encrypted home address |
+| address_encrypted | TEXT | | Encrypted home address (street name) |
+| address_number | TEXT | | House/building number |
+| address_complement | TEXT | | Apartment, unit, floor |
+| neighborhood | TEXT | | Neighborhood name |
+| city | TEXT | | City name |
+| state | TEXT | | State abbreviation (e.g., SC, SP) |
+| postal_code | TEXT | | Postal code (CEP) |
+| lat | REAL | | Latitude coordinate |
+| lon | REAL | | Longitude coordinate |
+| location_stable | INTEGER | DEFAULT 0 | 1=geocoded address confirmed |
 | birth_date | TEXT | | Birth date (ISO 8601) |
 | languages | TEXT | | JSON array: `["English", "Spanish"]` |
 | teaching_cities | TEXT | | JSON array of cities served |
+| teaches_presencial | INTEGER | DEFAULT 1 | 1=teaches in-person |
+| teaches_online | INTEGER | DEFAULT 0 | 1=teaches online |
+| teaches_individual | INTEGER | DEFAULT 1 | 1=teaches individual classes |
+| teaches_group | INTEGER | DEFAULT 0 | 1=teaches group classes |
 | active | INTEGER | NOT NULL, DEFAULT 1 | Active status |
 | join_date | TEXT | | Date teacher joined |
 | contract_date | TEXT | | Contract signing date |
@@ -105,6 +120,8 @@ leads --> (converts to) students + enrollments
 | status | TEXT | NOT NULL, CHECK | See status values below |
 | birth_date | TEXT | | Birth date |
 | address_encrypted | TEXT | | Encrypted student address |
+| address_number | TEXT | | House/building number |
+| address_complement | TEXT | | Apartment, unit, floor |
 | allergies_encrypted | TEXT | | Encrypted allergy info |
 | student_needs | TEXT | | About the student (interests, needs) |
 | teacher_id | TEXT | FOREIGN KEY | Assigned teacher ID |
@@ -132,6 +149,8 @@ leads --> (converts to) students + enrollments
 | image_permission | INTEGER | | Can post student photos (0/1) |
 | neighborhood | TEXT | | Student neighborhood |
 | city | TEXT | | Student city |
+| state | TEXT | | State (e.g., SC) |
+| postal_code | TEXT | | CEP postal code |
 | lat | REAL | | Latitude for travel time |
 | lon | REAL | | Longitude for travel time |
 | **From Lead (preserved during conversion)** | | | |
@@ -352,6 +371,8 @@ ATIVO <--> PAUSADO --> CANCELADO
 | student_in_school | INTEGER | | Currently in school (0/1) |
 | **Location** | | | |
 | address_encrypted | TEXT | | Encrypted home address |
+| address_number | TEXT | | House/building number |
+| address_complement | TEXT | | Apartment, unit, floor |
 | neighborhood | TEXT | | Neighborhood for matching |
 | city | TEXT | NOT NULL, DEFAULT | City (default: Florianópolis) |
 | state | TEXT | | State (e.g., SC) |
@@ -603,7 +624,29 @@ WHERE status = 'PAUSADO'
 
 ---
 
-### 14. enrollment_status_history
+### 14. teacher_availability_history
+
+**Purpose:** Track availability changes for historical schedule views
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | History ID (tah_xxx) |
+| teacher_id | TEXT | NOT NULL, FK | References teachers(id) |
+| day_of_week | INTEGER | NOT NULL, CHECK 0-6 | Day of week |
+| start_time | TEXT | NOT NULL | Start time HH:MM |
+| end_time | TEXT | NOT NULL | End time HH:MM |
+| slot_type | TEXT | NOT NULL, CHECK | 'LIVRE', 'BLOCKED', 'ENROLLED' |
+| valid_from | TEXT | NOT NULL | Start date (YYYY-MM-DD) |
+| valid_to | TEXT | | End date (NULL = current) |
+| is_current | INTEGER | DEFAULT 0 | 1 = current active record |
+| changed_by | TEXT | | User who made change |
+| created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+
+**Type 2 SCD Pattern:** Uses valid_from/valid_to for historical point-in-time queries.
+
+---
+
+### 15. enrollment_status_history
 
 **Purpose:** Audit trail for enrollment status changes (compliance)
 
@@ -620,7 +663,35 @@ WHERE status = 'PAUSADO'
 
 ---
 
-### 15. teacher_time_off_requests
+### 15. student_status_history
+
+**Purpose:** Audit trail for student status changes (historical integrity)
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | History ID (ssh_xxx) |
+| student_id | TEXT | NOT NULL, FK | References students(id) |
+| status | TEXT | NOT NULL, CHECK | Student status at this point |
+| teacher_id | TEXT | FK | Assigned teacher at this point |
+| teacher_nickname | TEXT | | Teacher name at this point |
+| class_location | TEXT | CHECK | 'Presencial' or 'Online' |
+| class_format | TEXT | CHECK | 'Individual' or 'Grupo' |
+| valid_from | TEXT | NOT NULL | Start date (YYYY-MM-DD) |
+| valid_to | TEXT | | End date (NULL = current) |
+| is_current | INTEGER | DEFAULT 0 | 1 = current active record |
+| changed_by | TEXT | | User who made change |
+| change_reason | TEXT | | Why the change was made |
+| created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+
+**Type 2 SCD Pattern:** Uses valid_from/valid_to for historical point-in-time queries.
+
+**Triggers:**
+- `trg_student_status_history_insert` - Auto-creates history on status change
+- `trg_student_teacher_history_insert` - Auto-creates history on teacher change
+
+---
+
+### 16. teacher_time_off_requests
 
 **Purpose:** Teacher vacation/time-off requests
 
@@ -1348,9 +1419,50 @@ Tracks individual parent responses to location changes.
 
 ---
 
+## Data Quality Tables
+
+### 42. data_issues
+
+**Purpose:** Unified tracking of data quality issues across all entity types
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | Issue ID |
+| entity_type | TEXT | NOT NULL, CHECK | 'lead', 'student', 'teacher' |
+| entity_id | TEXT | NOT NULL | ID of the affected entity |
+| category | TEXT | NOT NULL, CHECK | Issue category (see below) |
+| error_type | TEXT | NOT NULL | Specific error type within category |
+| error_message | TEXT | | Human-readable error description |
+| severity | TEXT | NOT NULL, DEFAULT 'warning' | 'critical', 'warning', 'info' |
+| status | TEXT | NOT NULL, DEFAULT 'PENDING' | 'PENDING', 'RESOLVED' |
+| resolved_at | INTEGER | | Resolution timestamp |
+| resolved_by | TEXT | | User who resolved |
+| context | TEXT | | JSON additional context |
+| created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
+
+**Categories:**
+- `location` - Missing coordinates, geocoding failures, address issues
+- `contact` - Missing phone, email, or WhatsApp
+- `incomplete` - Missing parent name, student name, etc.
+- `invalid` - Invalid formats (phone, email, dates)
+- `travel` - Anomalies in travel time calculations
+
+**Error Types by Category:**
+- Location: `MISSING_COORDS`, `GEOCODE_FAILED`, `INVALID_ADDRESS`, `COORDS_OUT_OF_REGION`, `ESTIMATE_USED`
+- Contact: `MISSING_PHONE`, `MISSING_EMAIL`, `MISSING_WHATSAPP`
+- Incomplete: `MISSING_PARENT_NAME`, `MISSING_STUDENT_NAME`, `MISSING_AVAILABILITY`
+- Invalid: `INVALID_PHONE_FORMAT`, `INVALID_EMAIL_FORMAT`, `INVALID_DATE`
+- Travel: `ANOMALY_HIGH_TIME`, `ANOMALY_LOW_TIME`, `API_ERROR`
+
+**Unique Constraint:** (entity_type, entity_id, error_type)
+
+**Indexes:** entity, category, status, severity, pending+category, created_at
+
+---
+
 ## Backup Tables
 
-### 40. backup_metadata
+### 43. backup_metadata
 
 **Purpose:** Track database backup records and their metadata
 
@@ -1373,7 +1485,7 @@ Tracks individual parent responses to location changes.
 
 ---
 
-### 41. deleted_backup_runs
+### 44. deleted_backup_runs
 
 **Purpose:** Track deleted backup GitHub run IDs to prevent re-import after sync
 
@@ -1399,6 +1511,8 @@ The following triggers enforce business rules and data integrity:
 | `trg_enrollment_cascade_exceptions` | enrollments | DELETE → Deletes related enrollment_exceptions |
 | `trg_enrollment_cascade_completions` | enrollments | DELETE → Deletes related class_completions |
 | `trg_enrollment_cascade_status_history` | enrollments | DELETE → Deletes related enrollment_status_history |
+| `trg_student_status_history_insert` | students | UPDATE status → Creates student_status_history record |
+| `trg_student_teacher_history_insert` | students | UPDATE teacher_id → Creates student_status_history record |
 
 ### Timestamp Update Triggers
 
@@ -1428,4 +1542,4 @@ Auto-update `updated_at` on record changes:
 
 ---
 
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-01-17

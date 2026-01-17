@@ -80,6 +80,7 @@ bmad-demo/
 | **Architecture** | `docs/architecture.md` |
 | **API endpoints** | `docs/reference/api-contracts.md` |
 | **Database schema** | `docs/reference/data-models.md` |
+| **Cross-cutting features** | `docs/reference/feature-maps.md` |
 | **Cloudflare patterns** | `eduschedule-app/CLOUDFLARE_CODING_STANDARDS.md` |
 | **Credentials** | `eduschedule-app/.credentials-reference.md` |
 
@@ -183,10 +184,10 @@ Before ending any session:
 
 **Phase 2 COMPLETE** - All 52 FRs + Epics 6-8 implemented, production-ready.
 
-- **37 pages** (23 admin, 6 teacher, 8 parent)
-- **134 API endpoints**
-- **38+ database tables**
-- **58 database migrations**
+- **40 pages** (24 admin, 7 teacher, 8 parent, 1 common)
+- **154 API endpoints**
+- **40+ database tables**
+- **73 database migrations**
 - **Production:** https://eduschedule-app.pages.dev
 
 **Phase 2 Progress:**
@@ -196,4 +197,4 @@ Before ending any session:
 
 ---
 
-**Last Updated:** 2026-01-12
+**Last Updated:** 2026-01-17
