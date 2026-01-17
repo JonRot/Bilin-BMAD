@@ -793,6 +793,24 @@ import { COLORS, SPACING, FONT_SIZES, SHADOWS, BORDER_RADIUS, TRANSITIONS, Z_IND
 | **NotificationBell** | Notification dropdown in Nav | unreadCount, notifications |
 | **NotificationIcon** | SVG icons for 33 notification types | type, size, class |
 
+#### Admin Layout Components
+
+| Component | Purpose | Props |
+|-----------|---------|-------|
+| **AdminLayout** | Layout wrapper for admin pages with sidebar navigation | title, currentPath, session, unreadNotifications, notifications |
+| **AdminHeader** | Top bar with logo, notifications, user dropdown | session, unreadNotifications, notifications |
+| **AdminSidebar** | Vertical navigation sidebar with expandable menus | currentPath, session |
+
+**AdminLayout** combines AdminHeader + AdminSidebar + main content area. All 24 admin pages use this layout.
+
+**AdminSidebar Features:**
+- Vertical navigation from NAV_LINKS.ADMIN
+- Expandable sections (Financeiro, Aprovações) with smooth animation
+- Active state highlighting for current page
+- Badge support for pending approval counts (auto-refreshes every 30s)
+- Mobile responsive: Off-canvas drawer with hamburger toggle
+- Permission-based filtering via AdminPermissions
+
 ### Button Component Specification
 
 ```astro
