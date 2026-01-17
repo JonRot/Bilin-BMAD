@@ -19,6 +19,33 @@ If you have not read these files, STOP and read them now.
 
 ---
 
+## Step 2: Check Feature Maps Before ANY Code Changes (REQUIRED)
+
+> **CRITICAL:** Before modifying ANY feature, component, or system - ALWAYS consult the Feature Maps first!
+
+**Read `docs/reference/feature-maps.md`** to understand the full impact of your changes.
+
+This document maps **34 cross-cutting features** showing exactly which files are affected:
+- Database tables, TypeScript interfaces, repositories, services
+- Validation schemas, API endpoints, client scripts
+- UI pages, components, and their interconnections
+
+### Why This Matters
+
+Many features touch 10-20+ files. Without the feature map, you risk:
+- Missing related files that need updates
+- Breaking functionality in unexpected places
+- Incomplete implementations
+
+### How to Use
+
+1. **Search the feature map** for the topic you're working on (e.g., "enrollment", "scheduling", "payment")
+2. **Review ALL listed files** before making changes
+3. **Update ALL affected areas** - not just the obvious ones
+4. **Update the feature map** if you add new files to a feature
+
+---
+
 ## Project Structure
 
 ```
@@ -76,11 +103,11 @@ bmad-demo/
 |------|------|
 | **Session context** | `eduschedule-app/project-context.md` |
 | **Documentation map** | `docs/index.md` |
+| **Feature impact maps** | `docs/reference/feature-maps.md` ⚠️ **CHECK BEFORE ANY CHANGES** |
 | **Requirements** | `docs/planning/prd.md` |
 | **Architecture** | `docs/architecture.md` |
 | **API endpoints** | `docs/reference/api-contracts.md` |
 | **Database schema** | `docs/reference/data-models.md` |
-| **Cross-cutting features** | `docs/reference/feature-maps.md` |
 | **Cloudflare patterns** | `eduschedule-app/CLOUDFLARE_CODING_STANDARDS.md` |
 | **Credentials** | `eduschedule-app/.credentials-reference.md` |
 
