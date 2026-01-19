@@ -2,7 +2,7 @@
 
 > **Purpose:** When modifying a feature, this document maps ALL code locations that need review. Prevents missed files during changes and helps understand how components connect.
 
-**Last Updated:** 2026-01-17
+**Last Updated:** 2026-01-19
 
 ---
 
@@ -491,6 +491,41 @@ Group of 3+: R$90/student
 | `POST /api/enrollments/[id]/add-to-group` | Add student to group |
 | `POST /api/enrollments/[id]/remove-from-group` | Remove from group |
 | `PUT /api/enrollments/group/[groupId]/status` | Update group status |
+
+### Group Member Status Display Flow (Enrollment Details Modal)
+
+**Data Flow:** Database → Service → BookingGrid → ClassBlock → JSON → Modal
+
+| Step | File | Key Code | Notes |
+|------|------|----------|-------|
+| 1. Query | `enrollment.ts` | `findByTeacher()` | Returns enrollments with `status` field |
+| 2. Project status | `schedule-page-service.ts` | `calculateProjectedStatus()` | Returns ATIVO/PAUSADO/AVISO based on week being viewed |
+| 3. Build blocks | `schedule-page-service.ts` | `buildClassBlocks()` | Sets `status: displayStatus` on each ClassBlock |
+| 4. Group detection | `BookingGrid.astro` | Auto-groups same day+time if no `group_id` | Assigns `auto-group-*` IDs |
+| 5. Pass to component | `BookingGrid.astro` | `groupMembers={groupMembers}` | Passes ClassBlock[] as GroupMember[] |
+| 6. Build click data | `ClassBlock.astro` | `clickData.groupMembers.map(m => ({...status: m.status}))` | **CRITICAL:** Must include status |
+| 7. JSON serialize | `ClassBlock.astro` | `JSON.stringify(clickData)` | **WARNING:** `undefined` values are omitted! |
+| 8. Parse & display | `enrollments-page-client.ts` | `member.status \|\| classData.status` | Fallback to primary if missing |
+
+**Type Definitions (must stay in sync):**
+
+| File | Type | groupMembers Definition |
+|------|------|------------------------|
+| `src/global.d.ts` | `WindowClassData` | `{ name, id?, status?, isHost?, enrollmentId? }[]` ✅ Has status |
+| `src/scripts/booking-grid-client.ts` | `ClassData` | Must match WindowClassData |
+| `src/scripts/enrollments-page-client.ts` | `ClassData` | Must match WindowClassData |
+| `src/components/grid/ClassBlock.astro` | `GroupMember` | Local interface, `status?: string` |
+| `src/types/schedule.ts` | `ClassBlock` | `status: string` (required) |
+
+**Common Bug Pattern:**
+- If `groupMembers[n].status` is `undefined` in the JSON, the modal falls back to `classData.status` (primary member's status)
+- All group members then display the same status (usually ATIVO)
+- Fix: Use nullish coalescing `status: m.status ?? classData.status` in ClassBlock.astro
+
+**Auto-Grouping Logic (BookingGrid.astro lines 217-246):**
+- Classes at same day+time are auto-grouped if they don't have a real `group_id`
+- Auto-generated IDs start with `auto-group-*` (vs real UUIDs from database)
+- `isRealGroup` check in modal: `classData.groupId && !classData.groupId.startsWith('auto-group-')`
 
 ---
 
@@ -1740,4 +1775,4 @@ Understanding which files are most complex helps with maintenance:
 
 ---
 
-**Last Updated:** 2026-01-17
+**Last Updated:** 2026-01-19

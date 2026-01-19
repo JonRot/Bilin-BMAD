@@ -1,9 +1,9 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2026-01-17
+**Last Updated:** 2026-01-18
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
-**Tables:** 44 total (11 core + 33 via migrations)
+**Tables:** 45 total (11 core + 34 via migrations)
 
 ## Overview
 
@@ -23,7 +23,7 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 | **Notifications** | notifications, push_device_tokens |
 | **Parent Links** | parent_links |
 | **Teacher Credits** | teacher_credits, teacher_credit_events |
-| **Cancellation Billing** | cancellation_pending_choices, cancellation_charges, location_change_requests, location_change_responses |
+| **Cancellation Billing** | cancellation_pending_choices, cancellation_charges, location_change_requests, location_change_responses, location_host_transfer_requests |
 | **Payment & Subscription** | subscription_plans, subscriptions, stripe_customers, reschedule_credits, one_time_payments, payment_transactions |
 | **LGPD Compliance** | lgpd_consent, lgpd_deletion_requests, lgpd_export_requests |
 | **Data Quality** | data_issues |
@@ -1154,6 +1154,43 @@ Tracks individual parent responses to location changes.
 - ALL must approve → Location change finalized
 - ANY decline → Class cancelled for ALL (no charge)
 - Expired without all approvals → Class cancelled for ALL
+
+---
+
+### 29. location_host_transfer_requests
+
+**Purpose:** Tracks location host transfer requests when host goes PAUSADO or parent requests to become host
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Prefixed UUID (htr_xxx) |
+| group_key | TEXT NOT NULL | Group identifier (teacher_id:day:time) |
+| from_enrollment_id | TEXT FK | Current host's enrollment |
+| to_enrollment_id | TEXT FK | New host's enrollment |
+| request_type | TEXT NOT NULL | 'PAUSADO_AUTO', 'PAUSADO_ADMIN', 'PARENT_REQUEST' |
+| status | TEXT NOT NULL | 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED' |
+| requested_by | TEXT NOT NULL | User who initiated the request |
+| approved_by | TEXT | Admin/teacher who approved |
+| travel_impact_minutes | INTEGER | Travel time change for teacher |
+| travel_warning_level | TEXT | 'NONE', 'MODERATE', 'HIGH' |
+| rejection_reason | TEXT | Reason if rejected |
+| notes | TEXT | Additional notes |
+| created_at | INTEGER | Unix timestamp |
+| updated_at | INTEGER | Unix timestamp |
+
+**Request Types:**
+- `PAUSADO_AUTO` - Auto-transfer when 2-person group host goes PAUSADO
+- `PAUSADO_ADMIN` - Admin selects new host for 3+ person groups
+- `PARENT_REQUEST` - Parent requests to become location host
+
+**Travel Warning Levels:**
+- `NONE` - ≤5 min impact on teacher travel
+- `MODERATE` - 6-15 min impact
+- `HIGH` - >15 min impact
+
+**Indexes:**
+- `idx_lht_group_key` - (group_key)
+- `idx_lht_status` - (status)
 
 ---
 

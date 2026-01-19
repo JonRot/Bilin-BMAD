@@ -10,9 +10,9 @@
 
 **Latest Deployment:** <https://eduschedule-app.pages.dev>
 
-**Implementation Stats (as of 2026-01-17):**
-- **40 pages** (24 admin, 7 teacher, 8 parent, 1 common)
-- **154 API endpoints** across 17 categories
+**Implementation Stats (as of 2026-01-18):**
+- **41 pages** (25 admin, 8 teacher, 8 parent, 1 common)
+- **158 API endpoints** across 17 categories
 - **73 reusable components** with full design system compliance
 - **75 business services** with repository pattern
 - **40+ database tables** (25+ added via migrations)
@@ -299,13 +299,14 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/admin/re-encrypt` | Data re-encryption tool for key rotation | Extra |
 | `/admin/import-data` | Bulk student import from JSON | Extra |
 | `/admin/resolve-errors` | Error resolution and data cleanup tool | Extra |
+| `/admin/host-selection` | Select new location host for 3+ person groups | Extra |
 | `/admin/billing` | Subscription overview: MRR, ARR, churn rate, subscription stats | Epic 8 |
 | `/admin/billing/subscriptions` | Subscription list with filters, search, bulk actions | Epic 8 |
 | `/admin/billing/transactions` | Transaction history with CSV export | Epic 8 |
 | `/admin/backups` | Backup management with manual backups and restore | Extra |
 | `/admin/profile-changes` | Profile change history and review (auto-approved) | Extra |
 
-### Teacher Routes (`/teacher/*`) - 7 Pages
+### Teacher Routes (`/teacher/*`) - 8 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
@@ -316,6 +317,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/teacher/profile` | Profile info, banking (PIX/CPF), change requests, teaching preferences | - |
 | `/teacher/invoice` | Monthly earnings: tier display, class-by-class breakdown, summary stats | FR23 |
 | `/teacher/time-off` | Time-off request management and history | Extra |
+| `/teacher/location-change-approvals` | Approve/reject parent location host requests with travel impact | Extra |
 
 ### Parent Routes (`/parent/*`) - 8 Pages
 
@@ -881,4 +883,4 @@ docs/index.md (documentation map - THIS FILE)
 
 ---
 
-**Last Updated:** 2026-01-17 (Address Fields Extended, 40 pages, 154 API endpoints, 73 migrations)
+**Last Updated:** 2026-01-18 (Location Host Transfer Feature, 41 pages, 158 API endpoints, 76 migrations)

@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2026-01-07
+**Last Updated:** 2026-01-19
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 134 total
+**Endpoints:** 139 total
 
 ## Overview
 
@@ -16,7 +16,7 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | Authentication | 7 | Google/Microsoft OAuth, sessions, CSRF |
 | Enrollments | 14 | CRUD, status, groups, exceptions, completions |
 | Students | 8 | CRUD, search, class history, enrollments summary |
-| Teachers | 12 | CRUD, availability, time-off, day-zones |
+| Teachers | 13 | CRUD, availability, time-off, day-zones, location-change |
 | Users | 6 | Management, roles |
 | Leads | 8 | Pipeline, matching, conversion, contracts |
 | Offers | 5 | Waitlist auto-match offers |
@@ -24,8 +24,8 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | Slots | 5 | Availability grid, reservations, matches |
 | System | 5 | Closures, exceptions |
 | Calendar | 4 | Google Calendar sync |
-| Admin | 25 | Approvals, geocoding, relocation, settings, stripe sync |
-| Parent | 7 | Dashboard, cancellations, pausado, feedback, reschedule |
+| Admin | 27 | Approvals, geocoding, relocation, host-transfer, settings, stripe sync |
+| Parent | 9 | Dashboard, cancellations, pausado, feedback, reschedule, location-host, smart suggestions |
 | Notifications | 5 | List, read, read-all, push registration |
 | Change Requests | 5 | CRUD, approve/reject |
 | Settings | 6 | App configuration, theme |
@@ -1655,6 +1655,55 @@ Accept or decline contract extension.
 ```
 - **Notes:** Accept transitions student status AULA_TESTE → ATIVO. Decline transitions to INATIVO.
 
+### GET /api/admin/host-transfer/[id]
+Get host selection candidates for a pending host transfer request.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "request": {
+    "id": "htr_xxx",
+    "group_key": "tea_xxx:1:14:00",
+    "from_enrollment_id": "enr_xxx",
+    "to_enrollment_id": "enr_yyy",
+    "request_type": "PAUSADO_ADMIN",
+    "status": "PENDING"
+  },
+  "candidates": [
+    {
+      "enrollment_id": "enr_yyy",
+      "student_id": "stu_yyy",
+      "student_name": "Maria",
+      "address": "Rua das Flores, 123, Centro",
+      "travel_impact_minutes": 5,
+      "travel_warning_level": "NONE"
+    }
+  ],
+  "teacher": { "id": "tea_xxx", "name": "Prof. Ana" },
+  "day_of_week": 1,
+  "start_time": "14:00"
+}
+```
+
+### POST /api/admin/host-transfer/[id]
+Admin selects new location host for a 3+ person group.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "new_host_enrollment_id": "enr_yyy"
+}
+```
+- **Response:**
+```json
+{
+  "success": true,
+  "message": "Novo local definido com sucesso"
+}
+```
+- **Notes:** Approves the request, updates enrollment's is_location_host flag, sends notifications
+
 ---
 
 ## Teacher APIs
@@ -1715,6 +1764,32 @@ Get which class modes have active enrollments for a teacher.
 - **Auth:** Admin only
 - **Response:** `{ "teacherId", "hasActiveEnrollments": { "individual": bool, "group": bool, "online": bool }, "totalActive": number }`
 - Used to prevent unchecking teaching preferences when active enrollments exist
+
+### POST /api/teacher/location-change/[id]
+Teacher approves or rejects a parent's request to become location host.
+- **Auth:** Teacher (own groups only)
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "action": "approve"  // or "reject"
+}
+```
+- **Response (approve):**
+```json
+{
+  "success": true,
+  "message": "Solicitação aprovada"
+}
+```
+- **Response (reject):**
+```json
+{
+  "success": true,
+  "message": "Solicitação recusada"
+}
+```
+- **Notes:** Updates location host flag, sends notifications to parent and admin
 
 ---
 
@@ -2126,6 +2201,34 @@ Get BILIN learning feedback for parent's children.
   - `401 UNAUTHORIZED` - Not authenticated
   - `403 FORBIDDEN` - Not parent role
   - `404 NOT_FOUND` - Student not found or not linked to parent
+
+### POST /api/parent/location-host-request
+Parent requests to become the location host for their child's group class.
+- **Auth:** Parent only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "enrollment_id": "enr_xxx"
+}
+```
+- **Response:**
+```json
+{
+  "success": true,
+  "request_id": "htr_xxx",
+  "message": "Solicitação enviada ao professor"
+}
+```
+- **Notes:**
+  - Only for group classes where parent is NOT the current host
+  - Teacher receives notification and must approve/reject
+  - Shows travel impact for teacher's itinerary
+- **Errors:**
+  - `403 FORBIDDEN` - Not parent's enrollment
+  - `400 ALREADY_HOST` - Already the location host
+  - `400 NOT_GROUP_CLASS` - Only valid for group classes
+  - `400 PENDING_REQUEST` - Already has pending request
 
 ---
 
@@ -3081,11 +3184,54 @@ Handles Stripe webhook events for subscription and payment updates.
 
 ## Parent APIs (Additional)
 
+### GET /api/reschedule-suggestions/[enrollmentId]
+Returns intelligent slot suggestions for rescheduling a class.
+- **Auth:** Parent (must own the student linked to enrollment)
+- **Query Params:** None
+- **Features:**
+  - Considers teacher availability (real schedules, not just open slots)
+  - Calculates travel times between classes (zone-based matrix, no API costs)
+  - Identifies makeup slots from cancelled classes (TEMPORARILY_AVAILABLE)
+  - Detects extended class options (+30min, +60min when adjacent slots are free)
+  - Scores and ranks slots (travel efficiency, parent preference, time proximity)
+- **Response:**
+```json
+{
+  "enrollmentId": "enr_abc123",
+  "studentName": "Maria Silva",
+  "teacherName": "Prof. João",
+  "currentSlot": {
+    "dayOfWeek": "Segunda",
+    "startTime": "14:00",
+    "duration": 60
+  },
+  "suggestions": [
+    {
+      "date": "2026-01-20",
+      "dayOfWeek": "Segunda",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "score": 85,
+      "isMakeupSlot": false,
+      "travelTimeMinutes": 10,
+      "extendedOptions": { "plus30": true, "plus60": false },
+      "reason": "mesmo dia da semana, mesmo horário",
+      "isRecommended": true
+    }
+  ],
+  "totalAvailable": 15
+}
+```
+- **Errors:**
+  - `401 UNAUTHORIZED` - Not authenticated
+  - `403 FORBIDDEN` - Parent doesn't own this student
+  - `404 NOT_FOUND` - Enrollment not found
+
 ### POST /api/parent/reschedule-class
 Reschedules a class to a different time slot.
 - **Auth:** Parent
-- **Body:** `{ class_instance_id, new_date, new_time, reason? }`
-- **Response:** `{ success: true, makeup_class_id: string }`
+- **Body:** `{ enrollment_id, original_date, new_date, new_time, reason? }`
+- **Response:** `{ success: true, exceptionId: string, makeupId: string, message: string, billing: {...} }`
 
 ---
 
