@@ -2,7 +2,7 @@
 
 > **Purpose:** When modifying a feature, this document maps ALL code locations that need review. Prevents missed files during changes and helps understand how components connect.
 
-**Last Updated:** 2026-01-19
+**Last Updated:** 2026-01-20
 
 ---
 
@@ -147,12 +147,29 @@
 ### Status Transition Rules
 
 ```
-ATIVO → PAUSADO (parent request, max 30 days)
-PAUSADO → ATIVO (auto after pause ends)
+ATIVO → PAUSADO (parent request)
+PAUSADO → ATIVO (auto after 21 days / 3 weeks)
 ATIVO → AVISO (admin marks for review)
-AVISO → INATIVO (admin confirms cancellation)
+AVISO → INATIVO (auto after 14 days / 2 weeks)
 Any → INATIVO (admin can force)
 ```
+
+### Duration Constants (CRITICAL - must be consistent across all files)
+
+| Constant | Value | Business Rule |
+|----------|-------|---------------|
+| `PAUSADO_MAX_DAYS` | 21 | 3 weeks = 3 slots blocked |
+| `AVISO_MAX_DAYS` | 14 | 2 weeks = 2 slots blocked |
+| `PAUSADO_COOLDOWN_MONTHS` | 5 | Months before can pause again |
+
+**Files that must use these constants:**
+- `src/constants/enrollment-statuses.ts` - defines constants
+- `src/lib/services/status-machine.ts` - expiry calculations
+- `src/lib/services/pausado-automator.ts` - auto-transition
+- `src/lib/services/aviso-automator.ts` - auto-transition
+- `src/scripts/enrollments-page-client.ts` - timeline display (uses hardcoded 21/14)
+- `src/pages/admin/enrollments.astro` - warning messages
+- `src/pages/admin/pausado-approvals.astro` - history display
 
 ### Services
 
@@ -1775,4 +1792,4 @@ Understanding which files are most complex helps with maintenance:
 
 ---
 
-**Last Updated:** 2026-01-19
+**Last Updated:** 2026-01-20
