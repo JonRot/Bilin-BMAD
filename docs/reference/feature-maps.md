@@ -167,9 +167,16 @@ Any → INATIVO (admin can force)
 - `src/lib/services/status-machine.ts` - expiry calculations
 - `src/lib/services/pausado-automator.ts` - auto-transition
 - `src/lib/services/aviso-automator.ts` - auto-transition
+- `src/lib/services/schedule-page-service.ts` - week view status projection (calculateProjectedStatus)
 - `src/scripts/enrollments-page-client.ts` - timeline display (uses hardcoded 21/14)
 - `src/pages/admin/enrollments.astro` - warning messages
 - `src/pages/admin/pausado-approvals.astro` - history display
+
+**Status Projection in Week View:**
+The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects the enrollment status for future weeks. It uses the **actual class date** (weekStartDate + day_of_week) for comparisons, not the week boundaries. This ensures:
+- PAUSADO shows for exactly 3 weekly slots (21 days from start)
+- AVISO shows for exactly 2 weekly slots (14 days from start)
+- Classes before PAUSADO/AVISO started show as ATIVO (historical view)
 
 ### Services
 
