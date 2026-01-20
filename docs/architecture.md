@@ -96,6 +96,7 @@ The PRD defines 52 functional requirements across 8 capability areas, centered o
 - 10ms CPU time per request limit
 - No Node.js crypto (Web Crypto API only)
 - Runtime binding for D1 access (`locals.runtime.env.DB`)
+- D1 loop query issue: same query in a loop returns results only on first iteration (cache before loop - see `CLOUDFLARE_CODING_STANDARDS.md`)
 
 **Existing System Integration:**
 - Preserve: users, teachers, students tables (extend, don't replace)
