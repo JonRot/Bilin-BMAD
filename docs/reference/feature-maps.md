@@ -551,6 +551,17 @@ Group of 3+: R$90/student
 - Auto-generated IDs start with `auto-group-*` (vs real UUIDs from database)
 - `isRealGroup` check in modal: `classData.groupId && !classData.groupId.startsWith('auto-group-')`
 
+**Parent Page Group Member Enrichment (`src/pages/parent/index.astro`):**
+
+⚠️ **CRITICAL D1 Query Issue:** Running the same D1 query in a loop only returns results for the first iteration. See `CLOUDFLARE_CODING_STANDARDS.md` → "D1 Query Issues in Loops" for the caching pattern.
+
+| Step | What Happens |
+|------|--------------|
+| 1. Collect unique groupIds | `[...new Set(upcomingClasses.map(c => c.groupId))]` |
+| 2. Query once per unique ID | Cache results in `Map<string, GroupMemberInfo[]>` |
+| 3. Use cache in enrichment loop | `groupMembersCache.get(classItem.groupId)` |
+| 4. Create new objects | `{ ...classItem, groupMembers }` (don't mutate) |
+
 ---
 
 ## 8. Cancellation System
