@@ -609,6 +609,41 @@ HOLIDAY
 | `/parent/cancel-choice` | Parent rate decision |
 | `/parent/location-change` | Location approval |
 
+### Client Scripts
+
+| File | Impact |
+|------|--------|
+| `src/scripts/enrollments-page-client.ts` | Modal group display, format tags, rate preview |
+| `src/scripts/weekly-schedule-grid-client.ts` | Slot modal with cancelled students |
+
+### UI Components Affected by Cancellations
+
+When a student cancels for a specific date, these displays need to filter/adjust:
+
+| Component | File | What Changes |
+|-----------|------|--------------|
+| **Week View Group Card** | `WeeklyScheduleGrid.astro`, `BookingGrid.astro` | Show only active members, transfer host if cancelled |
+| **Enrollment Details Modal** | `enrollments-page-client.ts` | Show all members with cancel tags, active count for format |
+| **Group Member Count** | `enrollments-page-client.ts:membersCount` | Shows "X alunos ativos" |
+| **Format Tag** | `enrollments-page-client.ts:formatTag` | Based on stored format (not active count) |
+| **Location Host Display** | `enrollments-page-client.ts:locationHostEl` | Transfer to active member if host cancelled |
+| **Rate Preview** | `enrollments-page-client.ts:ratePreview` | Uses `currentGroupData.effectiveSize` from API |
+| **Student Card Status** | `enrollments-page-client.ts` | Maps cancelled to ATIVO dropdown + cancel tag |
+| **Parent Invoice** | `parent/invoice.astro` | Shows cancellation charges with reasons |
+| **Admin Invoices** | `admin/invoices.astro` | Shows cancellation charges |
+
+### Helper Function
+
+```typescript
+// src/scripts/enrollments-page-client.ts
+const CANCELLED_STATUSES = ['CANCELLED_STUDENT', 'CANCELLED_TEACHER', 'RESCHEDULED_BY_STUDENT',
+                            'RESCHEDULED_BY_TEACHER', 'RESCHEDULED', 'HOLIDAY', 'NO_SHOW'];
+
+function getActiveGroupMembers(members) {
+  return members.filter(m => !CANCELLED_STATUSES.includes(m.status || ''));
+}
+```
+
 ---
 
 ## 9. Location/Address Fields
