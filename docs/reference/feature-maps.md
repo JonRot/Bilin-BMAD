@@ -2,7 +2,7 @@
 
 > **Purpose:** When modifying a feature, this document maps ALL code locations that need review. Prevents missed files during changes and helps understand how components connect.
 
-**Last Updated:** 2026-01-20
+**Last Updated:** 2026-01-22
 
 ---
 
@@ -53,6 +53,7 @@
 | [Scheduling Analytics](#32-scheduling-analytics) | scheduling-analytics.astro |
 | [Invoice/Earnings](#33-invoiceearnings-calculations) | invoice.ts, billing.ts |
 | [Dev Tools](#34-dev-tools) | /admin/dev/*, debug pages |
+| [Pricing/Rates](#35-pricingrates) | group-service.ts, billing.ts, invoice.ts |
 
 ---
 
@@ -503,10 +504,12 @@ CLASS_LOCATION_CHANGED, TRAVEL_TIME_ERROR, ...
 
 ```typescript
 // From group-service.ts
-Individual: R$140/hour
-Group of 2: R$110/student
-Group of 3+: R$90/student
+Individual (Presencial): R$150/hour
+Group (2+ students):     R$125/student
+Online:                  R$150/hour
 ```
+
+> **See also:** [Section 35. Pricing/Rates](#35-pricingrates) for complete file list when changing rates.
 
 ### API Endpoints
 
@@ -1712,9 +1715,13 @@ interface CalendarDay {
 | Factor | Calculation |
 |--------|-------------|
 | Monthly Fee | Sum of (weekly_classes × 4.33 × rate) |
-| Group Rate | 2 students=R$110, 3+=R$90 per student |
+| Individual Rate | R$150 per class |
+| Group Rate | R$125 per student (2+ students) |
+| Online Rate | R$150 per class |
 | Reschedule Credits | 2/month included |
-| Late Cancel Fee | 50% of class rate |
+| Late Cancel Fee | Charged at student's current rate |
+
+> **See also:** [Section 35. Pricing/Rates](#35-pricingrates) for complete file list when changing rates.
 
 ### API Endpoints
 
@@ -1768,6 +1775,75 @@ if (import.meta.env.ENVIRONMENT === 'development') {
 
 - `/flows` - Visual flow diagrams
 - `/design-system` - All components with examples
+
+---
+
+## 35. Pricing/Rates
+
+**Purpose:** Central mapping of all files containing class pricing/rate constants. **Update ALL these files when rates change.**
+
+### Current Rates (as of 2026-01-22)
+
+| Class Type | Parent Rate | In Centavos |
+|------------|-------------|-------------|
+| **Individual (Presencial)** | R$150 | 15000 |
+| **Group (2+ students)** | R$125/student | 12500 |
+| **Online** | R$150 | 15000 |
+
+### Primary Constants Files (MUST UPDATE)
+
+| File | Constants | Purpose |
+|------|-----------|---------|
+| `src/lib/services/group-service.ts` | `GROUP_RATE`, `INDIVIDUAL_RATE` | Core rate calculations |
+| `src/constants/billing.ts` | `PRICING.GROUP_CLASS_CENTAVOS`, `PRICING.INDIVIDUAL_CLASS_CENTAVOS` | Billing in centavos |
+| `src/constants/invoice.ts` | `PARENT_GROUP_RATE`, `PARENT_INDIVIDUAL_RATE` | Invoice display |
+
+### Related Services (Use Constants)
+
+| File | Purpose |
+|------|---------|
+| `src/lib/services/group-cancellation-service.ts` | Late cancellation billing (uses `original_rate` for fairness) |
+| `src/lib/services/enrollment-service.ts` | Rate calculations for enrollments |
+| `src/lib/services/reschedule-suggestion-service.ts` | Reschedule billing |
+
+### Tests to Update
+
+| File | What to Update |
+|------|----------------|
+| `src/lib/services/group-service.test.ts` | `GROUP_RATE` assertions, mock `hourly_rate` values |
+| `src/lib/services/group-cancellation-service.test.ts` | Billing amount expectations |
+| `src/lib/repositories/d1/completion.test.ts` | `actual_rate` mock values |
+| `src/lib/contracts/api-contracts.test.ts` | `hourly_rate` in mock data |
+| `src/tests/api/enrollments/group/[groupId]/status.test.ts` | `GROUP_RATE` mock |
+| `src/tests/api/enrollments/[id]/start-class.test.ts` | `actual_rate` mock values |
+| `src/tests/api/enrollments/[id]/completions/index.test.ts` | `actual_rate` mock values |
+
+### Documentation to Update
+
+| File | Section |
+|------|---------|
+| `docs/reference/feature-maps.md` | Section 7, 33, 35 (this section) |
+| `eduschedule-app/project-context.md` | Recent Changes |
+
+### Rate Change Billing Rules
+
+**Group 2→1 Scenario (rate change workflow):**
+- When one student cancels from group of 2, remaining student faces rate change
+- If remaining student cancels LATE (<24h): **Charged at ORIGINAL group rate (R$125)**
+- NOT charged at new individual rate (R$150) - fairness rule
+- Code: `group-cancellation-service.ts` uses `pendingChoice.original_rate`
+
+### Checklist for Rate Changes
+
+```
+□ Update src/lib/services/group-service.ts (GROUP_RATE, INDIVIDUAL_RATE)
+□ Update src/constants/billing.ts (PRICING.GROUP_CLASS_CENTAVOS)
+□ Update src/constants/invoice.ts (PARENT_GROUP_RATE)
+□ Update all test files (search for old rate values)
+□ Update docs/reference/feature-maps.md (sections 7, 33, 35)
+□ Update eduschedule-app/project-context.md (Recent Changes)
+□ Run tests: npm run test
+```
 
 ---
 
