@@ -2759,6 +2759,28 @@ Get teacher's month calendar view.
 
 ## Location APIs
 
+### GET /api/admin/ibge-locations
+Fetch Brazilian states and cities from IBGE API (proxied with caching).
+- **Auth:** Admin only
+- **Query Params:**
+  - `type=states` - Returns all Brazilian states
+  - `type=cities&uf=SC` - Returns all cities for a state (UF code required)
+- **Response (states):**
+```json
+[
+  { "uf": "SC", "name": "Santa Catarina" },
+  { "uf": "SP", "name": "São Paulo" }
+]
+```
+- **Response (cities):**
+```json
+[
+  { "id": 4205407, "name": "Florianópolis" },
+  { "id": 4209102, "name": "Joinville" }
+]
+```
+- **Notes:** Results are cached for 24 hours. Used for city selection in settings.
+
 ### GET /api/locations/autocomplete
 Autocomplete location search using Google Places API.
 - **Auth:** Required
