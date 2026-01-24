@@ -2,7 +2,7 @@
 
 > **Purpose:** When modifying a feature, this document maps ALL code locations that need review. Prevents missed files during changes and helps understand how components connect.
 
-**Last Updated:** 2026-01-22
+**Last Updated:** 2026-01-24
 
 ---
 
@@ -360,6 +360,8 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 |-------|---------|
 | `leads` | Pre-enrollment prospects |
 | `slot_offers` | Offers sent to leads |
+| `students` | Used for location proximity matching (comparing lead address to existing students) |
+| `enrollments` | Used to find active students for proximity matching |
 
 ### Services
 
@@ -367,8 +369,14 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 |------|---------|
 | `src/lib/services/lead-service.ts` | Lead CRUD and conversion |
 | `src/lib/services/lead-matching.ts` | Match leads to teachers |
-| `src/lib/services/lead-readiness-service.ts` | Score lead readiness |
+| `src/lib/services/lead-readiness-service.ts` | Score lead readiness + location proximity + categorization |
 | `src/lib/services/slot-offer-service.ts` | Manage slot offers |
+
+### Constants
+
+| File | Purpose |
+|------|---------|
+| `src/constants/matching.ts` | `LOCATION_PROXIMITY_WEIGHTS`, `LEAD_CATEGORIES` for scoring and categorization |
 
 ### Repositories
 
@@ -393,6 +401,25 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 | `POST /api/leads/[id]/mark-signed` | Mark contract signed |
 | `POST /api/webhooks/jotform` | JotForm webhook |
 | `GET/POST /api/offers` | Slot offers |
+
+### Client Scripts
+
+| File | Purpose |
+|------|---------|
+| `src/scripts/leads-page-client.ts` | Tab switching, filter chips, Easy Win wizard, slot selection |
+
+### UI Pages & Styles
+
+| File | Purpose |
+|------|---------|
+| `src/pages/admin/leads.astro` | Lead management page with category tabs, filter chips, Easy Win wizard modal |
+| `src/styles/leads-page.css` | Category tabs, filter chips, same-building alerts, proximity badges, wizard styles |
+
+### Key Features
+
+- **Location Proximity Scoring:** Same Building (40pts), Same Street (25pts), Same CEP (15pts), Same Neighborhood (10pts)
+- **Smart Categorization:** 7 categories (easy_wins, need_teacher, need_lead_avail, too_far, no_language, needs_data, archived)
+- **Easy Win Wizard:** 3-step contract flow for high-potential leads (same building or 85%+ score)
 
 ### Client Scripts
 

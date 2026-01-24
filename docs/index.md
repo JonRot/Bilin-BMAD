@@ -10,14 +10,14 @@
 
 **Latest Deployment:** <https://eduschedule-app.pages.dev>
 
-**Implementation Stats (as of 2026-01-18):**
+**Implementation Stats (as of 2026-01-24):**
 - **41 pages** (25 admin, 8 teacher, 8 parent, 1 common)
 - **158 API endpoints** across 17 categories
 - **73 reusable components** with full design system compliance
 - **75 business services** with repository pattern
-- **40+ database tables** (25+ added via migrations)
+- **45+ database tables** (34+ added via migrations)
 - **17 client-side TypeScript modules** in `src/scripts/`
-- **73 database migrations** applied
+- **81 database migrations** applied
 
 **Phase 2 Progress:**
 - ✅ **Epic 6 Complete** - Advanced Enrollment (11/11 stories)
@@ -526,6 +526,32 @@ These features were built during implementation but aren't in the original PRD. 
 
 ## Recent Changes
 
+### 2026-01-24: Enhanced Lead Scoring & Smart Categorization System
+
+**Location Proximity Scoring:**
+- New scoring weights: Same Building (40pts), Same Street (25pts), Same CEP (15pts), Same Neighborhood (10pts)
+- `calculateLocationProximity()` compares lead address against existing students with active enrollments
+- "Easy Win" detection when lead lives in same building as existing student
+
+**Smart Categorization System:**
+- 7 category tabs: Easy Wins, Need Teacher, Need Lead Availability, Too Far, No Language, Needs Data, Archived
+- Filter chips for combinable filtering (70%+, 40-70%, Same Building, Same Street, Has Errors)
+- Action column showing blocker type for each lead
+
+**Easy Win Wizard:**
+- 3-step guided wizard for high-potential leads
+- Lightning bolt button (⚡) on Easy Win leads opens wizard
+- Step 1: Match confirmation, Step 2: Slot selection, Step 3: Send contract
+
+**Teacher Travel Method Preferences:**
+- New columns: `travels_by_car`, `travels_by_walk`, `travels_by_transit`
+- Travel mode buttons disable based on teacher preferences
+- Per-enrollment travel mode selection
+
+**Files:** `lead-readiness-service.ts`, `matching.ts`, `leads.astro`, `leads-page-client.ts`, `leads-page.css`, migration 081
+
+---
+
 ### 2026-01-17: Address Fields Extended + Teacher Profile Enhancements
 
 **Address Fields Extended to Students and Leads:**
@@ -883,4 +909,4 @@ docs/index.md (documentation map - THIS FILE)
 
 ---
 
-**Last Updated:** 2026-01-18 (Location Host Transfer Feature, 41 pages, 158 API endpoints, 76 migrations)
+**Last Updated:** 2026-01-24 (Enhanced Lead Scoring & Easy Win Wizard, Teacher Travel Methods)

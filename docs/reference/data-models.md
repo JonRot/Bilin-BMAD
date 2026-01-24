@@ -1,6 +1,6 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2026-01-18
+**Last Updated:** 2026-01-24
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
 **Tables:** 45 total (11 core + 34 via migrations)
@@ -97,6 +97,9 @@ leads --> (converts to) students + enrollments
 | teaches_online | INTEGER | DEFAULT 0 | 1=teaches online |
 | teaches_individual | INTEGER | DEFAULT 1 | 1=teaches individual classes |
 | teaches_group | INTEGER | DEFAULT 0 | 1=teaches group classes |
+| travels_by_car | INTEGER | DEFAULT 1 | 1=available for car travel |
+| travels_by_walk | INTEGER | DEFAULT 1 | 1=available for walking travel |
+| travels_by_transit | INTEGER | DEFAULT 1 | 1=available for public transit |
 | active | INTEGER | NOT NULL, DEFAULT 1 | Active status |
 | join_date | TEXT | | Date teacher joined |
 | contract_date | TEXT | | Contract signing date |
