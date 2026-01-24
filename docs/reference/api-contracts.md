@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2026-01-19
+**Last Updated:** 2026-01-24
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 139 total
+**Endpoints:** 141 total
 
 ## Overview
 
@@ -30,7 +30,7 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | Change Requests | 5 | CRUD, approve/reject |
 | Settings | 6 | App configuration, theme |
 | Locations | 2 | Autocomplete, reverse geocode |
-| Travel Time | 2 | Calculate, matrix |
+| Travel Time | 3 | Calculate, matrix, travel-times |
 | Webhooks | 2 | JotForm, Stripe |
 | LGPD | 7 | Consent, data export, deletion |
 | Subscriptions | 7 | CRUD, pause, resume |
@@ -949,6 +949,56 @@ Delete calendar event.
 ---
 
 ## Admin APIs
+
+### GET /api/admin/sync-holidays
+Preview Brazilian holidays (national + regional SC) for a given year.
+- **Auth:** Admin only
+- **Query Params:**
+  - `year` (optional) - defaults to current year
+  - `cities` (optional) - comma-separated city IDs: `florianopolis,balneario,itajai,sao_jose`
+  - `includeNational` (optional) - defaults to `true`
+- **Response:**
+```json
+{
+  "year": 2026,
+  "holidays": [
+    { "date": "2026-01-01", "name": "Confraternização mundial", "type": "national", "exists": false },
+    { "date": "2026-03-23", "name": "Aniversário de Florianópolis", "type": "municipal", "cityId": "florianopolis", "exists": false },
+    { "date": "2026-08-11", "name": "Data Magna de Santa Catarina", "type": "state", "exists": true }
+  ],
+  "total": 15,
+  "existing": 2,
+  "toAdd": 13,
+  "availableCities": ["florianopolis", "balneario", "itajai", "sao_jose"]
+}
+```
+- **Notes:** National holidays from [BrasilAPI](https://brasilapi.com.br). SC state/municipal holidays stored locally.
+
+### POST /api/admin/sync-holidays
+Sync Brazilian holidays from BrasilAPI + local SC data and create closures.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "years": [2026, 2027],
+  "includeNational": true,
+  "cities": ["florianopolis", "itajai"]
+}
+```
+- **Response:**
+```json
+{
+  "success": true,
+  "message": "15 feriado(s) adicionado(s) com sucesso!",
+  "added": 15,
+  "skipped": 0,
+  "errors": 0,
+  "holidays": ["Confraternização mundial (2026-01-01)", "Aniversário de Florianópolis (florianopolis) (2026-03-23)", "..."],
+  "skippedHolidays": []
+}
+```
+- **Notes:** Municipal holidays are created with `city_id` set. State holiday (Aug 11) added for any selected SC city. Skips existing closures.
 
 ### POST /api/admin/cancellations
 Approve or reject teacher cancellation requests.
@@ -2736,6 +2786,41 @@ Calculate travel time matrix for multiple locations.
 - **Auth:** Admin only
 - **Query Params:** `origins`, `destinations`
 - **Response:** Matrix of travel times
+
+### GET /api/travel-times
+Fetch travel times for a teacher's schedule with specified travel mode.
+- **Auth:** Admin only
+- **Query Params:**
+  - `teacher_id` (required): Teacher ID
+  - `week_start` (required): Week start date (YYYY-MM-DD)
+  - `mode` (optional): Travel mode - `DRIVE` (default), `WALK`, or `TRANSIT`
+- **Response:**
+```json
+{
+  "travel_mode": "DRIVE",
+  "buffer_minutes": 10,
+  "travel_blocks": [
+    {
+      "id": "travel_enr_xxx_enr_yyy",
+      "from_enrollment_id": "enr_xxx",
+      "to_enrollment_id": "enr_yyy",
+      "day_of_week": 1,
+      "start_time": "09:00",
+      "end_time": "09:25",
+      "travel_minutes": 25,
+      "from_neighborhood": "Centro",
+      "to_neighborhood": "Lagoa",
+      "source": "api",
+      "travel_mode": "DRIVE"
+    }
+  ]
+}
+```
+
+**Buffer Times by Mode:**
+- WALK: 5 minutes
+- DRIVE: 10 minutes
+- TRANSIT: 15 minutes
 
 ---
 
