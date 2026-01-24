@@ -1045,13 +1045,14 @@ parent_cpf_encrypted, parent2_*_encrypted, address_encrypted, allergies_encrypte
 
 ## 17. System Closures
 
-**Purpose:** School holidays, closures that cancel all classes on specific dates
+**Purpose:** School holidays, closures that cancel all classes on specific dates. City-specific closures only affect students in that city.
 
 ### Database Tables
 
 | Table | Purpose |
 |-------|---------|
 | `system_closures` | Closure dates with optional city filter |
+| `students` | Student city field used for closure matching |
 
 ### Repositories
 
@@ -1087,8 +1088,16 @@ parent_cpf_encrypted, parent2_*_encrypted, address_encrypted, allergies_encrypte
 
 ### Integration Points
 
-- `schedule-generator.ts` - Skips classes on closure dates
+- `schedule-generator.ts` - Filters closures by student city (not teacher day zones)
+  - Uses `normalizeCity()` and `citiesMatch()` for city comparison
+  - Requires `studentCities` map in schedule options
 - `exception.ts` - Creates HOLIDAY exceptions automatically
+
+### City Matching Logic
+
+Closures use `city_id` (e.g., "balneario", "florianopolis") while students use full names (e.g., "Balneário Camboriú", "Florianópolis"). The system normalizes and matches:
+- Removes accents: "Florianópolis" → "florianopolis"
+- Supports prefix matching: "balneario" matches "Balneário Camboriú"
 
 ---
 
