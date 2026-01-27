@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2026-01-24
+**Last Updated:** 2026-01-27
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 141 total
+**Endpoints:** 143 total
 
 ## Overview
 
@@ -15,7 +15,7 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 |----------|-----------|-------------|
 | Authentication | 7 | Google/Microsoft OAuth, sessions, CSRF |
 | Enrollments | 14 | CRUD, status, groups, exceptions, completions |
-| Students | 8 | CRUD, search, class history, enrollments summary |
+| Students | 9 | CRUD, search, class history, enrollments summary, timeline |
 | Teachers | 13 | CRUD, availability, time-off, day-zones, location-change |
 | Users | 6 | Management, roles |
 | Leads | 8 | Pipeline, matching, conversion, contracts |
@@ -1572,6 +1572,53 @@ Get enrollment-derived data for student edit modal display (read-only fields).
 ```
 - **Notes:** Status is derived from active enrollments (ATIVO > PAUSADO > AVISO). Excludes WAITLIST and INATIVO enrollments. classModes and planTypes are unique values from all active enrollments.
 
+### GET /api/students/[id]/enrollment-timeline
+Get complete enrollment history with status change timeline for a student.
+- **Auth:** Admin only
+- **Response:**
+```json
+{
+  "studentId": "stu_xxx",
+  "studentName": "João Silva",
+  "enrollments": [
+    {
+      "enrollmentId": "enr_xxx",
+      "dayOfWeek": 1,
+      "dayLabel": "Seg",
+      "startTime": "14:00",
+      "teacherName": "Maria",
+      "language": "Inglês",
+      "currentStatus": "ATIVO",
+      "groupId": "grp_xxx",
+      "groupMembers": ["Ana", "Pedro"],
+      "createdAt": 1736640000,
+      "terminatedAt": null,
+      "timeline": [
+        {
+          "date": 1736640000,
+          "event": "CREATED",
+          "fromStatus": null,
+          "toStatus": "ATIVO",
+          "reason": null,
+          "triggeredBy": "user",
+          "createdBy": null
+        },
+        {
+          "date": 1737244800,
+          "event": "STATUS_CHANGE",
+          "fromStatus": "ATIVO",
+          "toStatus": "PAUSADO",
+          "reason": "Férias de verão",
+          "triggeredBy": "user",
+          "createdBy": "adm_xxx"
+        }
+      ]
+    }
+  ]
+}
+```
+- **Notes:** Returns all enrollments (including INATIVO) with their complete status change history. Timeline events include CREATED, STATUS_CHANGE, and TERMINATED. Sorted by status (ATIVO first) then by day of week.
+
 ### GET /api/students/[id]/exceptions
 List all exceptions for a student's enrollments.
 - **Auth:** Admin, Teacher (own students), Parent (own children)
@@ -2969,6 +3016,32 @@ Public lead registration (from cadastro page).
 - **Auth:** None (public)
 - **Body:** Lead registration data
 - **Response:** `201 Created` with lead reference
+
+### GET /api/public/hot-slots
+Returns available teacher time slots for a neighborhood and language.
+Used by cadastro form to highlight suggested slots where teachers are available.
+- **Auth:** None (public)
+- **Query Params:**
+  - `neighborhood` (required): Neighborhood name to check
+  - `language` (optional): Filter by language (e.g., "Inglês", "Espanhol")
+- **Response:**
+```json
+{
+  "hotSlots": [
+    { "day": 1, "period": "morning1", "teacherCount": 2 },
+    { "day": 1, "period": "afternoon1", "teacherCount": 1 }
+  ],
+  "filters": {
+    "neighborhood": "Centro",
+    "language": "Inglês",
+    "teachersInArea": 3
+  }
+}
+```
+- **Notes:**
+  - Periods: morning1 (8-10), morning2 (10-12), lunch (12-14), afternoon1 (14-16), afternoon2 (16-18)
+  - Only counts slots with ≥60 minutes free time
+  - Teachers must have active students in the neighborhood
 
 ---
 
