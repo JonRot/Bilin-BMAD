@@ -3,7 +3,7 @@
 **Last Updated:** 2026-01-27
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 143 total
+**Endpoints:** 147 total
 
 ## Overview
 
@@ -24,8 +24,8 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | Slots | 5 | Availability grid, reservations, matches |
 | System | 5 | Closures, exceptions |
 | Calendar | 4 | Google Calendar sync |
-| Admin | 27 | Approvals, geocoding, relocation, host-transfer, settings, stripe sync |
-| Parent | 9 | Dashboard, cancellations, pausado, feedback, reschedule, location-host, smart suggestions |
+| Admin | 29 | Approvals, geocoding, relocation, host-transfer, settings, stripe sync, invoice payments |
+| Parent | 11 | Dashboard, cancellations, pausado, feedback, reschedule, location-host, smart suggestions, billing-profile |
 | Notifications | 5 | List, read, read-all, push registration |
 | Change Requests | 5 | CRUD, approve/reject |
 | Settings | 6 | App configuration, theme |
@@ -1216,6 +1216,41 @@ Waitlist analytics for AI optimization panel.
 }
 ```
 
+### GET /api/admin/monthly-stats
+Monthly metrics for scheduling analytics dashboard.
+- **Auth:** Admin only
+- **Query Params:**
+  - `year` (optional): Year to query (default: current year)
+  - `month` (optional): Month to query, 1-12 (default: current month)
+- **Response:**
+```json
+{
+  "year": 2026,
+  "month": 1,
+  "monthLabel": "Janeiro 2026",
+  "totalClasses": 245,
+  "groupClasses": 80,
+  "individualClasses": 145,
+  "onlineClasses": 20,
+  "presencialClasses": 225,
+  "newLeads": 18,
+  "totalCancellations": 12,
+  "studentCancellations": 6,
+  "teacherCancellations": 4,
+  "adminCancellations": 2,
+  "currentPausado": 5,
+  "currentAviso": 3,
+  "currentAtivo": 78,
+  "comparison": {
+    "classesChange": 8,
+    "leadsChange": -5,
+    "cancellationsChange": 20
+  },
+  "generated_at": 1706400000
+}
+```
+- **Notes:** Provides monthly class counts (by format/location), new leads, cancellations, and current enrollment status counts. Includes month-over-month comparison percentages.
+
 ### POST /api/admin/update-lead-statuses
 Bulk update lead statuses from spreadsheet export.
 - **Auth:** Admin only
@@ -1478,6 +1513,62 @@ Teacher payroll breakdown for a given month.
   - PIX keys are masked (only last 4 digits shown)
   - Group earnings = groupRate × groupStudents (deduplicated by time slot)
   - statusImpacts shows students affecting teacher income
+
+### GET /api/admin/invoice-payments
+Get payment statuses for parent invoices in a given month.
+- **Auth:** Admin only
+- **Query Params:** `year` (required), `month` (required, 1-12)
+- **Response:**
+```json
+{
+  "payments": [
+    {
+      "id": "pay_xxx",
+      "parent_email_hash": "sha256hash...",
+      "year": 2026,
+      "month": 1,
+      "amount_due": 1500.00,
+      "amount_paid": 1500.00,
+      "status": "PAID",
+      "paid_at": 1706400000,
+      "paid_by": "admin@example.com",
+      "notes": "Pago via PIX",
+      "created_at": 1706300000,
+      "updated_at": 1706400000
+    }
+  ],
+  "year": 2026,
+  "month": 1
+}
+```
+
+### POST /api/admin/invoice-payments
+Create or update payment status for a parent invoice.
+- **Auth:** Admin only
+- **Body:**
+```json
+{
+  "parentEmail": "parent@example.com",
+  "year": 2026,
+  "month": 1,
+  "amountDue": 1500.00,
+  "amountPaid": 1500.00,
+  "status": "PAID",
+  "notes": "Pago via PIX"
+}
+```
+- **Response:** `200 OK` (update) or `201 Created` (new)
+```json
+{
+  "message": "Payment status updated",
+  "id": "pay_xxx",
+  "status": "PAID"
+}
+```
+- **Notes:**
+  - Parent email is hashed (SHA-256) before storage for privacy
+  - Status auto-calculated if not provided: PAID if amountPaid >= amountDue, PARTIAL if amountPaid > 0, PENDING otherwise
+  - paid_at and paid_by automatically set when status becomes PAID
 
 ---
 
@@ -2194,6 +2285,67 @@ Delete a teacher account link.
 ---
 
 ## Parent APIs
+
+### GET /api/parent/billing-profile
+Get parent's billing profile for invoicing.
+- **Auth:** Parent
+- **Response:**
+```json
+{
+  "billing_name": "Maria Silva",
+  "billing_email": "maria@example.com",
+  "billing_phone": "(48) 99999-9999",
+  "document": "12345678901",
+  "document_type": "CPF",
+  "document_formatted": "123.456.789-01",
+  "billing_street": "Rua das Flores",
+  "billing_number": "123",
+  "billing_complement": "Apto 101",
+  "billing_neighborhood": "Centro",
+  "billing_city": "Florianópolis",
+  "billing_state": "SC",
+  "billing_cep": "88010-000",
+  "billing_lat": -27.5969,
+  "billing_lon": -48.5480
+}
+```
+- **Notes:**
+  - Returns empty fields (null) if no profile exists
+  - `document_type` auto-detected: CPF (11 digits) or CNPJ (14 digits)
+  - `document_formatted` has mask applied for display
+
+### PUT /api/parent/billing-profile
+Update parent's billing profile.
+- **Auth:** Parent
+- **CSRF:** Required
+- **Body:**
+```json
+{
+  "billing_name": "Maria Silva",
+  "billing_email": "maria@example.com",
+  "billing_phone": "(48) 99999-9999",
+  "document": "12345678901",
+  "billing_street": "Rua das Flores",
+  "billing_number": "123",
+  "billing_complement": "Apto 101",
+  "billing_neighborhood": "Centro",
+  "billing_city": "Florianópolis",
+  "billing_state": "SC",
+  "billing_cep": "88010-000",
+  "billing_lat": -27.5969,
+  "billing_lon": -48.5480
+}
+```
+- **Validation:**
+  - `document`: CPF (11 digits) or CNPJ (14 digits), formatted or raw
+  - `billing_phone`: Brazilian format (XX) XXXXX-XXXX or raw digits
+  - `billing_cep`: XXXXX-XXX or raw 8 digits
+  - All fields optional except none required
+- **Response:** Same as GET (updated profile)
+- **Errors:**
+  - `400 VALIDATION_ERROR` - Invalid document/phone/CEP format
+
+---
 
 ### GET /api/parent/dashboard
 Get parent dashboard data.
