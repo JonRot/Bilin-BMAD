@@ -2,7 +2,7 @@
 
 > **Purpose:** When modifying a feature, this document maps ALL code locations that need review. Prevents missed files during changes and helps understand how components connect.
 
-**Last Updated:** 2026-01-24
+**Last Updated:** 2026-01-30
 
 ---
 
@@ -54,6 +54,8 @@
 | [Invoice/Earnings](#33-invoiceearnings-calculations) | invoice.ts, billing.ts |
 | [Dev Tools](#34-dev-tools) | /admin/dev/*, debug pages |
 | [Pricing/Rates](#35-pricingrates) | group-service.ts, billing.ts, invoice.ts |
+| [Autentique Contracts](#36-autentique-contract-signing) | contracts, autentique-service.ts |
+| [Admin Calendar Events](#37-admin-calendar-events) | admin_events, admin-event.ts, enrollments.astro |
 
 ---
 
@@ -576,10 +578,23 @@ Online:                  R$150/hour
 - All group members then display the same status (usually ATIVO)
 - Fix: Use nullish coalescing `status: m.status ?? classData.status` in ClassBlock.astro
 
-**Auto-Grouping Logic (BookingGrid.astro lines 217-246):**
+**Auto-Grouping Logic (BookingGrid.astro lines 217-249):**
 - Classes at same day+time are auto-grouped if they don't have a real `group_id`
+- **Quinzenal-aware:** Grouping key includes `quinzenal_week` so students on different biweekly weeks at the same day/time are NOT auto-grouped (key format: `dayOfWeek-startTime[-qwN]`)
 - Auto-generated IDs start with `auto-group-*` (vs real UUIDs from database)
 - `isRealGroup` check in modal: `classData.groupId && !classData.groupId.startsWith('auto-group-')`
+- **ClassBlock quinzenal fields:** `plan_type` and `quinzenal_week` are mapped from enrollment data in `schedule-page-service.ts` → `buildClassBlocks()`
+- **ClassBlock QA/QB badge:** `ClassBlock.astro` shows a purple "QA" or "QB" badge for quinzenal students
+- **MonthView QA/QB badge:** `MonthView.astro` shows QA/QB badge on event bars; `DisplayItem` includes `planType`/`quinzenalWeek` from `ScheduleItem`
+- **DayView QA/QB badge:** `DayView.astro` shows QA/QB badge in class header; `DisplayClass` includes `planType`/`quinzenalWeek` from `ScheduleItem`
+- **ScheduleItem quinzenal fields:** `schedule-generator.ts` `ScheduleItem` interface includes `planType` and `quinzenalWeek`, populated in `getScheduleForWeek()` and `getScheduleForDateRange()`
+
+**Quinzenal (Biweekly) Schedule Filtering:**
+- **Utility:** `src/lib/utils/quinzenal.ts` — `isQuinzenalActiveForDate()` uses `recurrence_start_date` as anchor, computes week parity to determine active week (even diff = 1ª Semana, odd diff = 2ª Semana)
+- **Week view:** `schedule-page-service.ts` → `buildClassBlocks()` skips quinzenal enrollments on off-week
+- **Month/day views:** `schedule-generator.ts` → `getScheduleForWeek()` and `getScheduleForDateRange()` skip quinzenal enrollments on off-week
+- **Admin toggle:** `users.astro` has 1ª Sem. / 2ª Sem. pill toggle in Matrícula card; `users-page-client.ts` PATCHes enrollment(s)
+- **API:** `/api/students/[id]/enrollments-summary` returns `quinzenalEnrollments` array with enrollment IDs and current week
 
 **Parent Page Group Member Enrichment (`src/pages/parent/index.astro`):**
 
@@ -780,13 +795,13 @@ function getActiveGroupMembers(members) {
 
 ## 11. Student/Parent Data
 
-**Includes:** Student profile, parent contacts (encrypted), BILIN feedback
+**Includes:** Student profile, parent contacts (encrypted), BILIN feedback, Lixeira (trash/soft-delete)
 
 ### Database Tables
 
 | Table | Purpose |
 |-------|---------|
-| `students` | Student profiles |
+| `students` | Student profiles (with `archived_at` for soft-delete) |
 | `parent_links` | OAuth email → student links |
 | `student_status_history` | Status audit trail |
 
@@ -809,17 +824,29 @@ parent_cpf_encrypted, parent2_*_encrypted, address_encrypted, allergies_encrypte
 |------|---------|
 | `src/lib/services/student-status-sync-service.ts` | Sync from enrollments |
 
+### Lixeira (Trash) System
+
+Students are soft-deleted via `archived_at` timestamp. Original status is preserved for restoration.
+
+| File | Purpose |
+|------|---------|
+| `src/lib/database.ts` | `archiveStudent()`, `restoreStudent()`, `getTrashedStudents()`, `deleteArchivedStudents()` |
+| `src/pages/api/students/index.ts` | `?include=trashed` returns archived students, lazy auto-purge >90 days |
+| `src/pages/api/students/[id]/restore.ts` | POST restore endpoint (clears `archived_at`) |
+| `src/scripts/users-page-client.ts` | Lixeira tab UI: `loadTrashedStudents()`, `renderTrashedStudents()`, `restoreStudentFromTrash()`, `moveStudentToTrash()` |
+| `src/styles/admin-users.css` | `.student-card--trashed`, `.trash-days--*`, `.btn-restore` |
+
 ### Client Scripts
 
 | File | Purpose |
 |------|---------|
-| `src/scripts/users-page-client.ts` | Student management |
+| `src/scripts/users-page-client.ts` | Student management + Lixeira tab |
 
 ### UI
 
 | Page | Purpose |
 |------|---------|
-| `/admin/users` | Student management (tab) |
+| `/admin/users` | Student management (tabs: active, aula_teste, pausado, aviso, archived, lixeira) |
 | `/admin/parent-links` | Link OAuth emails |
 | `/parent/profile` | Parent self-edit |
 | `/parent/students` | View children |
@@ -1883,6 +1910,108 @@ if (import.meta.env.ENVIRONMENT === 'development') {
 
 ---
 
+## 36. Autentique Contract Signing
+
+Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autentique GraphQL API.
+
+### Database Tables
+- `contracts` - Contract records with Autentique integration data
+
+### TypeScript Interfaces
+- `src/lib/repositories/types.ts` - `Contract`, `ContractDocStatus`, `ContractType`, `CreateContractData`, `IContractRepository`, `ContractNotFoundError`
+- `src/lib/contracts/types.ts` - `SendStudentContractData`, `AutentiqueConfig`
+
+### Repositories
+- `src/lib/repositories/d1/contract.ts` - `D1ContractRepository`
+
+### Services
+- `src/lib/services/contract-service.ts` - `ContractService` (generate, send, batch, poll, webhook, cancel, preview)
+- `src/lib/services/matricula-service.ts` - `getOrCreateMatriculaNumber()` (assigns persistent structured matricula number on first contract)
+
+### Database (Matricula)
+- `students.matricula_number` - Persistent matricula number (e.g. `Nº12260001`)
+- `matricula_sequence` table - Global counter for sequential number assignment
+
+### Providers
+- `src/lib/contracts/autentique-provider.ts` - `AutentiqueContractProvider` (GraphQL + multipart upload)
+- `src/lib/contracts/templates/termo-matricula.ts` - HTML template for PDF contract rendering (`ContractTemplateData` includes `planType` for quinzenal-aware frequency display)
+- `src/lib/contracts/templates/bilin-logo.ts` - Base64-encoded Bilin logo for contract PDF
+
+### Validation
+- `src/lib/validation/contract.ts` - `CreateContractsSchema`, `BatchSendSchema`, `ContractIdSchema`
+
+### API Endpoints
+- `src/pages/api/admin/contracts/index.ts` - GET (list) / POST (create DRAFT)
+- `src/pages/api/admin/contracts/preview.ts` - GET preview rendered HTML (no DB record)
+- `src/pages/api/admin/contracts/[id]/index.ts` - GET single contract
+- `src/pages/api/admin/contracts/[id]/send.ts` - POST send to Autentique
+- `src/pages/api/admin/contracts/[id]/cancel.ts` - POST cancel contract
+- `src/pages/api/admin/contracts/[id]/poll-status.ts` - GET poll status
+- `src/pages/api/admin/contracts/batch-send.ts` - POST batch generate + send
+- `src/pages/api/webhooks/autentique.ts` - Webhook handler (HMAC-SHA256)
+
+### Client Scripts
+- `src/scripts/contracts-page-client.ts` - Search, multi-select, batch send, contract preview, Autentique dashboard link
+
+### UI
+- `src/pages/admin/contracts.astro` - Admin contracts page
+- `src/styles/admin-contracts.css` - Page styles (CSS variables only)
+
+### Constants
+- `src/constants/ui.ts` - `CONTRACT_STATUS_LABELS`, `CONTRACT_TYPE_LABELS`, NAV_LINKS entry
+
+### Key Behaviors
+- **Auto-cancel:** Sending a new contract auto-cancels older SENT/VIEWED contracts for the same student (DB + Autentique API)
+- **Deduplication:** Admin UI shows only the latest contract per student in main table; older contracts in collapsed section
+- **Webhook-driven status:** Autentique webhooks update VIEWED/SIGNED/REJECTED status automatically (no manual polling)
+- **Signing URL:** Autentique returns `link: null` for email delivery method; dashboard link used instead
+- **Frequency display:** Template shows "Frequência mensal:" with "Quinzenal (1ª Semana)" or "Quinzenal (2ª Semana)" for quinzenal plan_type (using `quinzenalWeek`), or "N aula(s) por semana" for semanal
+- **Contract quinzenal_week:** `contract-service.ts` queries `quinzenal_week` from enrollments and passes it to `ContractTemplateData.quinzenalWeek`
+- **Contract modality:** Uses `group_id` (not `class_format` text) to determine Individual vs Grupo for accurate modality display
+
+### Environment
+- `wrangler.toml` - `AUTENTIQUE_SANDBOX` env var
+- Secrets: `AUTENTIQUE_API_TOKEN`, `AUTENTIQUE_WEBHOOK_SECRET`
+
+---
+
+## 37. Admin Calendar Events
+
+**Core concept:** Admin-created calendar events with one-time, weekly, or date-range recurrence. Events are assigned to admins and displayed across all admin calendar views (week, month, day, all-admins). Supports all-day events and timed events. Click-for-details modal with delete capability. Individual admin views filter to show only that admin's events.
+
+### Database
+- **`admin_events`** table - Stores events with recurrence type, admin assignment, time range, all-day flag
+- Migrations: `database/migrations/087_admin_events.sql`, `database/migrations/090_admin_events_all_day.sql`
+
+### TypeScript / Repository
+- `src/lib/repositories/d1/admin-event.ts` - `D1AdminEventRepository` (create, findById, findByAdminId, findAll, delete), `AdminEvent.is_all_day`
+- `src/constants/enrollment-statuses.ts` - `ID_PREFIXES.ADMIN_EVENT = 'evt_'`
+
+### Validation
+- `src/lib/validation/admin-event.ts` - `CreateAdminEventSchema` (Zod, conditional per recurrence type, optional times when all-day), `AdminEventListQuerySchema`
+
+### Services
+- `src/lib/services/admin-event-expander.ts` - `expandAdminEvents()` expands raw DB events into concrete date instances for a view range, `ExpandedAdminEvent.is_all_day`
+
+### API Endpoints
+- `src/pages/api/admin/events/index.ts` - GET (list/filter), POST (create with is_all_day)
+- `src/pages/api/admin/events/[id].ts` - DELETE
+
+### UI Pages
+- `src/pages/admin/enrollments.astro` - "+ Adicionar" button, event creation modal (all-day checkbox), event detail modal (click-to-view, delete), admin visibility filtering (`.filter(e => e.admin_id === adminFilter)` for specific admin views)
+
+### UI Components (Modified)
+- `src/components/views/AdminWeekView.astro` - Banner row with all-day tags + closure badges, timed event blocks, `data-event-json` click targets
+- `src/components/views/AdminMonthView.astro` - All-day solid bars, timed event bars, `data-event-json` click targets
+- `src/components/views/AdminDayView.astro` - All-day banner section, timed event cards, `data-event-json` click targets
+- `src/components/views/AllAdminsView.astro` - All-day events fill full day column (7-18h) in mini-week grids
+
+### Styles
+- `src/styles/booking-page.css` - `.admin-cal-event` block styles (cursor pointer), `.admin-events-toolbar`
+- Each view component has scoped styles for admin event rendering (indigo #6366f1 theme), all-day tags/bars/banners
+
+---
+
 ## Quick Reference: Change Patterns
 
 ### Adding a new field to an entity
@@ -1957,4 +2086,4 @@ Understanding which files are most complex helps with maintenance:
 
 ---
 
-**Last Updated:** 2026-01-20
+**Last Updated:** 2026-01-29

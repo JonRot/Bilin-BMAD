@@ -10,14 +10,14 @@
 
 **Latest Deployment:** <https://eduschedule-app.pages.dev>
 
-**Implementation Stats (as of 2026-01-24):**
-- **41 pages** (25 admin, 8 teacher, 8 parent, 1 common)
-- **160 API endpoints** across 17 categories
+**Implementation Stats (as of 2026-01-29):**
+- **42 pages** (26 admin, 8 teacher, 8 parent, 1 common)
+- **168 API endpoints** across 18 categories
 - **73 reusable components** with full design system compliance
-- **75 business services** with repository pattern
-- **45+ database tables** (34+ added via migrations)
-- **17 client-side TypeScript modules** in `src/scripts/`
-- **81 database migrations** applied
+- **76 business services** with repository pattern
+- **46+ database tables** (35+ added via migrations)
+- **18 client-side TypeScript modules** in `src/scripts/`
+- **89 database migrations** applied
 
 **Phase 2 Progress:**
 - ✅ **Epic 6 Complete** - Advanced Enrollment (11/11 stories)
@@ -305,6 +305,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/admin/billing/transactions` | Transaction history with CSV export | Epic 8 |
 | `/admin/backups` | Backup management with manual backups and restore | Extra |
 | `/admin/profile-changes` | Profile change history and review (auto-approved) | Extra |
+| `/admin/contracts` | Autentique digital contract signing (MATRICULA / REMATRICULA) | Extra |
 
 ### Teacher Routes (`/teacher/*`) - 8 Pages
 

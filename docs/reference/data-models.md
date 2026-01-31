@@ -1,9 +1,9 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2026-01-24
+**Last Updated:** 2026-01-30
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
-**Tables:** 45 total (11 core + 34 via migrations)
+**Tables:** 47 total (11 core + 36 via migrations)
 
 ## Overview
 
@@ -21,13 +21,16 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 | **Pausado Requests** | pausado_requests |
 | **Travel** | travel_time_cache, travel_time_errors, zone_travel_matrix, address_cache |
 | **Notifications** | notifications, push_device_tokens |
-| **Parent Links** | parent_links |
+| **Parent Profiles** | parent_links, parent_billing_profiles |
 | **Teacher Credits** | teacher_credits, teacher_credit_events |
-| **Cancellation Billing** | cancellation_pending_choices, cancellation_charges, location_change_requests, location_change_responses, location_host_transfer_requests |
+| **Cancellation Billing** | cancellation_pending_choices, cancellation_charges, invoice_payments, location_change_requests, location_change_responses, location_host_transfer_requests |
 | **Payment & Subscription** | subscription_plans, subscriptions, stripe_customers, reschedule_credits, one_time_payments, payment_transactions |
 | **LGPD Compliance** | lgpd_consent, lgpd_deletion_requests, lgpd_export_requests |
 | **Data Quality** | data_issues |
+| **Contracts** | contracts |
 | **Backup System** | backup_metadata, deleted_backup_runs |
+| **Admin Events** | admin_events |
+| **Sequences** | matricula_sequence |
 
 ## Entity Relationship Diagram
 
@@ -166,6 +169,9 @@ leads --> (converts to) students + enrollments
 | trial_contract_sent_at | INTEGER | | When contract extension was sent |
 | trial_contract_responded_at | INTEGER | | When parent responded |
 | trial_contract_type | TEXT | | 'MONTHLY', 'SEMESTER', 'ANNUAL' |
+| **Other** | | | |
+| tshirt_size | TEXT | | T-shirt size from contracts page |
+| matricula_number | TEXT | | Structured matricula number (e.g. Nº12260001) |
 | **Metadata** | | | |
 | notes | TEXT | | Admin notes |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
@@ -870,7 +876,44 @@ WHERE status = 'PAUSADO'
 
 ---
 
-### 20. pausado_requests
+### 20. parent_billing_profiles
+
+**Purpose:** Store parent billing credentials for invoicing (CPF/CNPJ, address, invoice email)
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | Billing profile ID (bpf_xxx) |
+| auth_email | TEXT | UNIQUE NOT NULL | Parent login email (links to parent_links) |
+| billing_name | TEXT | | Full name or company name for invoice |
+| billing_email | TEXT | | Invoice email (may differ from login) |
+| billing_phone_encrypted | TEXT | | Encrypted phone number |
+| document_type | TEXT | | 'CPF' (11 digits) or 'CNPJ' (14 digits) |
+| document_encrypted | TEXT | | Encrypted CPF/CNPJ number |
+| billing_street | TEXT | | Street address |
+| billing_number | TEXT | | House/building number |
+| billing_complement | TEXT | | Apartment, unit, etc. |
+| billing_neighborhood | TEXT | | Neighborhood |
+| billing_city | TEXT | | City |
+| billing_state | TEXT | | State abbreviation |
+| billing_cep | TEXT | | Postal code (CEP) |
+| billing_lat | REAL | | Latitude coordinate |
+| billing_lon | REAL | | Longitude coordinate |
+| created_at | INTEGER | DEFAULT | Unix timestamp |
+| updated_at | INTEGER | DEFAULT | Unix timestamp |
+
+**Index:** On `auth_email` for fast lookup
+
+**Business Rules:**
+- One billing profile per parent login email
+- Document type auto-detected from digit count (11=CPF, 14=CNPJ)
+- Sensitive fields (document, phone) encrypted at rest
+- All fields optional except auth_email
+
+**Migration:** `083_parent_billing_profiles.sql`
+
+---
+
+### 21. pausado_requests
 
 **Purpose:** Parent-initiated pause requests for enrollments (requires admin approval)
 
@@ -1113,7 +1156,38 @@ Tracks billable cancellation charges for invoicing.
 
 ---
 
-### 27. location_change_requests
+### 27. invoice_payments
+
+Tracks payment status for monthly parent invoices.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | UUID |
+| parent_email_hash | TEXT | SHA256 hash of parent email |
+| year | INTEGER | Invoice year |
+| month | INTEGER | Invoice month (1-12) |
+| amount_due | REAL | Total amount due |
+| amount_paid | REAL | Amount paid |
+| status | TEXT | 'PENDING', 'PARTIAL', 'PAID' |
+| paid_at | INTEGER | Unix timestamp when marked paid |
+| paid_by | TEXT | Admin email who marked paid |
+| notes | TEXT | Optional payment notes |
+| created_at | INTEGER | Unix timestamp |
+| updated_at | INTEGER | Unix timestamp |
+
+**Indexes:**
+- `idx_invoice_payments_year_month` - (year, month)
+- `idx_invoice_payments_status` - (status)
+- `idx_invoice_payments_parent` - (parent_email_hash)
+
+**Constraints:**
+- UNIQUE (parent_email_hash, year, month)
+- CHECK status IN ('PENDING', 'PARTIAL', 'PAID')
+- CHECK month >= 1 AND month <= 12
+
+---
+
+### 29. location_change_requests
 
 Tracks location change workflow when location host cancels.
 
@@ -1138,7 +1212,7 @@ Tracks location change workflow when location host cancels.
 
 ---
 
-### 28. location_change_responses
+### 30. location_change_responses
 
 Tracks individual parent responses to location changes.
 
@@ -1160,7 +1234,7 @@ Tracks individual parent responses to location changes.
 
 ---
 
-### 29. location_host_transfer_requests
+### 31. location_host_transfer_requests
 
 **Purpose:** Tracks location host transfer requests when host goes PAUSADO or parent requests to become host
 
@@ -1199,7 +1273,7 @@ Tracks individual parent responses to location changes.
 
 ## Payment & Subscription Tables (Epic 8)
 
-### 29. subscription_plans
+### 32. subscription_plans
 
 **Purpose:** Templates for different billing options (Monthly, Semester, Annual)
 
@@ -1537,6 +1611,87 @@ Tracks individual parent responses to location changes.
 | deleted_by_email | TEXT | Email of deleter |
 
 **Indexes:** deleted_at DESC
+
+---
+
+### 45. contracts
+
+**Purpose:** Track Autentique digital contract signing for student enrollment terms (MATRICULA / REMATRICULA).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT PK | Contract ID (prefix: `ctr_`) |
+| student_id | TEXT FK | References students(id) |
+| contract_type | TEXT NOT NULL | `MATRICULA` or `REMATRICULA` |
+| contract_year | INTEGER NOT NULL | Year of contract (e.g. 2026) |
+| modality | TEXT | Class modality |
+| weekly_frequency | INTEGER | Weekly classes (default 1) |
+| class_duration_minutes | INTEGER | Duration in minutes (default 60) |
+| class_address | TEXT | Class address |
+| enrollment_fee_cents | INTEGER | Fee in centavos (default 15000 = R$150) |
+| tshirt_size | TEXT | Student t-shirt size |
+| guardian_name | TEXT | Snapshot of guardian name at contract time |
+| guardian_email | TEXT | Snapshot of guardian email at contract time |
+| guardian_cpf_encrypted | TEXT | Encrypted guardian CPF |
+| autentique_document_id | TEXT | Autentique document ID |
+| autentique_signer_public_id | TEXT | Autentique signer public ID |
+| signing_url | TEXT | URL for signing the contract |
+| status | TEXT NOT NULL | `DRAFT`, `SENT`, `VIEWED`, `SIGNED`, `REJECTED`, `CANCELLED`, `EXPIRED` |
+| sent_at | INTEGER | Unix timestamp when sent |
+| viewed_at | INTEGER | Unix timestamp when viewed |
+| signed_at | INTEGER | Unix timestamp when signed |
+| rejected_at | INTEGER | Unix timestamp when rejected |
+| rejection_reason | TEXT | Reason for rejection |
+| signed_document_url | TEXT | URL to signed PDF |
+| batch_id | TEXT | Groups batch-sent contracts |
+| created_by | TEXT | Admin user ID who created |
+| created_at | INTEGER | Unix timestamp (default unixepoch()) |
+| updated_at | INTEGER | Unix timestamp (default unixepoch()) |
+
+**Indexes:** student_id, status, autentique_document_id, batch_id, contract_year, (contract_year + student_id)
+
+**Migration:** `086_contracts.sql`
+
+---
+
+### admin_events
+
+Admin calendar events supporting one-time, weekly, and date-range recurrence. Displayed across admin enrollment calendar views.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | TEXT (PK) | `evt_` + UUID prefix |
+| title | TEXT NOT NULL | Event title (max 100) |
+| description | TEXT | Event description (default '') |
+| admin_id | TEXT NOT NULL (FK→users) | Assigned admin |
+| event_date | TEXT | YYYY-MM-DD for one_time recurrence |
+| day_of_week | INTEGER | 1-7 (Mon-Sun) for weekly recurrence |
+| start_time | TEXT | HH:MM format (empty for all-day) |
+| end_time | TEXT | HH:MM format (empty for all-day) |
+| is_all_day | INTEGER | 0=timed, 1=all-day (default 0) |
+| recurrence | TEXT NOT NULL | 'one_time', 'weekly', or 'date_range' |
+| range_start | TEXT | YYYY-MM-DD for date_range start |
+| range_end | TEXT | YYYY-MM-DD for date_range end |
+| created_by | TEXT NOT NULL (FK→users) | Admin who created |
+| created_at | INTEGER NOT NULL | Unix timestamp |
+| updated_at | INTEGER NOT NULL | Unix timestamp |
+
+**Indexes:** admin_id, event_date, day_of_week, (range_start + range_end)
+
+**Migrations:** `087_admin_events.sql`, `090_admin_events_all_day.sql`
+
+---
+
+### matricula_sequence
+
+Global counter for generating structured matricula numbers.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY, DEFAULT 'global' | Sequence identifier |
+| last_counter | INTEGER | NOT NULL, DEFAULT 0 | Last assigned counter value |
+
+**Migration:** `089_matricula_number.sql`
 
 ---
 

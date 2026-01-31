@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2026-01-27
+**Last Updated:** 2026-01-30
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 147 total
+**Endpoints:** 157 total
 
 ## Overview
 
@@ -15,7 +15,7 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 |----------|-----------|-------------|
 | Authentication | 7 | Google/Microsoft OAuth, sessions, CSRF |
 | Enrollments | 14 | CRUD, status, groups, exceptions, completions |
-| Students | 9 | CRUD, search, class history, enrollments summary, timeline |
+| Students | 10 | CRUD, search, class history, enrollments summary, timeline, t-shirt size |
 | Teachers | 13 | CRUD, availability, time-off, day-zones, location-change |
 | Users | 6 | Management, roles |
 | Leads | 8 | Pipeline, matching, conversion, contracts |
@@ -25,13 +25,15 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | System | 5 | Closures, exceptions |
 | Calendar | 4 | Google Calendar sync |
 | Admin | 29 | Approvals, geocoding, relocation, host-transfer, settings, stripe sync, invoice payments |
+| Admin Events | 3 | Admin calendar events CRUD |
 | Parent | 11 | Dashboard, cancellations, pausado, feedback, reschedule, location-host, smart suggestions, billing-profile |
 | Notifications | 5 | List, read, read-all, push registration |
 | Change Requests | 5 | CRUD, approve/reject |
 | Settings | 6 | App configuration, theme |
 | Locations | 2 | Autocomplete, reverse geocode |
 | Travel Time | 3 | Calculate, matrix, travel-times |
-| Webhooks | 2 | JotForm, Stripe |
+| Contracts (Admin) | 6 | Autentique digital contract signing |
+| Webhooks | 3 | JotForm, Stripe, Autentique |
 | LGPD | 7 | Consent, data export, deletion |
 | Subscriptions | 7 | CRUD, pause, resume |
 | Payment Methods | 5 | CRUD, set default |
@@ -1709,6 +1711,25 @@ Get complete enrollment history with status change timeline for a student.
 }
 ```
 - **Notes:** Returns all enrollments (including INATIVO) with their complete status change history. Timeline events include CREATED, STATUS_CHANGE, and TERMINATED. Sorted by status (ATIVO first) then by day of week.
+
+### PATCH /api/students/[id]/tshirt-size
+Save t-shirt size to student record.
+- **Auth:** Admin (canEditStudents)
+- **CSRF:** Required
+- **Request Body:**
+```json
+{
+  "tshirt_size": "M (adulto)"
+}
+```
+- **Response:**
+```json
+{
+  "id": "stu_xxx",
+  "tshirt_size": "M (adulto)"
+}
+```
+- **Notes:** Saves immediately on dropdown change from contracts page. Empty string clears the value.
 
 ### GET /api/students/[id]/exceptions
 List all exceptions for a student's enrollments.
@@ -3495,6 +3516,43 @@ Returns endpoint documentation and status.
 
 ---
 
+## Admin Events APIs
+
+### GET /api/admin/events
+List admin calendar events with optional filters.
+- **Auth:** Admin only
+- **Query Parameters:**
+  - `start` (optional) - Start date YYYY-MM-DD
+  - `end` (optional) - End date YYYY-MM-DD
+  - `adminId` (optional) - Filter by admin user ID
+- **Response:** `{ events: ExpandedAdminEvent[] }` (expanded if date range provided) or `{ events: AdminEvent[] }` (raw if no range)
+
+### POST /api/admin/events
+Create a new admin calendar event.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+  - `title` (string, required, max 100) - Event title
+  - `description` (string, optional, max 500) - Event description
+  - `admin_id` (string, required) - Admin user ID
+  - `recurrence` (string, required) - `one_time` | `weekly` | `date_range`
+  - `event_date` (string) - YYYY-MM-DD (required for `one_time`)
+  - `day_of_week` (number, 1-7) - Mon=1..Sun=7 (required for `weekly`)
+  - `range_start` (string) - YYYY-MM-DD (required for `date_range`)
+  - `range_end` (string) - YYYY-MM-DD (required for `date_range`)
+  - `start_time` (string, required) - HH:MM format
+  - `end_time` (string, required) - HH:MM format
+- **Response:** `201 Created` with `{ event: AdminEvent }`
+
+### DELETE /api/admin/events/[id]
+Delete an admin calendar event.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Response:** `{ success: true }`
+- **Error:** `404` if event not found
+
+---
+
 ## Webhook APIs
 
 ### POST /api/webhooks/jotform
@@ -3511,6 +3569,87 @@ Handles Stripe webhook events for subscription and payment updates.
   - `invoice.paid/payment_failed`
   - `payment_intent.succeeded`
 - **Response:** `200 OK`
+
+### POST /api/webhooks/autentique
+Handles Autentique webhook events when contracts are viewed, signed, or rejected.
+- **Auth:** HMAC-SHA256 signature via `x-autentique-signature` header
+- **Events Handled:**
+  - `signature.viewed` → status = VIEWED
+  - `signature.accepted` → status = SIGNED
+  - `signature.rejected` → status = REJECTED
+  - `document.finished` → final confirmation
+- **Response:** `200 OK` (always, to prevent retries)
+
+---
+
+## Contract APIs (Admin)
+
+### GET /api/admin/contracts
+List contracts with optional filters.
+- **Auth:** Admin (`canEditSchedules`)
+- **Query Params:** `year` (integer), `status` (string), `limit` (integer), `offset` (integer)
+- **Response:** `{ contracts: Contract[], total: number }`
+
+### POST /api/admin/contracts
+Create DRAFT contracts for selected students.
+- **Auth:** Admin (`canEditSchedules`) + CSRF
+- **Body:**
+```json
+{
+  "student_ids": ["stu_abc", "stu_def"],
+  "contract_year": 2026,
+  "overrides": {
+    "stu_abc": { "contract_type": "MATRICULA", "tshirt_size": "M" }
+  }
+}
+```
+- **Response:** `{ contracts: Contract[] }`
+
+### GET /api/admin/contracts/preview
+Preview rendered contract HTML for a student (no DB record created).
+- **Auth:** Admin
+- **Query Params:**
+  - `student_id` (required): Student ID
+  - `contract_type` (optional): `MATRICULA` or `REMATRICULA` (auto-detected if omitted)
+  - `tshirt_size` (optional): T-shirt size (PP, P, M, G, GG)
+- **Response:** Raw HTML (`Content-Type: text/html`)
+
+### GET /api/admin/contracts/[id]
+Get single contract detail with student name.
+- **Auth:** Admin (`canEditSchedules`)
+- **Response:** `Contract` with `student_name`
+
+### POST /api/admin/contracts/[id]/send
+Send a DRAFT contract to Autentique for signing. Auto-cancels any older SENT/VIEWED contracts for the same student (both in DB and on Autentique).
+- **Auth:** Admin (`canEditSchedules`) + CSRF
+- **Response:** `Contract` with updated status
+- **Note:** Autentique returns `link: null` for email-delivered signers (DELIVERY_METHOD_EMAIL). Signing URL is not available via API.
+
+### POST /api/admin/contracts/[id]/cancel
+Cancel a contract (locally + on Autentique).
+- **Auth:** Admin (`canEditSchedules`) + CSRF
+- **Response:** `{ success: true }`
+
+### GET /api/admin/contracts/[id]/poll-status
+Poll Autentique for latest contract status.
+- **Auth:** Admin (`canEditSchedules`)
+- **Response:** `Contract` with updated status
+
+### POST /api/admin/contracts/batch-send
+Batch generate and send contracts for multiple students.
+- **Auth:** Admin (`canEditSchedules`) + CSRF
+- **Body:**
+```json
+{
+  "student_ids": ["stu_abc", "stu_def"],
+  "contract_year": 2026,
+  "overrides": {
+    "stu_abc": { "contract_type": "REMATRICULA", "tshirt_size": "G" }
+  }
+}
+```
+- **Response:** `{ batch_id: string, results: [{ student_id, success, contract?, error? }] }`
+- **Note:** Each student's older SENT/VIEWED contracts are auto-cancelled before sending the new one
 
 ---
 
