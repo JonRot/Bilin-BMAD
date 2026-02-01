@@ -2,7 +2,7 @@
 
 > **Purpose:** When modifying a feature, this document maps ALL code locations that need review. Prevents missed files during changes and helps understand how components connect.
 
-**Last Updated:** 2026-01-30
+**Last Updated:** 2026-02-01
 
 ---
 
@@ -56,6 +56,7 @@
 | [Pricing/Rates](#35-pricingrates) | group-service.ts, billing.ts, invoice.ts |
 | [Autentique Contracts](#36-autentique-contract-signing) | contracts, autentique-service.ts |
 | [Admin Calendar Events](#37-admin-calendar-events) | admin_events, admin-event.ts, enrollments.astro |
+| [ICS Calendar Feed](#38-ics-calendar-feed) | calendar_feed_tokens, ics-generator.ts, settings.astro |
 
 ---
 
@@ -1977,28 +1978,29 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ## 37. Admin Calendar Events
 
-**Core concept:** Admin-created calendar events with one-time, weekly, or date-range recurrence. Events are assigned to admins and displayed across all admin calendar views (week, month, day, all-admins). Supports all-day events and timed events. Click-for-details modal with delete capability. Individual admin views filter to show only that admin's events.
+**Core concept:** Admin-created calendar events with one-time, weekly, or date-range recurrence. Events use a many-to-many model via `admin_event_members` junction table, allowing shared events between admins. Displayed across all admin calendar views (week, month, day, all-admins). Supports all-day events and timed events. Click-for-details modal with edit and delete capability. Individual admin views filter to show events where that admin is a member.
 
 ### Database
-- **`admin_events`** table - Stores events with recurrence type, admin assignment, time range, all-day flag
-- Migrations: `database/migrations/087_admin_events.sql`, `database/migrations/090_admin_events_all_day.sql`
+- **`admin_events`** table - Stores events with recurrence type, time range, all-day flag. Legacy `admin_id` column kept for SQLite compat.
+- **`admin_event_members`** table - Junction table for many-to-many admin membership. Composite PK (event_id, admin_id). ON DELETE CASCADE.
+- Migrations: `087_admin_events.sql`, `090_admin_events_all_day.sql`, `091_admin_events_color.sql`, `092_admin_event_members.sql`
 
 ### TypeScript / Repository
-- `src/lib/repositories/d1/admin-event.ts` - `D1AdminEventRepository` (create, findById, findByAdminId, findAll, delete), `AdminEvent.is_all_day`
+- `src/lib/repositories/d1/admin-event.ts` - `D1AdminEventRepository`. `AdminEvent` has `admin_ids: string[]` from junction table. All queries use `GROUP_CONCAT` join. `create()` / `update()` sync junction rows.
 - `src/constants/enrollment-statuses.ts` - `ID_PREFIXES.ADMIN_EVENT = 'evt_'`
 
 ### Validation
-- `src/lib/validation/admin-event.ts` - `CreateAdminEventSchema` (Zod, conditional per recurrence type, optional times when all-day), `AdminEventListQuerySchema`
+- `src/lib/validation/admin-event.ts` - `CreateAdminEventSchema` / `UpdateAdminEventSchema` use `admin_ids: z.array(z.string()).min(1)`. Conditional refinements per recurrence type.
 
 ### Services
-- `src/lib/services/admin-event-expander.ts` - `expandAdminEvents()` expands raw DB events into concrete date instances for a view range, `ExpandedAdminEvent.is_all_day`
+- `src/lib/services/admin-event-expander.ts` - `expandAdminEvents()` expands raw DB events into concrete date instances. `ExpandedAdminEvent` has `admin_ids: string[]`.
 
 ### API Endpoints
-- `src/pages/api/admin/events/index.ts` - GET (list/filter), POST (create with is_all_day)
-- `src/pages/api/admin/events/[id].ts` - DELETE
+- `src/pages/api/admin/events/index.ts` - GET (list/filter by `admin_ids.includes()`), POST (create with `admin_ids[]`)
+- `src/pages/api/admin/events/[id].ts` - GET, PUT (accepts `admin_ids[]`), DELETE
 
 ### UI Pages
-- `src/pages/admin/enrollments.astro` - "+ Adicionar" button, event creation modal (all-day checkbox), event detail modal (click-to-view, delete), admin visibility filtering (`.filter(e => e.admin_id === adminFilter)` for specific admin views)
+- `src/pages/admin/enrollments.astro` - "+ Adicionar" button, event creation modal (sends single POST with `admin_ids[]`), event detail modal (shows multiple admin chips), edit mode (pre-populates all admins), admin filtering (`.filter(e => e.admin_ids.includes(adminFilter))`)
 
 ### UI Components (Modified)
 - `src/components/views/AdminWeekView.astro` - Banner row with all-day tags + closure badges, timed event blocks, `data-event-json` click targets
@@ -2009,6 +2011,52 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 ### Styles
 - `src/styles/booking-page.css` - `.admin-cal-event` block styles (cursor pointer), `.admin-events-toolbar`
 - Each view component has scoped styles for admin event rendering (indigo #6366f1 theme), all-day tags/bars/banners
+
+---
+
+## 38. ICS Calendar Feed
+
+**Purpose:** Subscribable ICS feed URL for viewing admin calendar events in external apps (Google Calendar, Apple Calendar, Outlook).
+
+### Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `calendar_feed_tokens` | SHA-256 hashed tokens for feed auth (one per admin) |
+
+### Repository
+
+| File | Methods |
+|------|---------|
+| `src/lib/repositories/d1/calendar-feed-token.ts` | `create()`, `findByAdminId()`, `findByTokenHash()`, `deleteByAdminId()` |
+
+### Services
+
+| File | Purpose |
+|------|---------|
+| `src/lib/services/ics-generator.ts` | Generate RFC 5545 ICS strings from expanded events |
+| `src/lib/services/admin-event-expander.ts` | Expand recurring events to concrete dates (shared with calendar views) |
+
+### API Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/admin/calendar-feed` | Check if admin has active token |
+| `POST /api/admin/calendar-feed` | Generate new token (replaces old) |
+| `DELETE /api/admin/calendar-feed` | Revoke token |
+| `GET /api/calendar/feed.ics?token=<raw>` | Public ICS feed (token auth) |
+
+### Client Scripts
+
+| File | Functions |
+|------|-----------|
+| `src/scripts/settings-client.ts` | `generateCalendarFeed()`, `regenerateCalendarFeed()`, `revokeCalendarFeed()`, `copyCalendarFeedUrl()` |
+
+### UI
+
+| Page | Purpose |
+|------|---------|
+| `/admin/settings` | "Calendário Externo" section with generate/copy/revoke UI |
 
 ---
 
@@ -2086,4 +2134,4 @@ Understanding which files are most complex helps with maintenance:
 
 ---
 
-**Last Updated:** 2026-01-29
+**Last Updated:** 2026-01-31
