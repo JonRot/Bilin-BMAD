@@ -3,7 +3,7 @@
 **Last Updated:** 2026-01-30
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
-**Tables:** 47 total (11 core + 36 via migrations)
+**Tables:** 49 total (11 core + 38 via migrations)
 
 ## Overview
 
@@ -30,6 +30,7 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 | **Contracts** | contracts |
 | **Backup System** | backup_metadata, deleted_backup_runs |
 | **Admin Events** | admin_events |
+| **Business Config** | business_config, business_config_audit |
 | **Sequences** | matricula_sequence |
 
 ## Entity Relationship Diagram
@@ -1682,6 +1683,52 @@ Admin calendar events supporting one-time, weekly, and date-range recurrence. Di
 
 ---
 
+### business_config
+
+Runtime-configurable business settings (pricing, durations, billing rules, etc.). 57 settings across 8 categories with typed values and min/max validation bounds.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| config_key | TEXT (PK) | Dot-notation key (e.g. `pricing_parent.individual_presencial`) |
+| config_value | TEXT NOT NULL | Value stored as string |
+| value_type | TEXT NOT NULL | `number`, `string`, or `boolean` |
+| category | TEXT NOT NULL | Category grouping (e.g. `pricing_parent`, `billing_rules`) |
+| label_pt | TEXT NOT NULL | Portuguese label for admin UI |
+| description_pt | TEXT | Portuguese description |
+| min_value | REAL | Minimum allowed value (for number type) |
+| max_value | REAL | Maximum allowed value (for number type) |
+| unit | TEXT | Display unit (e.g. `R$`, `dias`, `%`, `min`) |
+| display_order | INTEGER NOT NULL | Sort order within category |
+| updated_at | INTEGER | Unix timestamp of last update |
+| updated_by | TEXT | Email of admin who last updated |
+
+**Indexes:** `idx_business_config_category`
+
+**Categories (8):** `pricing_parent` (5), `pricing_teacher` (12), `plan_discounts` (3), `status_durations` (5), `billing_rules` (6), `travel_scheduling` (5), `lead_matching` (5), `data_retention` (3)
+
+**Migration:** `094_business_config.sql`
+
+---
+
+### business_config_audit
+
+Audit trail for all business config changes with old/new values.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INTEGER (PK) | Auto-increment |
+| config_key | TEXT NOT NULL (FK→business_config) | Setting that was changed |
+| old_value | TEXT | Previous value |
+| new_value | TEXT NOT NULL | New value |
+| changed_by | TEXT NOT NULL | Admin email |
+| changed_at | INTEGER NOT NULL | Unix timestamp |
+
+**Indexes:** `idx_business_config_audit_key`, `idx_business_config_audit_date` (DESC)
+
+**Migration:** `094_business_config.sql`
+
+---
+
 ### matricula_sequence
 
 Global counter for generating structured matricula numbers.
@@ -1737,4 +1784,4 @@ Auto-update `updated_at` on record changes:
 
 ---
 
-**Last Updated:** 2026-01-17
+**Last Updated:** 2026-02-01

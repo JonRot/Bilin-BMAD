@@ -15,9 +15,9 @@
 - **176 API endpoints** across 20 categories
 - **73 reusable components** with full design system compliance
 - **76 business services** with repository pattern
-- **47+ database tables** (36+ added via migrations)
+- **49+ database tables** (38+ added via migrations)
 - **18 client-side TypeScript modules** in `src/scripts/`
-- **93 database migrations** applied
+- **94 database migrations** applied
 
 **Phase 2 Progress:**
 - ✅ **Epic 6 Complete** - Advanced Enrollment (11/11 stories)
@@ -286,7 +286,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/admin/availability-approvals` | Teacher availability submissions + day zones | - |
 | `/admin/closures` | Holidays, FÉRIAS, weather, emergency closures | - |
 | `/admin/users` | Teacher/student management | FR50 |
-| `/admin/settings` | App settings (languages, cities, data maintenance) | - |
+| `/admin/settings` | App settings (business config, languages, cities, calendar feed, data maintenance) | - |
 | `/admin/theme-editor` | Design system customization with live preview | - |
 | `/admin/pending-cancellations` | Teacher cancellation approval workflow | FR13-14 |
 | `/admin/time-off-approvals` | Teacher vacation/sick/personal time-off requests | Extra |
@@ -526,6 +526,14 @@ These features were built during implementation but aren't in the original PRD. 
 ---
 
 ## Recent Changes
+
+### 2026-02-01: Business Configuration System
+
+- **Business config:** 57 runtime-configurable settings across 8 categories (pricing, teacher tiers, plan discounts, status durations, billing rules, travel/scheduling, lead matching, data retention) stored in `business_config` table with typed values and min/max validation.
+- **Audit trail:** All changes tracked in `business_config_audit` with old/new values, admin email, timestamp.
+- **Admin UI:** New "Business Configuration" section on `/admin/settings` with 8 category tabs, inline editing, and audit history modal per setting.
+- **API:** `GET/PUT /api/admin/business-config` with audit query support.
+- **Migration:** `094_business_config.sql` — creates tables, indexes, seeds all 57 defaults.
 
 ### 2026-01-31: Admin Calendar Edit, Color Picker, ICS Import
 

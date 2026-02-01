@@ -1,9 +1,9 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2026-01-30
+**Last Updated:** 2026-02-01
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
-**Endpoints:** 157 total
+**Endpoints:** 164 total
 
 ## Overview
 
@@ -24,7 +24,9 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | Slots | 5 | Availability grid, reservations, matches |
 | System | 5 | Closures, exceptions |
 | Calendar | 4 | Google Calendar sync |
+| Calendar Feed | 4 | ICS feed subscription (token management + public feed) |
 | Admin | 29 | Approvals, geocoding, relocation, host-transfer, settings, stripe sync, invoice payments |
+| Business Config | 3 | Runtime-configurable business settings with audit trail |
 | Admin Events | 5 | Admin calendar events CRUD |
 | Parent | 11 | Dashboard, cancellations, pausado, feedback, reschedule, location-host, smart suggestions, billing-profile |
 | Notifications | 5 | List, read, read-all, push registration |
@@ -3567,6 +3569,38 @@ Delete an admin calendar event.
 - **Response:** `{ success: true }`
 - **Error:** `404` if event not found
 
+## Calendar Feed APIs
+
+### GET /api/admin/calendar-feed
+Check if the current admin has an active calendar feed token.
+- **Auth:** Admin session
+- **Response (has token):** `{ hasToken: true, createdAt: 1738300000 }`
+- **Response (no token):** `{ hasToken: false }`
+
+### POST /api/admin/calendar-feed
+Generate a new feed token (replaces any existing one). Returns the raw token once.
+- **Auth:** Admin session
+- **CSRF:** Required
+- **Response (201):** `{ feedUrl: "https://eduschedule-app.pages.dev/api/calendar/feed.ics?token=abc123...", token: "abc123..." }`
+- **Notes:** Raw token is shown once and never stored. Only the SHA-256 hash is persisted.
+
+### DELETE /api/admin/calendar-feed
+Revoke the admin's feed token.
+- **Auth:** Admin session
+- **CSRF:** Required
+- **Response:** `{ revoked: true }`
+
+### GET /api/calendar/feed.ics
+Public ICS calendar feed endpoint. No session auth required — authenticates via token query parameter.
+- **Auth:** Token in `?token=<raw-token>` query param (SHA-256 hashed and looked up)
+- **Query Params:** `token` (required) — raw feed token
+- **Response:** `text/calendar; charset=utf-8` — RFC 5545 iCalendar content
+- **Error:** `401` if token missing or invalid
+- **Range:** Events from 1 month ago to 12 months ahead
+- **Notes:** Returns admin events (one-time, weekly, date-range) expanded to concrete dates with BRT→UTC time conversion
+
+---
+
 ### POST /api/admin/import-calendar
 Import admin events from a Google Calendar ICS export.
 - **Auth:** Admin only
@@ -3574,6 +3608,37 @@ Import admin events from a Google Calendar ICS export.
 - **Body:** `{ ics: string, clear_existing?: boolean }`
 - **Response:** `{ success: true, stats: { total_vevents, skipped_cancelled, skipped_exceptions, skipped_no_admin, skipped_parse_error, created, deleted_before } }`
 - **Notes:** Maps ATTENDEE emails to registered admin users. Cleans descriptions (removes Google Meet, Participantes, Reservado por). Creates one event per matched admin attendee.
+
+---
+
+## Business Config APIs
+
+Runtime-configurable business settings (pricing, status durations, billing rules, etc.) stored in `business_config` table with full audit trail. Replaces hardcoded constants for 57 settings across 8 categories.
+
+### GET /api/admin/business-config
+Returns all 57 settings grouped by category for the admin UI.
+- **Auth:** Admin only
+- **Response:** `{ categories: [{ category: { id, label_pt, icon }, settings: BusinessConfigRow[] }] }`
+
+### GET /api/admin/business-config?audit=KEY
+Returns change history for a specific config key.
+- **Auth:** Admin only
+- **Query Parameters:**
+  - `audit` (string, required) - Config key to get history for
+  - `limit` (number, optional, default 20, max 100) - Number of entries
+- **Response:** `{ key: string, history: BusinessConfigAuditRow[] }`
+
+### PUT /api/admin/business-config
+Update a single business config value. Validates against min/max bounds per value type.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:**
+  - `config_key` (string, required) - Setting key (e.g. `pricing_parent.individual_presencial`)
+  - `config_value` (string, required) - New value as string
+- **Response:** `{ success: true, key: string, value: string }`
+- **Errors:**
+  - `VALIDATION_ERROR` - Key not found, value out of bounds, or invalid type
+- **Notes:** Creates audit trail entry with old/new values and admin email. Values validated against `value_type` (number/string/boolean) and `min_value`/`max_value` bounds.
 
 ---
 

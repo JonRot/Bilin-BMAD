@@ -2,7 +2,7 @@
 
 > **Purpose:** When modifying a feature, this document maps ALL code locations that need review. Prevents missed files during changes and helps understand how components connect.
 
-**Last Updated:** 2026-02-01
+**Last Updated:** 2026-02-01 (Added Section 40: Business Configuration System)
 
 ---
 
@@ -57,6 +57,8 @@
 | [Autentique Contracts](#36-autentique-contract-signing) | contracts, autentique-service.ts |
 | [Admin Calendar Events](#37-admin-calendar-events) | admin_events, admin-event.ts, enrollments.astro |
 | [ICS Calendar Feed](#38-ics-calendar-feed) | calendar_feed_tokens, ics-generator.ts, settings.astro |
+| [Constants & Settings Registry](#39-constants--configurable-settings-registry) | billing.ts, invoice.ts, config.ts, enrollment-statuses.ts, matching.ts |
+| [Business Configuration](#40-business-configuration-system) | business-config-service.ts, business-config.ts (API + validation), settings.astro, settings-client.ts |
 
 ---
 
@@ -2057,6 +2059,455 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 | Page | Purpose |
 |------|---------|
 | `/admin/settings` | "Calendário Externo" section with generate/copy/revoke UI |
+
+---
+
+## 39. Constants & Configurable Settings Registry
+
+**Purpose:** Master registry of ALL business constants, where they're defined, where they're consumed, and known hardcoded duplicates. Use this to ensure consistency when changing any business rule or rate.
+
+> **When adding a new constant:** Add it here. When finding a hardcoded value: check here first, then add the file to the consumer list.
+
+### 39.1 Pricing — Parent Rates
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| `PARENT_INDIVIDUAL_RATE` | 150 (R$) | `constants/invoice.ts` | Individual presencial rate |
+| `PARENT_GROUP_RATE` | 125 (R$) | `constants/invoice.ts` | Group presencial rate per student |
+| `PARENT_INDIVIDUAL_ONLINE_RATE` | 120 (R$) | `constants/invoice.ts` | Individual online rate |
+| `PARENT_GROUP_ONLINE_RATE` | 120 (R$) | `constants/invoice.ts` | Group online rate per student |
+| `INDIVIDUAL_CLASS_CENTAVOS` | 15000 | `constants/billing.ts` | Individual presencial (centavos) |
+| `GROUP_CLASS_CENTAVOS` | 12500 | `constants/billing.ts` | Group presencial (centavos) |
+| `INDIVIDUAL_RATE` | 150 | `services/group-service.ts` | Used in rate calculations |
+| `GROUP_RATE` | 125 | `services/group-service.ts` | Used in rate calculations |
+| `getParentRate()` | function | `constants/invoice.ts` | Returns correct rate by online+group flags |
+
+**Consumers:**
+
+| File | How It's Used |
+|------|---------------|
+| `pages/admin/invoices.astro` | Invoice calculations via `getParentRate()` |
+| `services/group-service.ts` | `calculateEffectiveRate()` |
+| `services/group-cancellation-service.ts` | Late cancellation billing (uses `original_rate`) |
+| `services/enrollment-service.ts` | Rate calculations for new enrollments |
+| `services/contract-service.ts` | Contract pricing display |
+| `contracts/templates/termo-matricula.ts` | Contract PDF rate display |
+| `pages/parent/invoice.astro` | Parent billing display |
+| `pages/parent/cancel-choice.astro` | Rate change decision UI |
+| `lib/stripe/config.ts` | Stripe subscription pricing |
+
+**⚠️ Known Hardcoded Duplicates (need fixing):**
+
+| File | Line | Value | Issue |
+|------|------|-------|-------|
+| `scripts/enrollments-page-client.ts` | ~3813 | `GROUP_RATE = 125; INDIVIDUAL_RATE = 150` | Duplicated from constants (client-side) |
+| `scripts/enrollments-page-client.ts` | ~1059 | `classData.hourlyRate \|\| 150` | Fallback should use constant |
+| `pages/parent/cancel-choice.astro` | ~574 | `data.amount \|\| 150` | Fallback should use constant |
+| `pages/parent/index.astro` | ~1578 | `'R$ 150'` | Hardcoded string |
+| `pages/api/enrollments/[id]/start-class.ts` | ~209 | `actualRate = 150` | Should use INDIVIDUAL_RATE |
+
+---
+
+### 39.2 Pricing — Teacher Tier Rates
+
+| Tier | Score Range | Individual | Group (per student) | Defined In |
+|------|-----------|-----------|---------------------|-----------|
+| NEW | 0–499 | R$79 | R$50 | `services/teacher-credits.ts` |
+| STANDARD | 500–699 | R$85 | R$58 | `services/teacher-credits.ts` |
+| PREMIUM | 700–899 | R$90 | R$65 | `services/teacher-credits.ts` |
+| ELITE | 900–1000 | R$95 | R$70 | `services/teacher-credits.ts` |
+
+**Legacy centavos (ELITE only):**
+
+| Constant | Value | Defined In |
+|----------|-------|-----------|
+| `TEACHER_INDIVIDUAL_CENTAVOS` | 9500 | `constants/billing.ts` |
+| `TEACHER_GROUP_CENTAVOS` | 7000 | `constants/billing.ts` |
+
+**Consumers:**
+
+| File | How It's Used |
+|------|---------------|
+| `services/teacher-credits.ts` | `getTierForScore()`, `getRatesForTier()` |
+| `constants/invoice.ts` | Teacher pay calculations |
+| `pages/admin/invoices.astro` | Teacher payroll calculations |
+| `pages/teacher/invoice.astro` | Teacher earnings display |
+
+---
+
+### 39.3 Pricing — Enrollment Fee & Discounts
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| Matrícula fee | R$150 (15000 centavos) | `contracts/templates/termo-matricula.ts` | Contract enrollment fee |
+| `PLAN_DISCOUNTS.monthly` | 0% | `constants/billing.ts` | Monthly plan — no discount |
+| `PLAN_DISCOUNTS.semester` | 10% | `constants/billing.ts` | Semester plan discount |
+| `PLAN_DISCOUNTS.annual` | 15% | `constants/billing.ts` | Annual plan discount |
+
+**Consumers:** `lib/stripe/config.ts`, `constants/billing.ts` (`calculateDiscount()`, `calculateFinalAmount()`)
+
+---
+
+### 39.4 Pricing — Stripe Payment Fees
+
+| Constant | Value | Defined In |
+|----------|-------|-----------|
+| `CREDIT_CARD_PERCENT` | 3.99% | `constants/billing.ts` |
+| `CREDIT_CARD_FIXED_CENTAVOS` | 39 (R$0.39) | `constants/billing.ts` |
+| `BOLETO_FIXED_CENTAVOS` | 349 (R$3.49) | `constants/billing.ts` |
+| `PIX_PERCENT` | 0.99% | `constants/billing.ts` |
+
+**Consumers:** `lib/stripe/config.ts`, billing display components
+
+---
+
+### 39.5 Status Durations
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| `PAUSADO_MAX_DAYS` | 21 | `constants/enrollment-statuses.ts` | 3 weeks max pause |
+| `AVISO_MAX_DAYS` | 14 | `constants/enrollment-statuses.ts` | 2 weeks warning period |
+| `PAUSADO_COOLDOWN_MONTHS` | 5 | `constants/enrollment-statuses.ts` | Months before can pause again |
+| `TRIAL_DURATION_DAYS` | 30 | `constants/enrollment-statuses.ts` | Trial class period |
+| `TRIAL_WARNING_DAYS` | 7 | `constants/enrollment-statuses.ts` | Days before trial expiry warning |
+
+**Consumers:**
+
+| File | How It's Used |
+|------|---------------|
+| `services/status-machine.ts` | Expiry calculations |
+| `services/pausado-automator.ts` | Auto-transition PAUSADO → ATIVO |
+| `services/aviso-automator.ts` | Auto-transition AVISO → INATIVO |
+| `services/schedule-page-service.ts` | `calculateProjectedStatus()` week projection |
+| `scripts/enrollments-page-client.ts` | Timeline display (⚠️ uses hardcoded 21/14) |
+| `pages/admin/enrollments.astro` | Warning messages |
+| `pages/admin/pausado-approvals.astro` | History display |
+| `services/trial-automator.ts` | Trial period management |
+
+---
+
+### 39.6 Billing Rule Constants
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| `CANCELLATION_NOTICE_HOURS` | 24 | `constants/billing.ts` | Hours required for free cancellation |
+| `MAX_RESCHEDULE_CREDITS_PER_MONTH` | 1 | `constants/billing.ts` | Monthly reschedule limit |
+| `RESCHEDULE_CREDIT_EXPIRY_DAYS` | 30 | `constants/billing.ts` | Days before credit expires |
+| `PAYMENT_GRACE_PERIOD_DAYS` | 7 | `constants/billing.ts` | Days before subscription paused |
+| `AUTO_COMPLETION_OFFSET_HOURS` | 0 | `constants/billing.ts` | Hours before class end to auto-complete |
+| `TEACHER_CONFIRMATION_WINDOW_HOURS` | 48 | `constants/billing.ts` | Hours teacher has to confirm class |
+| `TRIAL_PERIOD_DAYS` | 30 | `constants/billing.ts` | Paid trial period |
+| `MIN_GROUP_SIZE_FOR_GROUP_RATE` | 2 | `constants/billing.ts` | Minimum students for group pricing |
+| `FREE_CANCELLATION_REASONS` | array | `constants/billing.ts` | Reasons that never get charged |
+
+**Consumers:** `services/group-cancellation-service.ts`, `services/auto-completion-service.ts`, `services/payment-grace-service.ts`, `pages/api/parent/reschedule-class.ts`, `pages/api/enrollments/[id]/exceptions/*`
+
+---
+
+### 39.7 Teacher Credit & Gamification Points
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| `CLASS_COMPLETED` | +5 | `services/teacher-credits.ts` | Points for completing a class |
+| `CLASS_CONFIRMED_EARLY` | +3 | `services/teacher-credits.ts` | Early confirmation bonus |
+| `CLASS_CONFIRMED_LATE` | -2 | `services/teacher-credits.ts` | Late confirmation penalty |
+| `PARENT_FEEDBACK_POSITIVE` | +10 | `services/teacher-credits.ts` | Positive parent feedback |
+| `PARENT_FEEDBACK_NEGATIVE` | -15 | `services/teacher-credits.ts` | Negative parent feedback |
+| `PUNCTUALITY_BONUS` | +2 | `services/teacher-credits.ts` | On-time start bonus |
+| `PUNCTUALITY_PENALTY` | -5 | `services/teacher-credits.ts` | Late start penalty |
+| `FEEDBACK_ON_TIME` | +1 | `services/teacher-credits.ts` | BILIN feedback submitted on time |
+| `FEEDBACK_LATE` | 0 | `services/teacher-credits.ts` | BILIN feedback submitted late |
+| `FEEDBACK_MISSED` | -1 | `services/teacher-credits.ts` | BILIN feedback not submitted |
+| `NO_SHOW_ON_TIME` | +1 | `services/teacher-credits.ts` | No-show reported on time |
+| `NO_SHOW_LATE` | 0 | `services/teacher-credits.ts` | No-show reported late |
+| `DEFAULT_NEW_TEACHER_SCORE` | 300 | `services/teacher-credits.ts` | Starting score for new teachers |
+| Grandfathered teacher score | 950 (ELITE) | `services/teacher-credits.ts` | Existing teachers default |
+
+**Tier Score Thresholds:** NEW 0–499, STANDARD 500–699, PREMIUM 700–899, ELITE 900–1000
+
+**Consumers:** `services/teacher-credits.ts`, `pages/teacher/invoice.astro`, `pages/admin/invoices.astro`
+
+---
+
+### 39.8 Travel & Matching Constants
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| `MAX_TRAVEL_MINUTES` | 45 | `constants/matching.ts` | Maximum acceptable travel time |
+| `CLOSE_TRAVEL_MINUTES` | 15 | `constants/matching.ts` | "Close" travel threshold |
+| `WARNING_TRAVEL_MINUTES` | 30 | `constants/matching.ts` | Warning threshold |
+| `MIN_GAP_BETWEEN_CLASSES` | 15 | `constants/matching.ts` | Minimum gap minutes |
+| `TIME_ROUNDING_MINUTES` | 15 | `constants/matching.ts` | Round travel to nearest N min |
+| `TRAVEL_BUFFER_MINUTES` | 5 | `constants/matching.ts` | Extra buffer per direction |
+| `MIN_SLOT_FOR_BOOKING` | 60 | `constants/matching.ts` | Minimum slot size for booking |
+| `DEFAULT_CLASS_DURATION` | 60 | `constants/matching.ts` | Standard class length |
+| `MAX_DISTANCE_FROM_CENTER_KM` | 150 | `services/travel-time-service.ts` | Region bounds from Florianópolis |
+| `CACHE_DURATION_DAYS` | 30 | `services/travel-time-service.ts` | Travel time cache TTL |
+| `ANOMALY_HIGH_TIME_MINUTES` | 60 | `services/travel-time-service.ts` | Flag suspiciously high times |
+| `ANOMALY_LOW_TIME_MINUTES` | 2 | `services/travel-time-service.ts` | Flag suspiciously low times |
+| `SLOT_DURATION_MINUTES` | 60 | `services/slot-service.ts` | Default slot size |
+| `SLOT_INCREMENT_MINUTES` | 30 | `services/slot-service.ts` | Slot grid increment |
+| `RESERVATION_DURATION_SECONDS` | 300 | `services/slot-reservation-service.ts` | 5-min slot hold |
+| `OFFER_EXPIRY_DAYS` | 7 | `services/slot-offer-service.ts` | Slot offer validity |
+| `ADDRESS_CACHE_TTL` | 7 days | `services/address-autocomplete.ts` | Address cache TTL |
+
+**Consumers:** `services/travel-time-service.ts`, `services/route-efficiency-service.ts`, `services/reschedule-suggestion-service.ts`, `services/slot-service.ts`, `services/slot-calculator.ts`, `services/lead-readiness-service.ts`, `pages/api/reschedule-suggestions/*`
+
+**⚠️ Known Local Constants (not exported):**
+
+| File | Constant | Value |
+|------|----------|-------|
+| `services/travel-time-service.ts` | `BATCH_SIZE` | 5 (API batch limit) |
+| `services/route-efficiency-service.ts` | `BUFFER_ROUNDING` | 5 (minutes) |
+
+---
+
+### 39.9 Lead Matching & Scoring Weights
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| `SAME_BUILDING` | 40 pts | `constants/matching.ts` | Location proximity — same building |
+| `SAME_STREET` | 25 pts | `constants/matching.ts` | Location proximity — same street |
+| `SAME_CEP_PREFIX` | 15 pts | `constants/matching.ts` | Location proximity — same CEP |
+| `SAME_NEIGHBORHOOD` | 10 pts | `constants/matching.ts` | Location proximity — same neighborhood |
+| `SAME_ZONE` | 5 pts | `constants/matching.ts` | Location proximity — same zone |
+| `SCORE_THRESHOLD_HIGH` | 70 | `constants/matching.ts` | High match threshold |
+| `SCORE_THRESHOLD_MEDIUM` | 40 | `constants/matching.ts` | Medium match threshold |
+
+**Zone Buffers:** Same zone 5min, Adjacent 15min, Different 25min (in `constants/matching.ts`)
+
+**Consumers:** `services/lead-readiness-service.ts`, `pages/admin/leads.astro`, `scripts/leads-page-client.ts`
+
+---
+
+### 39.10 Calendar & Schedule Settings
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| `DAYS_AHEAD` | 90 | `constants/config.ts` | Calendar lookahead |
+| `DAYS_BEHIND` | 7 | `constants/config.ts` | Calendar lookback |
+| `MAX_EVENTS_PER_QUERY` | 250 | `constants/config.ts` | Query limit |
+| `DEFAULT_EVENT_DURATION_MINUTES` | 60 | `constants/config.ts` | Default class length |
+| `MIN_BUFFER_TIME_MINUTES` | 15 | `constants/config.ts` | Minimum travel buffer |
+| `MAX_BUFFER_TIME_MINUTES` | 60 | `constants/config.ts` | Maximum travel buffer |
+| `DEFAULT_BUFFER_TIME_MINUTES` | 30 | `constants/config.ts` | Default travel buffer |
+| `DEFAULT_CLASS_DURATION_MINUTES` | 60 | `constants/enrollment-statuses.ts` | Standard class length |
+| ICS feed lookback | 1 month | `pages/api/calendar/feed.ics.ts` | ICS feed range start |
+| ICS feed lookahead | 12 months | `pages/api/calendar/feed.ics.ts` | ICS feed range end |
+
+**⚠️ ICS feed window (1 month / 12 months) is hardcoded in `feed.ics.ts`, not in a constants file.**
+
+---
+
+### 39.11 Session, Rate Limits & Security
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| `SESSION.MAX_AGE_DAYS` | 7 | `constants/config.ts` | Session duration |
+| `SESSION.REFRESH_THRESHOLD_MS` | 300000 (5min) | `constants/config.ts` | Session refresh window |
+| `RATE_LIMITS.AUTH` | 5 per 15min | `constants/config.ts` | Login attempt limit |
+| `RATE_LIMITS.READ` | 60 per 60s | `constants/config.ts` | API read limit |
+| `RATE_LIMITS.WRITE` | 30 per 60s | `constants/config.ts` | API write limit |
+| `ENCRYPTION.ALGORITHM` | AES-GCM | `constants/config.ts` | Encryption algorithm |
+| `ENCRYPTION.KEY_LENGTH` | 256 bits | `constants/config.ts` | Key length |
+
+---
+
+### 39.12 Validation Limits
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| `MAX_NAME_LENGTH` | 100 | `constants/config.ts` | Name field max |
+| `MAX_EMAIL_LENGTH` | 255 | `constants/config.ts` | Email field max |
+| `MAX_PHONE_LENGTH` | 20 | `constants/config.ts` | Phone field max |
+| `MAX_NOTES_LENGTH` | 1000 | `constants/config.ts` | Notes/text max |
+| `MAX_ADDRESS_LENGTH` | 500 | `constants/config.ts` | Address field max |
+| `MAX_FILE_SIZE_MB` | 5 | `constants/config.ts` | Upload file size limit |
+| `PAGINATION.DEFAULT_PAGE_SIZE` | 20 | `constants/config.ts` | Default items per page |
+| `PAGINATION.MAX_PAGE_SIZE` | 100 | `constants/config.ts` | Max items per page |
+| `PAGINATION.MIN_PAGE_SIZE` | 5 | `constants/config.ts` | Min items per page |
+| `MIN_AGE` | 0 | `constants/config.ts` | Student min age |
+| `MAX_AGE` | 120 | `constants/config.ts` | Student max age |
+
+---
+
+### 39.13 Trash & Data Retention
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| Trash auto-purge | 90 days | `pages/api/students/index.ts` | ⚠️ **HARDCODED** — not in constants |
+| Historical lock | 30 days | `validation/historical-constraints.ts` | Classes >30 days can't be edited |
+| Feedback bonus window | 24h | `services/teacher-credits.ts` | Bonus for timely BILIN feedback |
+| Feedback penalty delay | 48h | `services/teacher-credits.ts` | Penalty for missed feedback |
+| Audit log retention | 2 years | (not enforced in code) | LGPD requirement |
+
+---
+
+### 39.14 Holiday & Closure Configuration
+
+| Setting | Value | Defined In | Purpose |
+|---------|-------|-----------|---------|
+| Carnaval extension | -3d / +1d from Tuesday | `pages/api/admin/sync-holidays.ts` | Saturday–Wednesday |
+| Semana Santa extension | -1d from Friday | `pages/api/admin/sync-holidays.ts` | Thursday–Friday |
+| SC State Holiday | Aug 11 | `pages/api/admin/sync-holidays.ts` | Data Magna de SC |
+| Florianópolis municipal | Mar 23 | `pages/api/admin/sync-holidays.ts` | City holiday |
+| Balneário Camboriú municipal | Jul 20 | `pages/api/admin/sync-holidays.ts` | City holiday |
+| Itajaí municipal | Jun 15 | `pages/api/admin/sync-holidays.ts` | City holiday |
+| São José municipal | Mar 19 | `pages/api/admin/sync-holidays.ts` | City holiday |
+
+**⚠️ All holiday configs are hardcoded in the sync endpoint, not in a constants file or database settings.**
+
+---
+
+### 39.15 Locale & Regional
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| `TIMEZONE` | America/Sao_Paulo | `constants/config.ts` | App timezone |
+| `DEFAULT_CITY` | Florianópolis | `constants/config.ts` | Default city |
+| `DATE_FORMAT` | DD/MM/YYYY | `constants/config.ts` | Brazilian date format |
+| `CURRENCY` | BRL | `constants/config.ts` | Brazilian Real |
+| `LOCALE` | pt-BR | `constants/config.ts` | Language locale |
+
+---
+
+### 39.16 UI Timing & Debounce
+
+| Constant | Value | Defined In | Purpose |
+|----------|-------|-----------|---------|
+| `DEBOUNCE.SEARCH` | 300ms | `constants/config.ts` | Search input delay |
+| `DEBOUNCE.FILTER` | 200ms | `constants/config.ts` | Filter input delay |
+| `DEBOUNCE.SAVE` | 1000ms | `constants/config.ts` | Auto-save delay |
+| `TIMEOUTS.DEFAULT` | 30s | `constants/config.ts` | API call timeout |
+| `TIMEOUTS.LONG` | 60s | `constants/config.ts` | Long operation timeout |
+| `TIMEOUTS.NOTIFICATION` | 5s | `constants/config.ts` | Toast display time |
+| `RETRY.MAX_ATTEMPTS` | 3 | `constants/config.ts` | API retry limit |
+| `RETRY.INITIAL_DELAY_MS` | 1000 | `constants/config.ts` | First retry delay |
+| `RETRY.MAX_DELAY_MS` | 10000 | `constants/config.ts` | Max retry delay |
+
+---
+
+### 39.17 Database-Backed Settings (Admin Configurable)
+
+These are stored in the `app_settings` table and managed via `/admin/settings`:
+
+| Setting Key | Source | Admin UI |
+|-------------|--------|----------|
+| `languages` | `constants/languages.ts` (60+ options) | ✅ Add/toggle/delete |
+| `cities` | IBGE API (cascading state→city) | ✅ Add/toggle/delete |
+| `class_modes` | `constants/class-settings.ts` | Category exists |
+| `plan_types` | `constants/class-settings.ts` | Category exists |
+
+**API:** `GET/POST/PUT/PATCH/DELETE /api/settings`
+**Database:** `app_settings` table (`setting_key`, `setting_value`, `active`, `display_order`)
+
+**Business Config (57 settings):** See [Section 40](#40-business-configuration-system) for the runtime-configurable `business_config` table system covering pricing, status durations, billing rules, travel, matching weights, and data retention.
+
+---
+
+### 39.18 Feature Flags
+
+| Flag | Default | Defined In | Purpose |
+|------|---------|-----------|---------|
+| `PWA` | false | `constants/config.ts` | Progressive Web App |
+| `OFFLINE_MODE` | false | `constants/config.ts` | Offline support |
+| `ANALYTICS` | false | `constants/config.ts` | Usage analytics |
+| `SERVICE_WORKER` | false | `constants/config.ts` | SW registration |
+| `VIRTUAL_SCROLLING` | false | `constants/config.ts` | Large list optimization |
+| `WEBSOCKETS` | false | `constants/config.ts` | Real-time updates |
+
+---
+
+### Constants File Index
+
+| File | Categories Covered |
+|------|--------------------|
+| `src/constants/billing.ts` | Parent pricing (centavos), billing rules, plan discounts, Stripe fees, refund policy |
+| `src/constants/invoice.ts` | Parent rates (R$), teacher pay tiers, invoice calculation helpers |
+| `src/constants/enrollment-statuses.ts` | Status values, transitions, durations (PAUSADO/AVISO/trial), class duration |
+| `src/constants/config.ts` | Session, rate limits, validation limits, calendar, pagination, locale, debounce, timeouts, retry, feature flags |
+| `src/constants/matching.ts` | Location proximity weights, travel limits, zone buffers, scoring thresholds |
+| `src/constants/theme.ts` | CSS variables, brand colors, component tokens |
+| `src/constants/ui.ts` | Nav links, messages, labels, weekdays, cancellation reasons |
+| `src/constants/languages.ts` | 72+ world languages with Portuguese labels |
+| `src/constants/bilin.ts` | 7 pedagogical pillars, 6 skill dimensions, rating scale |
+| `src/constants/class-settings.ts` | Class format (Individual/Grupo) and location (Presencial/Online) options |
+| `src/constants/validation-messages.ts` | Zod error messages in Portuguese |
+| `src/constants/user-forms.ts` | Form field metadata |
+| `src/constants/api.ts` | API route paths, Google API URLs |
+| `src/lib/services/teacher-credits.ts` | Teacher tier thresholds, tier rates, gamification point values |
+| `src/lib/services/travel-time-service.ts` | Cache TTL, anomaly thresholds, region bounds |
+| `src/lib/services/slot-service.ts` | Slot duration, increment |
+| `src/lib/services/slot-reservation-service.ts` | Reservation hold duration |
+| `src/lib/services/slot-offer-service.ts` | Offer expiry |
+| `src/pages/api/admin/sync-holidays.ts` | Holiday extensions, municipal holiday dates |
+
+---
+
+## 40. Business Configuration System
+
+**Core concept:** 57 runtime-configurable business settings stored in `business_config` table, replacing hardcoded constants for pricing, status durations, billing rules, travel/scheduling, lead matching weights, and data retention. All changes audited.
+
+### Database Tables
+
+| Table | Purpose | Migration |
+|-------|---------|-----------|
+| `business_config` | 57 settings across 8 categories with typed values and min/max bounds | 094 |
+| `business_config_audit` | Change history with old/new values, admin email, timestamp | 094 |
+
+### Categories (8)
+
+| Category ID | Label | Settings |
+|-------------|-------|----------|
+| `pricing_parent` | Taxas de Pais | 5 (individual/group/online rates, enrollment fee) |
+| `pricing_teacher` | Taxas de Professores | 12 (NEW/STANDARD/PREMIUM/ELITE tier rates + thresholds) |
+| `plan_discounts` | Descontos por Plano | 3 (monthly/semester/annual discounts) |
+| `status_durations` | Durações de Status | 5 (PAUSADO/AVISO days, cooldown, trial period) |
+| `billing_rules` | Regras de Cobrança | 6 (cancellation window, reschedule credits, grace period) |
+| `travel_scheduling` | Viagem e Agendamento | 5 (max travel, buffer, min gap, class duration) |
+| `lead_matching` | Pesos de Matching | 5 (building/street/cep/neighborhood/zone weights) |
+| `data_retention` | Retenção de Dados | 3 (trash purge, historical lock, feedback bonus) |
+
+### TypeScript Interfaces
+
+| File | Interface(s) |
+|------|--------------|
+| `src/lib/services/business-config-service.ts` | `BusinessConfigRow`, `BusinessConfigAuditRow`, `CategoryMeta`, `GroupedBusinessConfig` |
+
+### Service Layer
+
+| File | Class/Function |
+|------|----------------|
+| `src/lib/services/business-config-service.ts` | `BusinessConfigService` — `getNumber()`, `getString()`, `getBoolean()`, `getAllGrouped()`, `setValue()`, `getAuditHistory()` |
+
+### Validation
+
+| File | Schema |
+|------|--------|
+| `src/lib/validation/business-config.ts` | `UpdateBusinessConfigSchema`, `AuditQuerySchema` |
+
+### API Endpoints
+
+| File | Endpoints |
+|------|-----------|
+| `src/pages/api/admin/business-config.ts` | `GET` (all grouped / audit history), `PUT` (update with validation) |
+
+### Client Script
+
+| File | Functions |
+|------|-----------|
+| `src/scripts/settings-client.ts` | `loadBusinessConfig()`, `renderBconfigCategory()`, `bconfigStartEdit()`, `bconfigSave()`, `bconfigShowAudit()` |
+
+### UI
+
+| File | Section |
+|------|---------|
+| `src/pages/admin/settings.astro` | Business Configuration section — 8 category tabs with inline editing and audit history modal |
+
+### Cross-References
+
+- **Section 39** — Constants that overlap with business_config values (pricing, durations, billing rules)
+- **Section 19** — Settings page also manages languages, cities, calendar feed, data maintenance
 
 ---
 
