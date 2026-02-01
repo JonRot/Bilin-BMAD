@@ -25,7 +25,7 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | System | 5 | Closures, exceptions |
 | Calendar | 4 | Google Calendar sync |
 | Admin | 29 | Approvals, geocoding, relocation, host-transfer, settings, stripe sync, invoice payments |
-| Admin Events | 3 | Admin calendar events CRUD |
+| Admin Events | 5 | Admin calendar events CRUD |
 | Parent | 11 | Dashboard, cancellations, pausado, feedback, reschedule, location-host, smart suggestions, billing-profile |
 | Notifications | 5 | List, read, read-all, push registration |
 | Change Requests | 5 | CRUD, approve/reject |
@@ -3544,12 +3544,36 @@ Create a new admin calendar event.
   - `end_time` (string, required) - HH:MM format
 - **Response:** `201 Created` with `{ event: AdminEvent }`
 
+### GET /api/admin/events/[id]
+Get a single admin calendar event by ID.
+- **Auth:** Admin only
+- **Response:** `{ data: AdminEvent }`
+- **Error:** `404` if event not found
+
+### PUT /api/admin/events/[id]
+Update an admin calendar event.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** Same fields as POST (except `created_by` which stays fixed)
+  - `title`, `description`, `admin_id`, `recurrence`, `is_all_day`
+  - Conditional: `event_date`, `day_of_week`, `range_start`, `range_end`, `start_time`, `end_time`
+- **Response:** `{ data: AdminEvent }`
+- **Error:** `404` if event not found
+
 ### DELETE /api/admin/events/[id]
 Delete an admin calendar event.
 - **Auth:** Admin only
 - **CSRF:** Required
 - **Response:** `{ success: true }`
 - **Error:** `404` if event not found
+
+### POST /api/admin/import-calendar
+Import admin events from a Google Calendar ICS export.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** `{ ics: string, clear_existing?: boolean }`
+- **Response:** `{ success: true, stats: { total_vevents, skipped_cancelled, skipped_exceptions, skipped_no_admin, skipped_parse_error, created, deleted_before } }`
+- **Notes:** Maps ATTENDEE emails to registered admin users. Cleans descriptions (removes Google Meet, Participantes, Reservado por). Creates one event per matched admin attendee.
 
 ---
 

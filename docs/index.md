@@ -527,6 +527,15 @@ These features were built during implementation but aren't in the original PRD. 
 
 ## Recent Changes
 
+### 2026-01-31: Admin Calendar Edit, Color Picker, ICS Import
+
+- **Event edit:** Edit button on detail modal opens creation form pre-populated. GET/PUT API endpoints. Instant open using client-side stored data (no fetch delay).
+- **Color picker:** 10-swatch picker + auto option. `color` column on `admin_events` (migration 091). Applied across all view components.
+- **Detail modal:** Read-only admin chip, removed "Fechar" button, wider modals (500px).
+- **ICS import:** `POST /api/admin/import-calendar` + `scripts/import-ics.mjs`. Parses Google Calendar ICS exports, maps attendees to admin users, cleans descriptions. 334 events imported.
+- **Week view:** Time range expanded from 07:00–21:00 to 00:00–24:00.
+- **Expanded events:** `event_date`, `day_of_week`, `range_start`, `range_end` added to `ExpandedAdminEvent`.
+
 ### 2026-01-24: Enhanced Lead Scoring & Smart Categorization System
 
 **Location Proximity Scoring:**
