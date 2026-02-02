@@ -2504,6 +2504,20 @@ These are stored in the `app_settings` table and managed via `/admin/settings`:
 |------|---------|
 | `src/pages/admin/settings.astro` | Business Configuration section — 8 category tabs with inline editing and audit history modal |
 
+### Runtime Config Wiring (locals.config)
+
+The following files read business config values at runtime via `Astro.locals.config` / `locals.config`:
+
+| File | Config Properties Used |
+|------|----------------------|
+| `src/middleware.ts` | Loads all 57 settings into `locals.config` |
+| `src/lib/runtime-business-config.ts` | `BusinessConfig` interface, loader, defaults |
+| `src/scripts/config-bridge.ts` | Client-side bridge reading from DOM |
+| ~19 Astro pages/components | Various (pricing, durations, tier rates, travel) |
+| ~16 API routes | Various (pricing, durations, class duration, travel) |
+| ~8 service files | Via constructor/method params |
+| 6 client scripts | Via config-bridge.ts |
+
 ### Cross-References
 
 - **Section 39** — Constants that overlap with business_config values (pricing, durations, billing rules)

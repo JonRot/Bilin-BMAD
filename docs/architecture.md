@@ -670,6 +670,55 @@ function calculateInvoice(enrollmentId: string, startDate: Date, endDate: Date):
 - Slot availability depends on enrollments
 - Invoice calculation depends on completions
 
+## Runtime Business Configuration
+
+### Overview
+
+Business settings (57 values across 8 categories) are stored in the `business_config` DB table and editable via `/admin/settings`. Astro middleware loads all settings from DB once per request into `locals.config` as a typed, frozen `BusinessConfig` object.
+
+### Architecture
+
+```
+Request → middleware.ts → loadBusinessConfig(db) → locals.config (BusinessConfig)
+                                                      ↓
+                                          Pages/APIs: Astro.locals.config / locals.config
+                                          Services: passed as constructor/method param
+                                          Client scripts: <div id="business-config"> → config-bridge.ts
+```
+
+### Key Files
+
+| File | Role |
+|------|------|
+| `src/lib/runtime-business-config.ts` | `BusinessConfig` interface, `loadBusinessConfig()`, `createDefaultBusinessConfig()` |
+| `src/middleware.ts` | Loads config per request, falls back to static defaults on error |
+| `src/env.d.ts` | Declares `config: BusinessConfig` on `App.Locals` |
+| `src/scripts/config-bridge.ts` | Client-side utility reading config from server-rendered DOM element |
+
+### Patterns
+
+- **Astro pages/components**: `const config = Astro.locals.config;` then use `config.propertyName`
+- **API routes**: `const config = locals.config;` then use `config.propertyName`
+- **Service classes**: Accept config via constructor, use instance property
+- **Helper functions**: Optional config parameter with static constant as default
+- **Client scripts**: Import `getConfigNumber()` from `config-bridge.ts`; parent page renders `<div id="business-config" data-config={JSON.stringify({...})} hidden>`
+- **Fallback**: `createDefaultBusinessConfig()` returns static constants as defaults when DB is unavailable
+
+### Config Categories
+
+| Category | Properties | Example |
+|----------|-----------|---------|
+| `pricing_parent` | parentIndividualRate, parentGroupRate, etc. | 150, 125 |
+| `pricing_teacher` | tierRates, tierStandardThreshold, etc. | ELITE: {individual: 80, group: 65} |
+| `plan_discounts` | planDiscountMonthly, planDiscountSemester, etc. | 0, 10, 15 |
+| `status_durations` | pausadoMaxDays, avisoMaxDays, trialDays, etc. | 21, 14, 30 |
+| `billing_rules` | cancellationWindowHours, gracePeriodDays, etc. | 24, 7 |
+| `travel_scheduling` | maxTravelMinutes, classDurationMinutes, etc. | 45, 60 |
+| `lead_matching` | buildingWeight, streetWeight, etc. | 40, 25 |
+| `data_retention` | trashPurgeDays, historicalLockDays, etc. | 90, 30 |
+
+---
+
 ## Implementation Patterns & Consistency Rules
 
 ### Pattern Categories Defined
@@ -1003,7 +1052,10 @@ eduschedule-app/
 │
 ├── src/
 │   ├── env.d.ts                  # TypeScript environment definitions
-│   ├── middleware.ts             # Astro middleware (auth, session)
+│   ├── middleware.ts             # Astro middleware (config loading)
+│   │
+│   ├── lib/
+│   │   ├── runtime-business-config.ts  # BusinessConfig interface + loader
 │   │
 │   ├── constants/                # Application constants
 │   │   ├── index.ts              # Barrel export
