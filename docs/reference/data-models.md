@@ -164,12 +164,7 @@ leads --> (converts to) students + enrollments
 | availability_windows | TEXT | | JSON array of preferred times |
 | referral_source | TEXT | | How did they find us |
 | referral_detail | TEXT | | Referral details |
-| **Trial Tracking** | | | |
-| trial_started_at | INTEGER | | When AULA_TESTE trial began |
-| trial_contract_status | TEXT | | NULL, 'PENDING', 'ACCEPTED', 'DECLINED' |
-| trial_contract_sent_at | INTEGER | | When contract extension was sent |
-| trial_contract_responded_at | INTEGER | | When parent responded |
-| trial_contract_type | TEXT | | 'MONTHLY', 'SEMESTER', 'ANNUAL' |
+| ~~**Trial Tracking**~~ | | | ~~Removed 2026-02-03 (migration 095)~~ |
 | **Other** | | | |
 | tshirt_size | TEXT | | T-shirt size from contracts page |
 | matricula_number | TEXT | | Structured matricula number (e.g. Nº12260001) |
@@ -179,15 +174,7 @@ leads --> (converts to) students + enrollments
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | archived_at | INTEGER | | Soft delete timestamp |
 
-**Status Values:** `ATIVO`, `AULA_TESTE`, `PAUSADO`, `AVISO`, `INATIVO` (uppercase, syncs with enrollment status)
-
-**Trial Period (AULA_TESTE):**
-- New students from lead conversion start with `AULA_TESTE` status
-- Trial period is 30 days from `trial_started_at`
-- Warning sent 7 days before trial ends
-- Contract types: MONTHLY (flexible), SEMESTER (6-month, 10% discount), ANNUAL (12-month, 15% discount)
-- On acceptance: status → ATIVO, contract dates set
-- On decline: status → INATIVO
+**Status Values:** `ATIVO`, `PAUSADO`, `AVISO`, `INATIVO` (uppercase, syncs with enrollment status)
 
 **Second Parent Login:** Both parent emails can log in via Google/Microsoft OAuth. The system auto-creates `parent_links` entries during Lead→Student conversion.
 

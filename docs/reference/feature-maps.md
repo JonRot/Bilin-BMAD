@@ -31,7 +31,7 @@
 | [Teacher Data](#10-teacher-data) | teacher.ts, users-page-client.ts |
 | [Student/Parent Data](#11-studentparent-data) | student.ts, users-page-client.ts |
 | [Payment/Billing](#12-paymentbilling) | stripe-service.ts, subscription-service.ts |
-| [Trial Tracking](#13-trial-tracking-aula_teste) | trial-automator.ts |
+| ~~Trial Tracking~~ | ~~Removed in 2026-02-03~~ |
 | [Historical Integrity](#14-historical-integrity) | student_status_history, historical-constraints.ts |
 | [Data Quality](#15-data-quality-system) | data-issue-service.ts, resolve-errors-client.ts |
 | [Backup System](#16-backup-system) | github-service.ts, backups.astro |
@@ -148,7 +148,7 @@
 
 ## 2. Status Lifecycle
 
-**Status values:** `ATIVO`, `PAUSADO`, `AVISO`, `INATIVO` (enrollments) + `AULA_TESTE` (students)
+**Status values:** `ATIVO`, `PAUSADO`, `AVISO`, `INATIVO` (both enrollments and students)
 
 ### Status Transition Rules
 
@@ -927,39 +927,9 @@ Students are soft-deleted via `archived_at` timestamp. Original status is preser
 
 ---
 
-## 13. Trial Tracking (AULA_TESTE)
+## 13. ~~Trial Tracking~~ (REMOVED 2026-02-03)
 
-**Flow:** Lead → AULA_TESTE student → 30 days → Contract sent → Accept/Decline → ATIVO/INATIVO
-
-### Database Columns (students table)
-
-| Column | Purpose |
-|--------|---------|
-| `trial_started_at` | When trial began |
-| `trial_contract_status` | NULL, PENDING, ACCEPTED, DECLINED |
-| `trial_contract_sent_at` | When contract was sent |
-| `trial_contract_responded_at` | When parent responded |
-| `trial_contract_type` | MONTHLY, SEMESTER, ANNUAL |
-
-### Services
-
-| File | Purpose |
-|------|---------|
-| `src/lib/services/trial-automator.ts` | Trial period logic |
-
-### API Endpoints
-
-| Endpoint | Purpose |
-|----------|---------|
-| `GET /api/trial-contracts` | List trial students |
-| `POST /api/trial-contracts/:studentId` | Send contract |
-| `PUT /api/trial-contracts/:studentId` | Accept/decline |
-
-### UI
-
-| Page | Purpose |
-|------|---------|
-| `/admin/users` | "Aula Teste" tab |
+The trial tracking system (AULA_TESTE status, 30-day countdown, contract extension flow) was removed. Lead conversions now create students directly as ATIVO. See migration 095.
 
 ---
 
@@ -1349,7 +1319,7 @@ Closures use `city_id` (e.g., "balneario", "florianopolis") while students use f
 | `POST /api/cron/auto-complete` | Auto-complete past classes | Every 15 min |
 | `POST /api/cron/pausado-check` | Transition PAUSADO → ATIVO | Daily |
 | `POST /api/cron/aviso-check` | Transition AVISO → INATIVO | Daily |
-| `POST /api/cron/trial-warnings` | Send trial expiry warnings | Daily |
+| ~~`POST /api/cron/trial-warnings`~~ | ~~Removed 2026-02-03~~ | ~~N/A~~ |
 | `POST /api/cron/payment-reminders` | Send payment reminders | Daily |
 | `POST /api/cron/feedback-penalties` | Apply feedback penalties | Daily |
 
@@ -1360,7 +1330,7 @@ Closures use `city_id` (e.g., "balneario", "florianopolis") while students use f
 | `src/lib/services/auto-completion-service.ts` | Class auto-completion logic |
 | `src/lib/services/pausado-automator.ts` | PAUSADO status transitions |
 | `src/lib/services/aviso-automator.ts` | AVISO status transitions |
-| `src/lib/services/trial-automator.ts` | Trial period management |
+| ~~`src/lib/services/trial-automator.ts`~~ | ~~Removed 2026-02-03~~ |
 
 ### Cloudflare Configuration
 
@@ -2168,8 +2138,8 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 | `PAUSADO_MAX_DAYS` | 21 | `constants/enrollment-statuses.ts` | 3 weeks max pause |
 | `AVISO_MAX_DAYS` | 14 | `constants/enrollment-statuses.ts` | 2 weeks warning period |
 | `PAUSADO_COOLDOWN_MONTHS` | 5 | `constants/enrollment-statuses.ts` | Months before can pause again |
-| `TRIAL_DURATION_DAYS` | 30 | `constants/enrollment-statuses.ts` | Trial class period |
-| `TRIAL_WARNING_DAYS` | 7 | `constants/enrollment-statuses.ts` | Days before trial expiry warning |
+| ~~`TRIAL_DURATION_DAYS`~~ | ~~30~~ | ~~Removed 2026-02-03~~ | ~~Trial class period~~ |
+| ~~`TRIAL_WARNING_DAYS`~~ | ~~7~~ | ~~Removed 2026-02-03~~ | ~~Days before trial expiry warning~~ |
 
 **Consumers:**
 
@@ -2182,7 +2152,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 | `scripts/enrollments-page-client.ts` | Timeline display (⚠️ uses hardcoded 21/14) |
 | `pages/admin/enrollments.astro` | Warning messages |
 | `pages/admin/pausado-approvals.astro` | History display |
-| `services/trial-automator.ts` | Trial period management |
+| ~~`services/trial-automator.ts`~~ | ~~Removed 2026-02-03~~ |
 
 ---
 
@@ -2196,7 +2166,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 | `PAYMENT_GRACE_PERIOD_DAYS` | 7 | `constants/billing.ts` | Days before subscription paused |
 | `AUTO_COMPLETION_OFFSET_HOURS` | 0 | `constants/billing.ts` | Hours before class end to auto-complete |
 | `TEACHER_CONFIRMATION_WINDOW_HOURS` | 48 | `constants/billing.ts` | Hours teacher has to confirm class |
-| `TRIAL_PERIOD_DAYS` | 30 | `constants/billing.ts` | Paid trial period |
+| ~~`TRIAL_PERIOD_DAYS`~~ | ~~30~~ | ~~`constants/billing.ts`~~ | ~~Paid trial period (removed 2026-02-03)~~ |
 | `MIN_GROUP_SIZE_FOR_GROUP_RATE` | 2 | `constants/billing.ts` | Minimum students for group pricing |
 | `FREE_CANCELLATION_REASONS` | array | `constants/billing.ts` | Reasons that never get charged |
 
@@ -2424,7 +2394,7 @@ These are stored in the `app_settings` table and managed via `/admin/settings`:
 |------|--------------------|
 | `src/constants/billing.ts` | Parent pricing (centavos), billing rules, plan discounts, Stripe fees, refund policy |
 | `src/constants/invoice.ts` | Parent rates (R$), teacher pay tiers, invoice calculation helpers |
-| `src/constants/enrollment-statuses.ts` | Status values, transitions, durations (PAUSADO/AVISO/trial), class duration |
+| `src/constants/enrollment-statuses.ts` | Status values, transitions, durations (PAUSADO/AVISO), class duration |
 | `src/constants/config.ts` | Session, rate limits, validation limits, calendar, pagination, locale, debounce, timeouts, retry, feature flags |
 | `src/constants/matching.ts` | Location proximity weights, travel limits, zone buffers, scoring thresholds |
 | `src/constants/theme.ts` | CSS variables, brand colors, component tokens |
@@ -2462,7 +2432,7 @@ These are stored in the `app_settings` table and managed via `/admin/settings`:
 | `pricing_parent` | Taxas de Pais | 5 (individual/group/online rates, enrollment fee) |
 | `pricing_teacher` | Taxas de Professores | 12 (NEW/STANDARD/PREMIUM/ELITE tier rates + thresholds) |
 | `plan_discounts` | Descontos por Plano | 3 (monthly/semester/annual discounts) |
-| `status_durations` | Durações de Status | 5 (PAUSADO/AVISO days, cooldown, trial period) |
+| `status_durations` | Durações de Status | 3 (PAUSADO/AVISO days, cooldown) |
 | `billing_rules` | Regras de Cobrança | 6 (cancellation window, reschedule credits, grace period) |
 | `travel_scheduling` | Viagem e Agendamento | 5 (max travel, buffer, min gap, class duration) |
 | `lead_matching` | Pesos de Matching | 5 (building/street/cep/neighborhood/zone weights) |
