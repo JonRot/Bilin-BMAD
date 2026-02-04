@@ -527,6 +527,10 @@ These features were built during implementation but aren't in the original PRD. 
 
 ## Recent Changes
 
+### 2026-02-04: Internacional Online Class Location
+
+- **New class_location:** `Internacional Online` added across constants, validation schemas, form options, and legacy compatibility. Migration 098 adds `pricing_parent.enrollment_fee_international_online` (R$150). Contract service uses three-tier fee selection based on class_location.
+
 ### 2026-02-04: Online Enrollment Fee
 
 - **New config:** `pricing_parent.enrollment_fee_online` (R$120) — separate enrollment fee for online students. Migration 097, runtime config, contract service auto-selects by `class_location`. All 9 contract API callers updated.
