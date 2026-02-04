@@ -527,6 +527,13 @@ These features were built during implementation but aren't in the original PRD. 
 
 ## Recent Changes
 
+### 2026-02-04: Connect All Settings Tabs to Runtime
+
+- **Full stack wiring:** All 57 `business_config` settings now flow from DB → middleware → `locals.config` → services/validation/API endpoints. Tabs 5-8 (Cobrança, Viagem, Matching, Dados) completed this session.
+- **Services updated:** `StripeWebhookService`, `waitlist-matcher`, `location-change-service`, `relocation-impact-service`, `group-cancellation-service`, `route-efficiency-service`, `lead-readiness-service`, `date-utils`, `historical-constraints` — all accept optional runtime config with static constant fallbacks.
+- **API callers updated:** 25+ endpoint files now pass runtime config from `locals.config` to services.
+- **Feature maps expanded:** 4 new sections (39-42) documenting Billing Rules, Travel & Scheduling, Matching Weights, Data Retention. Feature maps now at 47 sections total.
+
 ### 2026-02-01: Business Configuration System
 
 - **Business config:** 57 runtime-configurable settings across 8 categories (pricing, teacher tiers, plan discounts, status durations, billing rules, travel/scheduling, lead matching, data retention) stored in `business_config` table with typed values and min/max validation.

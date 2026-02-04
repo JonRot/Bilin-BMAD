@@ -2,7 +2,7 @@
 
 > **Purpose:** When modifying a feature, this document maps ALL code locations that need review. Prevents missed files during changes and helps understand how components connect.
 
-**Last Updated:** 2026-02-01 (Added Section 40: Business Configuration System)
+**Last Updated:** 2026-02-04 (Section 35 rewritten: complete runtime config connection map for parent pricing)
 
 ---
 
@@ -53,12 +53,17 @@
 | [Scheduling Analytics](#32-scheduling-analytics) | scheduling-analytics.astro |
 | [Invoice/Earnings](#33-invoiceearnings-calculations) | invoice.ts, billing.ts |
 | [Dev Tools](#34-dev-tools) | /admin/dev/*, debug pages |
-| [Pricing/Rates](#35-pricingrates) | group-service.ts, billing.ts, invoice.ts |
-| [Autentique Contracts](#36-autentique-contract-signing) | contracts, autentique-service.ts |
-| [Admin Calendar Events](#37-admin-calendar-events) | admin_events, admin-event.ts, enrollments.astro |
-| [ICS Calendar Feed](#38-ics-calendar-feed) | calendar_feed_tokens, ics-generator.ts, settings.astro |
-| [Constants & Settings Registry](#39-constants--configurable-settings-registry) | billing.ts, invoice.ts, config.ts, enrollment-statuses.ts, matching.ts |
-| [Business Configuration](#40-business-configuration-system) | business-config-service.ts, business-config.ts (API + validation), settings.astro, settings-client.ts |
+| [Parent Pricing](#35-pricingrates--parent-pricing-taxas-de-pais) | subscription-service.ts, billing.ts, invoice.ts |
+| [Teacher Pricing](#36-pricingrates--teacher-pricing-taxas-de-professores) | teacher-credits.ts, invoice.ts |
+| [Plan Discounts](#37-plan-discounts-descontos) | subscription-service.ts, stripe/config.ts |
+| [Status Durations](#38-status-durations-durações-de-status) | status-machine.ts, pausado-automator.ts, aviso-automator.ts |
+| [Billing Rules](#39-billing-rules-regras-de-cobrança) | auto-completion-service.ts, payment-grace-service.ts, reschedule-credit.ts |
+| [Travel & Scheduling](#40-travel--scheduling-viagemAgendamento) | waitlist-matcher.ts, location-change-service.ts, group-cancellation-service.ts |
+| [Autentique Contracts](#41-autentique-contract-signing) | contracts, autentique-service.ts |
+| [Admin Calendar Events](#42-admin-calendar-events) | admin_events, admin-event.ts, enrollments.astro |
+| [ICS Calendar Feed](#43-ics-calendar-feed) | calendar_feed_tokens, ics-generator.ts, settings.astro |
+| [Constants & Settings Registry](#44-constants--configurable-settings-registry) | billing.ts, invoice.ts, config.ts, enrollment-statuses.ts, matching.ts |
+| [Business Configuration](#45-business-configuration-system) | business-config-service.ts, business-config.ts (API + validation), settings.astro, settings-client.ts |
 
 ---
 
@@ -1814,76 +1819,532 @@ if (import.meta.env.ENVIRONMENT === 'development') {
 
 ---
 
-## 35. Pricing/Rates
+## 35. Pricing/Rates — Parent Pricing (Taxas de Pais)
 
-**Purpose:** Central mapping of all files containing class pricing/rate constants. **Update ALL these files when rates change.**
+**Purpose:** Complete connection map from admin settings to every file that uses parent pricing rates. **Rates are now runtime-configurable** via Admin > Settings > "Taxas de Pais" tab.
 
-### Current Rates (as of 2026-01-22)
+### Data Flow: Admin Settings → App
 
-| Class Type | Parent Rate | In Centavos |
-|------------|-------------|-------------|
-| **Individual (Presencial)** | R$150 | 15000 |
-| **Group (2+ students)** | R$125/student | 12500 |
-| **Online** | R$150 | 15000 |
+```
+Admin Settings UI (settings.astro / settings-client.ts)
+  → PUT /api/admin/business-config
+    → business_config DB table (pricing_parent.*)
+      → middleware.ts loads via loadBusinessConfig()
+        → locals.config.parentIndividualRate / parentGroupRate / etc.
+          → Services, Pages, APIs, Client Scripts
+```
 
-### Primary Constants Files (MUST UPDATE)
+### Runtime Config Keys (business_config table)
+
+| DB Key | BusinessConfig Property | Default | Unit |
+|--------|------------------------|---------|------|
+| `pricing_parent.individual_presencial` | `parentIndividualRate` | 150 | R$ |
+| `pricing_parent.group_presencial` | `parentGroupRate` | 125 | R$ |
+| `pricing_parent.individual_online` | `parentIndividualOnlineRate` | 120 | R$ |
+| `pricing_parent.group_online` | `parentGroupOnlineRate` | 120 | R$ |
+| `pricing_parent.enrollment_fee` | `enrollmentFee` | 150 | R$ |
+
+### Static Default Constants (fallbacks only)
 
 | File | Constants | Purpose |
 |------|-----------|---------|
-| `src/lib/services/group-service.ts` | `GROUP_RATE`, `INDIVIDUAL_RATE` | Core rate calculations |
-| `src/constants/billing.ts` | `PRICING.GROUP_CLASS_CENTAVOS`, `PRICING.INDIVIDUAL_CLASS_CENTAVOS` | Billing in centavos |
-| `src/constants/invoice.ts` | `PARENT_GROUP_RATE`, `PARENT_INDIVIDUAL_RATE` | Invoice display |
+| `src/constants/invoice.ts` | `PARENT_INDIVIDUAL_RATE`, `PARENT_GROUP_RATE`, `PARENT_INDIVIDUAL_ONLINE_RATE`, `PARENT_GROUP_ONLINE_RATE` | Static defaults (R$) |
+| `src/constants/billing.ts` | `PRICING.INDIVIDUAL_CLASS_CENTAVOS`, `PRICING.GROUP_CLASS_CENTAVOS`, `PRICING.ENROLLMENT_FEE_CENTAVOS` | Static defaults (centavos) |
+| `src/lib/services/group-service.ts` | `GROUP_RATE`, `INDIVIDUAL_RATE` | Static defaults + `ParentRateConfig` interface |
 
-### Related Services (Use Constants)
+### Services Using Runtime Config (via constructor/method params)
 
-| File | Purpose |
-|------|---------|
-| `src/lib/services/group-cancellation-service.ts` | Late cancellation billing (uses `original_rate` for fairness) |
-| `src/lib/services/enrollment-service.ts` | Rate calculations for enrollments |
-| `src/lib/services/reschedule-suggestion-service.ts` | Reschedule billing |
+| File | How Config Arrives | Properties Used |
+|------|-------------------|-----------------|
+| `src/lib/services/group-service.ts` | `rateConfig?: ParentRateConfig` param on all functions | `individualRate`, `groupRate` |
+| `src/lib/services/group-cancellation-service.ts` | `rateConfig?: ParentRateConfig` in constructor | `individualRate`, `groupRate` |
+| `src/lib/services/subscription-service.ts` | `pricingConfig?: SubscriptionPricingConfig` in constructor | `individualClassCentavos`, `groupClassCentavos` |
+| `src/lib/services/contract-service.ts` | `enrollmentFeeCents?: number` in deps | `enrollmentFee * 100` |
+| `src/lib/services/notification-service.ts` | `parentGroupRate` in config param | `parentGroupRate` |
+| `src/lib/stripe/config.ts` | `rateOverrides?` param on `calculateMonthlyPrice()` | `individualCentavos`, `groupCentavos` |
 
-### Tests to Update
+### API Endpoints Passing Runtime Config
 
-| File | What to Update |
-|------|----------------|
-| `src/lib/services/group-service.test.ts` | `GROUP_RATE` assertions, mock `hourly_rate` values |
+| File | Config Usage |
+|------|-------------|
+| `src/pages/api/enrollments/[id]/start-class.ts` | Passes `rateConfig` to `calculateEffectiveRate`, `getEffectiveGroup` |
+| `src/pages/api/enrollments/[id]/completions/index.ts` | Passes `rateConfig` to `calculateEffectiveRate`; `locals.config.parentIndividualRate` for individual fallback |
+| `src/pages/api/enrollments/[id]/status.ts` | Passes `rateConfig` to `getEffectiveGroup`, `calculateEffectiveRate` |
+| `src/pages/api/enrollments/group/[groupId]/status.ts` | Passes `rateConfig` to all group-service calls; returns runtime rates in response |
+| `src/pages/api/enrollments/[id]/exceptions/index.ts` | Passes `rateConfig` to `createGroupCancellationService` |
+| `src/pages/api/parent/cancel-class.ts` | Passes `rateConfig` to `createGroupCancellationService` |
+| `src/pages/api/parent/reschedule-class.ts` | Uses `locals.config.parentIndividualRate` for billing fallback |
+| `src/pages/api/cancellations/auto-resolve.ts` | Passes `rateConfig` to `createGroupCancellationService` |
+| `src/pages/api/admin/invoices/summary.ts` | Uses `config.parentIndividualRate`, `config.parentGroupRate` |
+| `src/pages/api/admin/invoices/parents.ts` | Uses `config.parentGroupRate`, `config.parentIndividualRate` |
+| `src/pages/api/admin/contracts/*.ts` (9 files) | Passes `enrollmentFeeCents: config.enrollmentFee * 100` to `ContractService` |
+| `src/pages/api/subscriptions/*.ts` (4 files, 7 calls) | Passes `individualClassCentavos`, `groupClassCentavos` to `SubscriptionService` |
+
+### Astro Pages Using Runtime Config
+
+| File | Config Usage |
+|------|-------------|
+| `src/pages/admin/invoices.astro` | Derives `PARENT_*_RATE` constants from `config.*`; defines `getParentRate()` from runtime values |
+| `src/pages/admin/enrollments.astro` | Passes `config.parentIndividualRate`, `config.parentGroupRate` to client |
+| `src/pages/parent/invoice.astro` | Derives `GROUP_RATE`, `INDIVIDUAL_RATE` from `config.*` |
+| `src/pages/parent/billing/subscribe.astro` | Uses `config.parentIndividualRate`, `config.parentGroupRate` |
+| `src/pages/parent/cancel-choice.astro` | Passes `config.parentIndividualRate` via `define:vars` |
+| `src/pages/parent/index.astro` | Passes `config.parentIndividualRate` via `define:vars` |
+| `src/pages/admin/dev/notifications.astro` | Passes both rates via `define:vars` for test messages |
+
+### Components Using Runtime Config
+
+| File | Config Usage |
+|------|-------------|
+| `src/components/parent/modals/CancelRescheduleModal.astro` | `config.parentIndividualRate` for charge display |
+
+### Client-Side Scripts
+
+| File | Config Usage |
+|------|-------------|
+| `src/scripts/enrollments-page-client.ts` | `getConfigNumber('parentIndividualRate', ...)` via config-bridge |
+| `src/scripts/config-bridge.ts` | Reads runtime config from DOM `data-config-*` attributes |
+
+### Tests (use static constants — OK for test fixtures)
+
+| File | What Tests |
+|------|------------|
+| `src/lib/services/group-service.test.ts` | Rate calculations with default constants |
 | `src/lib/services/group-cancellation-service.test.ts` | Billing amount expectations |
-| `src/lib/repositories/d1/completion.test.ts` | `actual_rate` mock values |
-| `src/lib/contracts/api-contracts.test.ts` | `hourly_rate` in mock data |
-| `src/tests/api/enrollments/group/[groupId]/status.test.ts` | `GROUP_RATE` mock |
-| `src/tests/api/enrollments/[id]/start-class.test.ts` | `actual_rate` mock values |
-| `src/tests/api/enrollments/[id]/completions/index.test.ts` | `actual_rate` mock values |
-
-### Documentation to Update
-
-| File | Section |
-|------|---------|
-| `docs/reference/feature-maps.md` | Section 7, 33, 35 (this section) |
-| `eduschedule-app/project-context.md` | Recent Changes |
+| `src/lib/services/subscription-service.test.ts` | Pricing calculations |
+| `src/tests/api/enrollments/group/[groupId]/status.test.ts` | Group rate responses |
+| `src/tests/api/enrollments/[id]/start-class.test.ts` | `actual_rate` values |
+| `src/tests/api/enrollments/[id]/completions/index.test.ts` | `actual_rate` values |
 
 ### Rate Change Billing Rules
 
 **Group 2→1 Scenario (rate change workflow):**
 - When one student cancels from group of 2, remaining student faces rate change
-- If remaining student cancels LATE (<24h): **Charged at ORIGINAL group rate (R$125)**
-- NOT charged at new individual rate (R$150) - fairness rule
+- If remaining student cancels LATE (<24h): **Charged at ORIGINAL group rate** (fairness rule)
+- NOT charged at new individual rate
 - Code: `group-cancellation-service.ts` uses `pendingChoice.original_rate`
 
 ### Checklist for Rate Changes
 
 ```
-□ Update src/lib/services/group-service.ts (GROUP_RATE, INDIVIDUAL_RATE)
-□ Update src/constants/billing.ts (PRICING.GROUP_CLASS_CENTAVOS)
-□ Update src/constants/invoice.ts (PARENT_GROUP_RATE)
+PREFERRED: Change rates via Admin > Settings > "Taxas de Pais" tab (takes effect immediately)
+
+If changing static DEFAULTS:
+□ Update src/constants/invoice.ts (PARENT_*_RATE)
+□ Update src/constants/billing.ts (PRICING.*_CENTAVOS)
 □ Update all test files (search for old rate values)
-□ Update docs/reference/feature-maps.md (sections 7, 33, 35)
-□ Update eduschedule-app/project-context.md (Recent Changes)
+□ Update docs/reference/feature-maps.md (this section)
 □ Run tests: npm run test
 ```
 
 ---
 
-## 36. Autentique Contract Signing
+## 36. Pricing/Rates — Teacher Pricing (Taxas de Professores)
+
+Teacher tier-based pay rates and score thresholds. Managed via Admin Settings → "Taxas de Professores" tab.
+
+### Data Flow
+
+```
+business_config DB table
+  → middleware loadBusinessConfig()
+    → locals.config.tierRates            (NEW/STANDARD/PREMIUM/ELITE × individual/group)
+    → locals.config.tierStandardThreshold (score boundary)
+    → locals.config.tierPremiumThreshold
+    → locals.config.tierEliteThreshold
+    → locals.config.defaultNewTeacherScore
+      → API endpoints build tierConfig
+        → TeacherCreditService (tier transitions, rate assignment)
+        → Teacher pages (schedule, invoice display)
+        → flows.astro (documentation display)
+```
+
+### Runtime Config Keys (`business_config` table)
+
+| Key | BusinessConfig Property | Default |
+|-----|------------------------|---------|
+| `pricing_teacher.new_individual` | `tierRates.NEW.individual` | 79 |
+| `pricing_teacher.new_group` | `tierRates.NEW.group` | 50 |
+| `pricing_teacher.standard_individual` | `tierRates.STANDARD.individual` | 85 |
+| `pricing_teacher.standard_group` | `tierRates.STANDARD.group` | 58 |
+| `pricing_teacher.premium_individual` | `tierRates.PREMIUM.individual` | 90 |
+| `pricing_teacher.premium_group` | `tierRates.PREMIUM.group` | 65 |
+| `pricing_teacher.elite_individual` | `tierRates.ELITE.individual` | 95 |
+| `pricing_teacher.elite_group` | `tierRates.ELITE.group` | 70 |
+| `pricing_teacher.standard_threshold` | `tierStandardThreshold` | 500 |
+| `pricing_teacher.premium_threshold` | `tierPremiumThreshold` | 700 |
+| `pricing_teacher.elite_threshold` | `tierEliteThreshold` | 900 |
+| `pricing_teacher.default_new_score` | `defaultNewTeacherScore` | 300 |
+
+### File Map
+
+| File | Connection Status | Notes |
+|------|-------------------|-------|
+| **Static Constants (fallbacks only)** | | |
+| `src/lib/services/teacher-credits.ts` — `TIER_RATES`, `TIER_THRESHOLDS` | FALLBACK | Static defaults; runtime config used via `TeacherTierConfig` |
+| `src/constants/invoice.ts` — `TEACHER_TIER_RATES` | DEAD CODE | No longer imported anywhere |
+| **Runtime Config** | | |
+| `src/lib/runtime-business-config.ts` — `loadBusinessConfig()` | SOURCE | Loads all 12 teacher pricing keys from DB |
+| `src/middleware.ts` | BRIDGE | Sets `locals.config` per-request |
+| **Services** | | |
+| `src/lib/services/teacher-credits.ts` — `TeacherCreditService` | ✅ CONNECTED | Constructor accepts `TeacherTierConfig`; `recordEvent()` uses instance config for tier transitions and rate assignment |
+| `src/lib/services/teacher-credits.ts` — `getTierFromScore()` | ✅ CONNECTED | Accepts optional threshold overrides |
+| `src/lib/services/teacher-credits.ts` — `getRatesForTier()` | ✅ CONNECTED | Accepts optional rate overrides |
+| `src/lib/services/teacher-credits.ts` — `getRatesFromScore()` | ✅ CONNECTED | Accepts optional config |
+| **Repository** | | |
+| `src/lib/repositories/d1/teacher.ts` — `create()` | SAFETY-NET | Uses hardcoded `TIER_RATES.NEW` as fallback; all callers pass explicit runtime rates |
+| **API Endpoints (pass tierConfig from locals.config)** | | |
+| `src/pages/api/completions/[id]/feedback.ts` | ✅ CONNECTED | Builds `tierConfig` from `locals.config`, passes to `createTeacherCreditService()` |
+| `src/pages/api/completions/[id]/no-show.ts` | ✅ CONNECTED | Same pattern |
+| `src/pages/api/enrollments/[id]/complete-class.ts` | ✅ CONNECTED | Same pattern |
+| `src/pages/api/cron/feedback-penalties.ts` | ✅ CONNECTED | Same pattern |
+| **Pages** | | |
+| `src/pages/teacher/schedule.astro` | ✅ CONNECTED | Uses `config.tierRates.ELITE` for grandfathered teachers |
+| `src/pages/teacher/invoice.astro` | ✅ CONNECTED | Uses `config.tierRates.ELITE` for grandfathered teachers |
+| `src/components/teacher/TeacherTierCard.astro` | ✅ CONNECTED | Derives thresholds from `config.tierStandardThreshold`, etc. |
+| `src/pages/flows.astro` | ✅ CONNECTED | Derives `TEACHER_TIER_RATES` and `TIER_THRESHOLDS` from runtime config |
+| **Admin Settings UI** | | |
+| `src/pages/admin/settings.astro` | ✅ CONNECTED | Tab 2 displays/saves all 12 teacher pricing keys |
+
+---
+
+## 37. Plan Discounts (Descontos)
+
+Subscription plan discount percentages. Managed via Admin Settings → "Descontos" tab.
+
+### Data Flow
+
+```
+business_config DB table
+  → middleware loadBusinessConfig()
+    → locals.config.planDiscountMonthly   (0%)
+    → locals.config.planDiscountSemester  (10%)
+    → locals.config.planDiscountAnnual    (15%)
+      → API endpoints build discountOverrides
+        → SubscriptionService (subscription creation & plan changes)
+        → stripe/config.ts (Stripe price calculation)
+      → subscription_plans.discount_percent (stored in DB per plan)
+        → Parent UI (subscribe.astro, PlanSelector, SubscriptionCard)
+```
+
+### Runtime Config Keys (`business_config` table)
+
+| Key | BusinessConfig Property | Default |
+|-----|------------------------|---------|
+| `plan_discounts.monthly` | `planDiscountMonthly` | 0 |
+| `plan_discounts.semester` | `planDiscountSemester` | 10 |
+| `plan_discounts.annual` | `planDiscountAnnual` | 15 |
+
+### File Map
+
+| File | Connection Status | Notes |
+|------|-------------------|-------|
+| **Static Constants (fallbacks only)** | | |
+| `src/constants/billing.ts` — `PLAN_DISCOUNTS` | FALLBACK | Static defaults; runtime config preferred |
+| `src/constants/billing.ts` — `BILLING_LABELS.PLANS` | DEAD CODE | Not imported anywhere |
+| `src/constants/billing.ts` — `getPlanLabels()` | DEAD CODE | Not called anywhere |
+| **Runtime Config** | | |
+| `src/lib/runtime-business-config.ts` — `loadBusinessConfig()` | SOURCE | Loads 3 discount keys from DB |
+| `src/middleware.ts` | BRIDGE | Sets `locals.config` per-request |
+| **Helper Functions** | | |
+| `src/constants/billing.ts` — `calculateDiscount()` | ✅ CONNECTED | Accepts `discountOverrides` param |
+| `src/constants/billing.ts` — `calculateFinalAmount()` | ✅ CONNECTED | Accepts `discountOverrides` param |
+| **Services** | | |
+| `src/lib/services/subscription-service.ts` | ✅ CONNECTED | `SubscriptionPricingConfig.discountOverrides` passed to `calculateDiscount()` |
+| `src/lib/stripe/config.ts` — `calculateMonthlyPrice()` | ✅ CONNECTED | Accepts `discountOverrides` param |
+| `src/lib/stripe/config.ts` — `getPriceMetadata()` | ✅ CONNECTED | Accepts `discountOverrides` param |
+| **API Endpoints (pass discountOverrides from locals.config)** | | |
+| `src/pages/api/subscriptions/index.ts` (GET, POST) | ✅ CONNECTED | Passes `discountOverrides` to `createSubscriptionService()` |
+| `src/pages/api/subscriptions/[id]/index.ts` (GET, PUT, DELETE) | ✅ CONNECTED | Same pattern |
+| `src/pages/api/subscriptions/[id]/pause.ts` | ✅ CONNECTED | Same pattern |
+| `src/pages/api/subscriptions/[id]/resume.ts` | ✅ CONNECTED | Same pattern |
+| **Pages & Components (read from DB records)** | | |
+| `src/pages/parent/billing/subscribe.astro` | ✅ CONNECTED | Uses `plan.discount_percent` from `subscription_plans` table |
+| `src/pages/parent/billing/index.astro` | ✅ CONNECTED | Reads `subscription.discount_amount_centavos` |
+| `src/components/billing/PlanSelector.astro` | ✅ CONNECTED | Displays `plan.discount_percent` badge |
+| `src/components/billing/SubscriptionCard.astro` | ✅ CONNECTED | Displays `subscription.discount_amount_centavos` |
+| `src/pages/admin/users.astro` | ✅ CONNECTED | Passes `config.planDiscountSemester/Annual` to client |
+| **Database** | | |
+| `subscription_plans.discount_percent` | DB STORAGE | Stores plan-level discount percent |
+| `subscriptions.discount_amount_centavos` | DB STORAGE | Stores computed discount per subscription |
+| **Admin Settings UI** | | |
+| `src/pages/admin/settings.astro` | ✅ CONNECTED | Tab 3 displays/saves all 3 discount keys |
+
+---
+
+## 38. Status Durations (Durações de Status)
+
+Enrollment status durations for PAUSADO, AVISO, and cooldown periods. Managed via Admin Settings → "Status" tab.
+
+### Data Flow
+
+```
+business_config DB table
+  → middleware loadBusinessConfig()
+    → locals.config.pausadoMaxDays      (21 days)
+    → locals.config.avisoMaxDays        (14 days)
+    → locals.config.cooldownMonths      (5 months)
+      → StatusMachineService (expiry calculation, cooldown)
+      → PausadoAutomatorService (auto PAUSADO→ATIVO)
+      → AvisoAutomatorService (auto AVISO→INATIVO)
+      → ScheduleGeneratorService (schedule boundaries)
+      → Pages (display rules, expiry dates)
+```
+
+### Runtime Config Keys (`business_config` table)
+
+| Key | BusinessConfig Property | Default |
+|-----|------------------------|---------|
+| `status_durations.pausado_max_days` | `pausadoMaxDays` | 21 |
+| `status_durations.aviso_max_days` | `avisoMaxDays` | 14 |
+| `status_durations.cooldown_months` | `cooldownMonths` | 5 |
+
+### File Map
+
+| File | Connection Status | Notes |
+|------|-------------------|-------|
+| **Static Constants (fallbacks only)** | | |
+| `src/constants/enrollment-statuses.ts` — `PAUSADO_MAX_DAYS`, `AVISO_MAX_DAYS`, `PAUSADO_COOLDOWN_MONTHS` | FALLBACK | Static defaults; runtime config used via `StatusDurationConfig` |
+| **Runtime Config** | | |
+| `src/lib/runtime-business-config.ts` — `loadBusinessConfig()` | SOURCE | Loads 3 status duration keys from DB |
+| `src/middleware.ts` | BRIDGE | Sets `locals.config` per-request |
+| **Services** | | |
+| `src/lib/services/status-machine.ts` — `StatusMachineService` | ✅ CONNECTED | Constructor accepts `StatusDurationConfig`; all calculations use instance properties |
+| `src/lib/services/pausado-automator.ts` | ✅ CONNECTED | Passes `pausadoMaxDays` to both own config and StatusMachine |
+| `src/lib/services/aviso-automator.ts` | ✅ CONNECTED | Passes `avisoMaxDays` to both own config and StatusMachine |
+| `src/lib/services/schedule-generator.ts` | ✅ CONNECTED | Uses `config.pausadoMaxDays`, `config.avisoMaxDays` in constructor |
+| `src/lib/services/notification-service.ts` | ✅ CONNECTED | Uses `config.pausadoMaxDays` for notifications |
+| `src/lib/services/student-status-sync-service.ts` | ✅ CONNECTED | Uses `config.avisoMaxDays` |
+| **API Endpoints** | | |
+| `src/pages/api/enrollments/group/[groupId]/status.ts` | ✅ CONNECTED | Passes full config to `createStatusMachineService()` |
+| `src/pages/api/admin/pausas.ts` | ✅ CONNECTED | Uses `config.cooldownMonths` |
+| `src/pages/api/teacher/time-off.ts` | ✅ CONNECTED | Uses `config.pausadoMaxDays` |
+| **Pages** | | |
+| `src/pages/admin/enrollments.astro` | ✅ CONNECTED | Derives `PAUSADO_MAX_DAYS`, `AVISO_MAX_DAYS`, `PAUSADO_COOLDOWN_MONTHS` from config |
+| `src/pages/admin/pausas.astro` | ✅ CONNECTED | Uses `config.pausadoMaxDays`, `config.cooldownMonths` |
+| `src/pages/admin/index.astro` | ✅ CONNECTED | Uses `config.pausadoMaxDays` |
+| `src/pages/admin/invoices.astro` | ✅ CONNECTED | Uses `config.avisoMaxDays` |
+| `src/pages/parent/invoice.astro` | ✅ CONNECTED | Uses `config.pausadoMaxDays`, `config.avisoMaxDays` |
+| `src/pages/teacher/invoice.astro` | ✅ CONNECTED | Uses `config.pausadoMaxDays`, `config.avisoMaxDays` |
+| `src/pages/flows.astro` | ✅ CONNECTED | Uses config properties for documentation display |
+| `src/pages/parent/index.astro` | ✅ CONNECTED | Cleaned up — unused static imports removed |
+| **Components** | | |
+| `src/components/parent/modals/PausadoRequestModal.astro` | ✅ CONNECTED | Uses `config.pausadoMaxDays`, `config.cooldownMonths` |
+| **Client Scripts** | | |
+| `src/scripts/enrollments-page-client.ts` | ✅ CONNECTED | Reads from DOM config attributes |
+| `src/scripts/weekly-schedule-grid-client.ts` | ✅ CONNECTED | Reads from DOM config attributes |
+| **Admin Settings UI** | | |
+| `src/pages/admin/settings.astro` | ✅ CONNECTED | Tab 4 displays/saves all 3 status duration keys |
+
+---
+
+## 39. Billing Rules (Regras de Cobrança)
+
+Runtime-configurable billing operational rules: teacher confirmation window, grace period, credit expiry days.
+
+### Data Flow
+
+```
+business_config DB (billing_rules.*)
+  → loadBusinessConfig() (middleware)
+    → locals.config.teacherConfirmationHours / gracePeriodDays / creditExpiryDays
+      → Cron endpoints pass to service factories
+      → Services use config with static constant fallbacks
+```
+
+### Runtime Config Keys
+
+| Config Key | BusinessConfig Property | Static Fallback | Unit |
+|---|---|---|---|
+| `billing_rules.teacher_confirmation_hours` | `teacherConfirmationHours` | `BILLING_CONSTANTS.TEACHER_CONFIRMATION_HOURS` | hours |
+| `billing_rules.grace_period_days` | `gracePeriodDays` | `BILLING_CONSTANTS.PAYMENT_GRACE_PERIOD_DAYS` | days |
+| `billing_rules.credit_expiry_days` | `creditExpiryDays` | `BILLING_CONSTANTS.RESCHEDULE_CREDIT_EXPIRY_DAYS` | days |
+
+### File Connection Map
+
+| File | Status | How Connected |
+|---|---|---|
+| **Constants (fallbacks)** | | |
+| `src/constants/billing.ts` | FALLBACK | `BILLING_CONSTANTS` — static defaults only |
+| **Runtime Config** | | |
+| `src/lib/runtime-business-config.ts` | ✅ CONNECTED | Loads `teacherConfirmationHours`, `gracePeriodDays`, `creditExpiryDays` |
+| **Services** | | |
+| `src/lib/services/auto-completion-service.ts` | ✅ CONNECTED | Factory accepts `{ teacherConfirmationHours }` config |
+| `src/lib/services/payment-grace-service.ts` | ✅ CONNECTED | Factory accepts `{ gracePeriodDays }` config |
+| `src/lib/services/subscription-service.ts` | ✅ CONNECTED | `SubscriptionPricingConfig.creditExpiryDays` — passes to `grantMonthlyCredits` |
+| `src/lib/services/stripe-webhook-service.ts` | ✅ CONNECTED | Factory accepts `{ creditExpiryDays }` — passes to `grantMonthlyCredits` |
+| **Repositories** | | |
+| `src/lib/repositories/d1/reschedule-credit.ts` | ✅ CONNECTED | `grantMonthlyCredits` / `createRescheduleCredits` accept `{ creditExpiryDays }` config |
+| **Cron Endpoints** | | |
+| `src/pages/api/cron/auto-complete.ts` | ✅ CONNECTED | Passes `locals.config.teacherConfirmationHours` to factory |
+| `src/pages/api/cron/payment-grace.ts` | ✅ CONNECTED | Passes `locals.config.gracePeriodDays` to factory |
+| **Webhook Endpoints** | | |
+| `src/pages/api/webhooks/stripe.ts` | ✅ CONNECTED | Passes `locals.config.creditExpiryDays` to webhook service factory |
+| **Subscription API Endpoints** | | |
+| `src/pages/api/subscriptions/index.ts` | ✅ CONNECTED | Passes `creditExpiryDays` in pricing config (2 call sites) |
+| `src/pages/api/subscriptions/[id]/index.ts` | ✅ CONNECTED | Passes `creditExpiryDays` in pricing config (3 call sites) |
+| `src/pages/api/subscriptions/[id]/pause.ts` | ✅ CONNECTED | Passes `creditExpiryDays` in pricing config |
+| `src/pages/api/subscriptions/[id]/resume.ts` | ✅ CONNECTED | Passes `creditExpiryDays` in pricing config |
+| **Admin Settings UI** | | |
+| `src/pages/admin/settings.astro` | ✅ CONNECTED | Tab 5 displays/saves all 3 billing rule keys |
+
+---
+
+## 40. Travel & Scheduling (Viagem/Agendamento)
+
+Runtime-configurable travel time limits, buffer times, class duration, and slot increments used across scheduling, matching, cancellation, and relocation services.
+
+### Data Flow
+
+```
+business_config DB (travel_scheduling.*)
+  → loadBusinessConfig() (middleware)
+    → locals.config.maxTravelMinutes / travelBufferMinutes / minGapMinutes / classDurationMinutes / slotIncrementMinutes
+      → API endpoints pass to service factories
+      → Services use config with TRAVEL.* static constant fallbacks
+```
+
+### Runtime Config Keys
+
+| Config Key | BusinessConfig Property | Static Fallback | Unit |
+|---|---|---|---|
+| `travel_scheduling.max_travel_minutes` | `maxTravelMinutes` | `TRAVEL.MAX_TRAVEL_MINUTES` (45) | minutes |
+| `travel_scheduling.travel_buffer_minutes` | `travelBufferMinutes` | `TRAVEL.TRAVEL_BUFFER_MINUTES` (5) | minutes |
+| `travel_scheduling.min_gap_minutes` | `minGapMinutes` | `TRAVEL.MIN_GAP_BETWEEN_CLASSES` (15) | minutes |
+| `travel_scheduling.class_duration_minutes` | `classDurationMinutes` | `TRAVEL.DEFAULT_CLASS_DURATION` (60) | minutes |
+| `travel_scheduling.slot_increment_minutes` | `slotIncrementMinutes` | `TRAVEL.TIME_ROUNDING_MINUTES` (15) | minutes |
+
+**Not configurable (static):** `TRAVEL.CLOSE_TRAVEL_MINUTES` (15), `TRAVEL.WARNING_TRAVEL_MINUTES` (30), `TRAVEL.MIN_SLOT_FOR_BOOKING` (60)
+
+### File Connection Map
+
+| File | Status | How Connected |
+|---|---|---|
+| **Constants (fallbacks)** | | |
+| `src/constants/matching.ts` | FALLBACK | `TRAVEL` object — static defaults only |
+| **Runtime Config** | | |
+| `src/lib/runtime-business-config.ts` | ✅ CONNECTED | Loads all 5 travel_scheduling keys |
+| **Services (configurable constants replaced)** | | |
+| `src/lib/services/waitlist-matcher.ts` | ✅ CONNECTED | `WaitlistMatcherConfig.travelConfig` — MAX_TRAVEL, CLASS_DURATION, SLOT_INCREMENT, BUFFER |
+| `src/lib/services/location-change-service.ts` | ✅ CONNECTED | Constructor accepts `{ maxTravelMinutes }` |
+| `src/lib/services/relocation-impact-service.ts` | ✅ CONNECTED | Factory accepts `{ maxTravelMinutes }` |
+| `src/lib/services/group-cancellation-service.ts` | ✅ CONNECTED | Constructor accepts `travelConfig: { maxTravelMinutes }` |
+| `src/lib/services/route-efficiency-service.ts` | ✅ CONNECTED | Constructor accepts `{ classDurationMinutes }` |
+| **Services (static constants only — no changes needed)** | | |
+| `src/lib/services/cascade-impact.ts` | OK (static) | Uses only `TRAVEL.WARNING_TRAVEL_MINUTES` (not configurable) |
+| `src/lib/services/schedule-page-service.ts` | OK (static) | Uses only `CLOSE`/`WARNING` (not configurable) |
+| **API Endpoints (callers)** | | |
+| `src/pages/api/slots/suggestions.ts` | ✅ CONNECTED | Passes full `travelConfig` to waitlist matcher |
+| `src/pages/api/slots/matches.ts` | ✅ CONNECTED | Passes full `travelConfig` to waitlist matcher |
+| `src/pages/api/leads/[id]/matches.ts` | ✅ CONNECTED | Passes `classDurationMinutes` to route-efficiency |
+| `src/pages/api/cancellations/auto-resolve.ts` | ✅ CONNECTED | Passes `maxTravelMinutes` to cancellation + location-change |
+| `src/pages/api/cancellations/pending-choice.ts` | ✅ CONNECTED | Passes `maxTravelMinutes` to cancellation service |
+| `src/pages/api/parent/cancel-class.ts` | ✅ CONNECTED | Passes `maxTravelMinutes` to cancellation + location-change |
+| `src/pages/api/enrollments/[id]/exceptions/index.ts` | ✅ CONNECTED | Passes `maxTravelMinutes` to cancellation + location-change |
+| `src/pages/api/location-change/[id]/respond.ts` | ✅ CONNECTED | Passes `maxTravelMinutes` to location-change |
+| `src/pages/api/students/[id].ts` | ✅ CONNECTED | Passes `maxTravelMinutes` to relocation |
+| `src/pages/api/teachers/[id].ts` | ✅ CONNECTED | Passes `maxTravelMinutes` to relocation |
+| `src/pages/api/admin/relocation-preview.ts` | ✅ CONNECTED | Passes `maxTravelMinutes` to relocation |
+| **Pages (already using config)** | | |
+| `src/pages/teacher/availability.astro` | ✅ CONNECTED | Uses `config.classDurationMinutes`, `config.minGapMinutes` |
+| `src/pages/admin/enrollments.astro` | ✅ CONNECTED | Uses `config.maxTravelMinutes`, `config.classDurationMinutes` |
+| **Admin Settings UI** | | |
+| `src/pages/admin/settings.astro` | ✅ CONNECTED | Tab 6 displays/saves all 5 travel_scheduling keys |
+
+---
+
+## 41. Matching Weights (Lead Proximity Scoring)
+
+Runtime-configurable weights for location proximity scoring in lead readiness assessment.
+Admin adjusts these in Settings → Tab 7 (Matching) to tune how heavily each proximity match type scores.
+
+### Data Flow
+
+```
+business_config DB → middleware loadBusinessConfig() → locals.config.buildingWeight/streetWeight/etc.
+  → leads.astro passes to createLeadReadinessService({ proximityWeights })
+    → calculateLocationProximity(lead, students, weights)
+      → scores returned in LeadReadiness.locationProximity.score
+```
+
+### Runtime Config Keys (5 settings from `lead_matching.*`)
+
+| Config Key | DB Key | Static Fallback | Default |
+|---|---|---|---|
+| `buildingWeight` | `lead_matching.building_weight` | `LOCATION_PROXIMITY_WEIGHTS.SAME_BUILDING` | 40 |
+| `streetWeight` | `lead_matching.street_weight` | `LOCATION_PROXIMITY_WEIGHTS.SAME_STREET` | 25 |
+| `cepWeight` | `lead_matching.cep_weight` | `LOCATION_PROXIMITY_WEIGHTS.SAME_CEP_PREFIX` | 15 |
+| `neighborhoodWeight` | `lead_matching.neighborhood_weight` | `LOCATION_PROXIMITY_WEIGHTS.SAME_NEIGHBORHOOD` | 10 |
+| `zoneWeight` | `lead_matching.zone_weight` | `LOCATION_PROXIMITY_WEIGHTS.SAME_ZONE` | 5 |
+
+### File Connection Map
+
+| File | Status | How Connected |
+|---|---|---|
+| **Constants (static fallbacks)** | | |
+| `src/constants/matching.ts` | FALLBACK ONLY | Defines `LOCATION_PROXIMITY_WEIGHTS` — used as defaults when DB has no override |
+| **Runtime Config** | | |
+| `src/lib/runtime-business-config.ts` | ✅ CONNECTED | Loads 5 `lead_matching.*` keys from `business_config` table |
+| **Service** | | |
+| `src/lib/services/lead-readiness-service.ts` | ✅ CONNECTED | Accepts `proximityWeights` in config, resolves with fallbacks, passes to `calculateLocationProximity` |
+| **Callers** | | |
+| `src/pages/admin/leads.astro` | ✅ CONNECTED | Passes `Astro.locals.config.*Weight` to `createLeadReadinessService` |
+| **Admin Settings UI** | | |
+| `src/pages/admin/settings.astro` | ✅ CONNECTED | Tab 7 displays/saves all 5 lead_matching keys |
+
+---
+
+## 42. Data Retention & Historical Integrity (Dados)
+
+Runtime-configurable settings for data retention periods, historical lock window, and feedback bonus timing.
+Admin adjusts these in Settings → Tab 8 (Dados).
+
+### Data Flow
+
+```
+business_config DB → middleware loadBusinessConfig() → locals.config.historicalLockDays / feedbackBonusHours / trashPurgeDays
+  → API endpoints pass to validation functions / services
+    → isHistoricallyLocked(date, lockDays), calculateFeedbackTiming(date, time, config)
+    → validateFeedbackSubmission / validateNoShowMarking with DataRetentionConfig
+```
+
+### Runtime Config Keys (3 settings from `data_retention.*`)
+
+| Config Key | DB Key | Static Fallback | Default |
+|---|---|---|---|
+| `trashPurgeDays` | `data_retention.trash_purge_days` | `TRASH_PURGE_DAYS` | 90 |
+| `historicalLockDays` | `data_retention.historical_lock_days` | `HISTORICAL_LOCK_DAYS` | 30 |
+| `feedbackBonusHours` | `data_retention.feedback_bonus_hours` | `FEEDBACK_BONUS_HOURS` | 24 |
+
+### File Connection Map
+
+| File | Status | How Connected |
+|---|---|---|
+| **Constants (static fallbacks)** | | |
+| `src/constants/enrollment-statuses.ts` | FALLBACK ONLY | Defines `TRASH_PURGE_DAYS` (90) |
+| `src/lib/utils/date-utils.ts` | FALLBACK ONLY | Defines `HISTORICAL_LOCK_DAYS` (30) and `FEEDBACK_BONUS_HOURS` (24); utility functions accept optional config params |
+| **Runtime Config** | | |
+| `src/lib/runtime-business-config.ts` | ✅ CONNECTED | Loads 3 `data_retention.*` keys from `business_config` table |
+| **Utility Functions** | | |
+| `src/lib/utils/date-utils.ts` | ✅ CONNECTED | `isHistoricallyLocked(date, lockDays?)`, `getDateTimeZone(date, lockDays?)`, `calculateFeedbackTiming(date, time, config?)` accept optional config |
+| **Validation Functions** | | |
+| `src/lib/validation/historical-constraints.ts` | ✅ CONNECTED | All validators accept optional `DataRetentionConfig` / `lockDays`, thread to date-utils |
+| **API Endpoint Callers** | | |
+| `src/pages/api/completions/[id]/feedback.ts` | ✅ CONNECTED | Passes `DataRetentionConfig` from `locals.config` to `validateFeedbackSubmission`, `calculateFeedbackPoints`, `getFeedbackEventType` |
+| `src/pages/api/completions/[id]/no-show.ts` | ✅ CONNECTED | Passes `DataRetentionConfig` from `locals.config` to `validateNoShowMarking`, `calculateFeedbackPoints`, `getNoShowEventType` |
+| `src/pages/api/cron/feedback-penalties.ts` | ✅ CONNECTED | Uses `config.historicalLockDays` for `findExpiredPendingFeedback` |
+| `src/pages/api/students/index.ts` | ✅ CONNECTED | Uses `config.trashPurgeDays` for `deleteArchivedStudents` |
+| **Page Callers** | | |
+| `src/pages/teacher/schedule.astro` | ✅ CONNECTED | Passes `config.historicalLockDays` to `isHistoricallyLocked` |
+| `src/pages/admin/users.astro` | ✅ CONNECTED | Exposes `config.trashPurgeDays` to client via config bridge |
+| **Client Scripts** | | |
+| `src/scripts/users-page-client.ts` | ✅ CONNECTED | Uses `getConfigNumber('trashPurgeDays', TRASH_PURGE_DAYS)` via config-bridge |
+| **Admin Settings UI** | | |
+| `src/pages/admin/settings.astro` | ✅ CONNECTED | Tab 8 displays/saves all 3 data_retention keys |
+
+---
+
+## 43. Autentique Contract Signing
 
 Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autentique GraphQL API.
 
@@ -1948,7 +2409,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-## 37. Admin Calendar Events
+## 44. Admin Calendar Events
 
 **Core concept:** Admin-created calendar events with one-time, weekly, or date-range recurrence. Events use a many-to-many model via `admin_event_members` junction table, allowing shared events between admins. Displayed across all admin calendar views (week, month, day, all-admins). Supports all-day events and timed events. Click-for-details modal with edit and delete capability. Individual admin views filter to show events where that admin is a member.
 
@@ -1986,7 +2447,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-## 38. ICS Calendar Feed
+## 45. ICS Calendar Feed
 
 **Purpose:** Subscribable ICS feed URL for viewing admin calendar events in external apps (Google Calendar, Apple Calendar, Outlook).
 
@@ -2032,13 +2493,13 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-## 39. Constants & Configurable Settings Registry
+## 46. Constants & Configurable Settings Registry
 
 **Purpose:** Master registry of ALL business constants, where they're defined, where they're consumed, and known hardcoded duplicates. Use this to ensure consistency when changing any business rule or rate.
 
 > **When adding a new constant:** Add it here. When finding a hardcoded value: check here first, then add the file to the consumer list.
 
-### 39.1 Pricing — Parent Rates
+### 44.1Pricing — Parent Rates
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2078,7 +2539,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.2 Pricing — Teacher Tier Rates
+### 44.2 Pricing — Teacher Tier Rates
 
 | Tier | Score Range | Individual | Group (per student) | Defined In |
 |------|-----------|-----------|---------------------|-----------|
@@ -2105,7 +2566,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.3 Pricing — Enrollment Fee & Discounts
+### 44.3 Pricing — Enrollment Fee & Discounts
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2118,7 +2579,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.4 Pricing — Stripe Payment Fees
+### 44.4 Pricing — Stripe Payment Fees
 
 | Constant | Value | Defined In |
 |----------|-------|-----------|
@@ -2131,7 +2592,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.5 Status Durations
+### 44.5 Status Durations
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2156,7 +2617,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.6 Billing Rule Constants
+### 44.6 Billing Rule Constants
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2174,7 +2635,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.7 Teacher Credit & Gamification Points
+### 44.7 Teacher Credit & Gamification Points
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2199,7 +2660,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.8 Travel & Matching Constants
+### 44.8 Travel & Matching Constants
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2232,7 +2693,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.9 Lead Matching & Scoring Weights
+### 44.9 Lead Matching & Scoring Weights
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2250,7 +2711,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.10 Calendar & Schedule Settings
+### 44.10 Calendar & Schedule Settings
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2269,7 +2730,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.11 Session, Rate Limits & Security
+### 44.11 Session, Rate Limits & Security
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2283,7 +2744,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.12 Validation Limits
+### 44.12 Validation Limits
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2301,7 +2762,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.13 Trash & Data Retention
+### 44.13 Trash & Data Retention
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2313,7 +2774,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.14 Holiday & Closure Configuration
+### 44.14 Holiday & Closure Configuration
 
 | Setting | Value | Defined In | Purpose |
 |---------|-------|-----------|---------|
@@ -2329,7 +2790,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.15 Locale & Regional
+### 44.15 Locale & Regional
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2341,7 +2802,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.16 UI Timing & Debounce
+### 44.16 UI Timing & Debounce
 
 | Constant | Value | Defined In | Purpose |
 |----------|-------|-----------|---------|
@@ -2357,7 +2818,7 @@ Digital contract signing for MATRICULA / REMATRICULA enrollment terms via Autent
 
 ---
 
-### 39.17 Database-Backed Settings (Admin Configurable)
+### 44.17 Database-Backed Settings (Admin Configurable)
 
 These are stored in the `app_settings` table and managed via `/admin/settings`:
 
@@ -2371,11 +2832,11 @@ These are stored in the `app_settings` table and managed via `/admin/settings`:
 **API:** `GET/POST/PUT/PATCH/DELETE /api/settings`
 **Database:** `app_settings` table (`setting_key`, `setting_value`, `active`, `display_order`)
 
-**Business Config (57 settings):** See [Section 40](#40-business-configuration-system) for the runtime-configurable `business_config` table system covering pricing, status durations, billing rules, travel, matching weights, and data retention.
+**Business Config (57 settings):** See [Section 47](#47-business-configuration-system) for the runtime-configurable `business_config` table system covering pricing, status durations, billing rules, travel, matching weights, and data retention.
 
 ---
 
-### 39.18 Feature Flags
+### 44.18 Feature Flags
 
 | Flag | Default | Defined In | Purpose |
 |------|---------|-----------|---------|
@@ -2414,7 +2875,7 @@ These are stored in the `app_settings` table and managed via `/admin/settings`:
 
 ---
 
-## 40. Business Configuration System
+## 47. Business Configuration System
 
 **Core concept:** 57 runtime-configurable business settings stored in `business_config` table, replacing hardcoded constants for pricing, status durations, billing rules, travel/scheduling, lead matching weights, and data retention. All changes audited.
 
@@ -2569,4 +3030,4 @@ Understanding which files are most complex helps with maintenance:
 
 ---
 
-**Last Updated:** 2026-01-31
+**Last Updated:** 2026-02-04
