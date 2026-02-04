@@ -527,6 +527,10 @@ These features were built during implementation but aren't in the original PRD. 
 
 ## Recent Changes
 
+### 2026-02-04: Audit & Fix Hardcoded Magic Numbers
+
+- **Codebase audit:** 4 parallel agents scanned all pages, services, scripts, and constants for hardcoded business values. Found and fixed 5 issues across 11 files: `time-off.astro` (21→config), `group-cancellation-service.ts` (24h notice→config param), billing pages and waitlist-stats (30/90→`ANALYTICS` constants).
+
 ### 2026-02-04: Connect All Settings Tabs to Runtime
 
 - **Full stack wiring:** All 57 `business_config` settings now flow from DB → middleware → `locals.config` → services/validation/API endpoints. Tabs 5-8 (Cobrança, Viagem, Matching, Dados) completed this session.
