@@ -207,6 +207,7 @@ leads --> (converts to) students + enrollments
 | class_mode | TEXT | | @deprecated - use class_location + class_format |
 | plan_type | TEXT | DEFAULT 'Semanal' | 'Semanal' or 'Quinzenal' |
 | quinzenal_week | INTEGER | DEFAULT 1 | 1 or 2 for bi-weekly scheduling |
+| matricula_number | TEXT | | Denormalized from students table |
 | google_calendar_event_id | TEXT | | Linked calendar event |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
@@ -216,6 +217,7 @@ leads --> (converts to) students + enrollments
 - `idx_enrollments_teacher_id`
 - `idx_enrollments_status`
 - `idx_enrollments_day_time` on (teacher_id, day_of_week, start_time)
+- `idx_enrollments_matricula_number`
 
 **Status Lifecycle:**
 ```
