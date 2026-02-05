@@ -208,6 +208,7 @@ leads --> (converts to) students + enrollments
 | plan_type | TEXT | DEFAULT 'Semanal' | 'Semanal' or 'Quinzenal' |
 | quinzenal_week | INTEGER | DEFAULT 1 | 1 or 2 for bi-weekly scheduling |
 | matricula_number | TEXT | | Denormalized from students table |
+| matricula_signed_at | INTEGER | | Unix timestamp of matrícula signing (Migration 103) |
 | google_calendar_event_id | TEXT | | Linked calendar event |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
@@ -1683,7 +1684,7 @@ Admin calendar events supporting one-time, weekly, and date-range recurrence. Di
 
 ### business_config
 
-Runtime-configurable business settings (pricing, durations, billing rules, etc.). 57 settings across 8 categories with typed values and min/max validation bounds.
+Runtime-configurable business settings (pricing, durations, billing rules, etc.). 66 settings across 10 categories with typed values and min/max validation bounds.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -1702,9 +1703,9 @@ Runtime-configurable business settings (pricing, durations, billing rules, etc.)
 
 **Indexes:** `idx_business_config_category`
 
-**Categories (8):** `pricing_parent` (5), `pricing_teacher` (12), `plan_discounts` (3), `status_durations` (5), `billing_rules` (6), `travel_scheduling` (5), `lead_matching` (5), `data_retention` (3)
+**Categories (10):** `pricing_parent` (5), `pricing_teacher` (12), `plan_discounts` (3), `status_durations` (5), `billing_rules` (6), `travel_scheduling` (5), `lead_matching` (5), `data_retention` (3), `academic_calendar` (5), `contract_lifecycle` (4)
 
-**Migration:** `094_business_config.sql`
+**Migration:** `094_business_config.sql`, `102_contract_lifecycle_settings.sql`
 
 ---
 

@@ -2,7 +2,7 @@
 
 > **Purpose:** When modifying a feature, this document maps ALL code locations that need review. Prevents missed files during changes and helps understand how components connect.
 
-**Last Updated:** 2026-02-04 (Section 35 rewritten: complete runtime config connection map for parent pricing)
+**Last Updated:** 2026-02-05 (Section 35 rewritten: complete runtime config connection map for parent pricing)
 
 ---
 
@@ -64,6 +64,7 @@
 | [ICS Calendar Feed](#43-ics-calendar-feed) | calendar_feed_tokens, ics-generator.ts, settings.astro |
 | [Constants & Settings Registry](#44-constants--configurable-settings-registry) | billing.ts, invoice.ts, config.ts, enrollment-statuses.ts, matching.ts |
 | [Business Configuration](#45-business-configuration-system) | business-config-service.ts, business-config.ts (API + validation), settings.astro, settings-client.ts |
+| [Contract Lifecycle](#48-contract-lifecycle--renewal) | contract-expiry-automator.ts, contract-service.ts, contract-summary API |
 
 ---
 
@@ -2877,16 +2878,16 @@ These are stored in the `app_settings` table and managed via `/admin/settings`:
 
 ## 47. Business Configuration System
 
-**Core concept:** 57 runtime-configurable business settings stored in `business_config` table, replacing hardcoded constants for pricing, status durations, billing rules, travel/scheduling, lead matching weights, and data retention. All changes audited.
+**Core concept:** 66 runtime-configurable business settings stored in `business_config` table, replacing hardcoded constants for pricing, status durations, billing rules, travel/scheduling, lead matching weights, data retention, academic calendar, and contract lifecycle. All changes audited.
 
 ### Database Tables
 
 | Table | Purpose | Migration |
 |-------|---------|-----------|
-| `business_config` | 57 settings across 8 categories with typed values and min/max bounds | 094 |
+| `business_config` | 66 settings across 10 categories with typed values and min/max bounds | 094, 102 |
 | `business_config_audit` | Change history with old/new values, admin email, timestamp | 094 |
 
-### Categories (8)
+### Categories (10)
 
 | Category ID | Label | Settings |
 |-------------|-------|----------|
@@ -2898,6 +2899,8 @@ These are stored in the `app_settings` table and managed via `/admin/settings`:
 | `travel_scheduling` | Viagem e Agendamento | 5 (max travel, buffer, min gap, class duration) |
 | `lead_matching` | Pesos de Matching | 5 (building/street/cep/neighborhood/zone weights) |
 | `data_retention` | Retenção de Dados | 3 (trash purge, historical lock, feedback bonus) |
+| `academic_calendar` | Calendário Acadêmico | 5 (classes start/end, rematrícula window, academic year) |
+| `contract_lifecycle` | Ciclo de Contratos | 4 (expiry warning/reminder/urgent days, reserva badge days) |
 
 ### TypeScript Interfaces
 
@@ -3001,6 +3004,78 @@ The following files read business config values at runtime via `Astro.locals.con
 
 ---
 
+## 48. Contract Lifecycle & Renewal
+
+Automated contract expiry detection, AVISO transitions, expiry notifications, "Reservando Vaga" badge, and contract renewal flow.
+
+### Database Tables
+| Table | Purpose |
+|-------|---------|
+| `business_config` | 9 new settings in `academic_calendar` (5) + `contract_lifecycle` (4) categories |
+| `contracts` | Service contract expiry via `contract_end_date` |
+| `enrollments` | New `matricula_signed_at` column for Reservando Vaga badge |
+| `enrollment_status_history` | Logs `triggered_by: 'contract_expiry'` transitions |
+| `notifications` | `CONTRACT_EXPIRING` + `CONTRACT_EXPIRED` notification types |
+
+### Migrations
+| File | Purpose |
+|------|---------|
+| `102_contract_lifecycle_settings.sql` | 9 business_config settings (academic calendar + contract lifecycle) |
+| `103_enrollment_matricula_signed_at.sql` | `matricula_signed_at` column + backfill from contracts |
+
+### TypeScript Interfaces
+| Interface | File | Changes |
+|-----------|------|---------|
+| `BusinessConfig` | `runtime-business-config.ts` | 9 new properties (classesStartDate, classesEndDate, rematriculaStartDate, rematriculaEndDate, academicYear, expiryWarningDays, expiryReminderDays, expiryUrgentDays, reservaBadgeDays) |
+| `ContractSummary` | `contract-service.ts` | `isInRematriculaWindow`, `contractExpiringIn` |
+| `Enrollment` | `repositories/types.ts` | `matricula_signed_at` |
+| `CreateEnrollmentData` | `repositories/types.ts` | `matricula_signed_at?` |
+| `NotificationType` | `repositories/types.ts` | `CONTRACT_EXPIRING`, `CONTRACT_EXPIRED` |
+| `ScheduleItem` | `schedule-generator.ts` | `matriculaSignedAt?` |
+| `ClassBlock` | `types/schedule.ts` | `matricula_signed_at?` |
+| `ClassBlockData` | `ClassBlock.astro` | `matricula_signed_at?` |
+
+### Services
+| Service | File | Purpose |
+|---------|------|---------|
+| `ContractExpiryAutomatorService` | `services/contract-expiry-automator.ts` | Detects expired contracts → transitions enrollments to AVISO, sends notifications |
+| `BusinessConfigService` | `services/business-config-service.ts` | 2 new categories: `academic_calendar`, `contract_lifecycle` |
+| `ContractService` | `services/contract-service.ts` | `getContractSummary()` with rematrícula window + expiry days; webhook/polling propagate `matricula_signed_at` |
+| `ScheduleGenerator` | `services/schedule-generator.ts` | Passes `matriculaSignedAt` to schedule items |
+| `SchedulePageService` | `services/schedule-page-service.ts` | Maps `matricula_signed_at` to ClassBlock |
+
+### API Endpoints
+| Endpoint | File | Changes |
+|----------|------|---------|
+| `GET /api/students/[id]/contract-summary` | `api/students/[id]/contract-summary.ts` | Triggers expiry check + notifications on access |
+
+### Client Scripts
+| File | Changes |
+|------|---------|
+| `contracts-page-client.ts` | `renewContract()` function for contract renewal flow |
+
+### UI Components
+| Component | File | Changes |
+|-----------|------|---------|
+| Settings page | `pages/admin/settings.astro` | 2 new tab buttons (Calendário Acadêmico, Ciclo de Contratos) |
+| Contracts page | `pages/admin/contracts.astro` | "Renovar" button on signed service contracts |
+| ClassBlock | `components/grid/ClassBlock.astro` | "Reservando Vaga" star badge (★) |
+
+### Styles
+| File | Changes |
+|------|---------|
+| `admin-contracts.css` | `.action-btn--renew` styles |
+| `ClassBlock.astro <style>` | `.class-block__reserva-badge` styles |
+
+### Key Logic
+- **Lazy evaluation**: Contract expiry checked when student modal opens (contract-summary API), not via cron
+- **AVISO transition**: Expired contract → ATIVO/PAUSADO enrollments become AVISO → existing AvisoAutomator handles AVISO → INATIVO after 14 days
+- **Notification deduplication**: 24-hour window query prevents duplicate notifications
+- **Reservando Vaga badge**: Shows ★ on ClassBlock for `reservaBadgeDays` (default 30) after matrícula signed
+- **Rematrícula window**: `isInRematriculaWindow` computed from `rematriculaStartDate`/`rematriculaEndDate` config
+
+---
+
 ## File Size Reference (Largest Files)
 
 Understanding which files are most complex helps with maintenance:
@@ -3030,4 +3105,4 @@ Understanding which files are most complex helps with maintenance:
 
 ---
 
-**Last Updated:** 2026-02-04
+**Last Updated:** 2026-02-05
