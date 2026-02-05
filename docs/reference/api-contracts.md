@@ -3574,7 +3574,7 @@ Handles Autentique webhook events when contracts are viewed, signed, or rejected
 ### GET /api/admin/contracts
 List contracts with optional filters.
 - **Auth:** Admin (`canEditSchedules`)
-- **Query Params:** `year` (integer), `status` (string), `limit` (integer), `offset` (integer)
+- **Query Params:** `year` (integer), `status` (string), `category` (`matricula` | `service` | `all`), `limit` (integer), `offset` (integer)
 - **Response:** `{ contracts: Contract[], total: number }`
 
 ### POST /api/admin/contracts
@@ -3599,6 +3599,9 @@ Preview rendered contract HTML for a student (no DB record created).
   - `student_id` (required): Student ID
   - `contract_type` (optional): `MATRICULA` or `REMATRICULA` (auto-detected if omitted)
   - `tshirt_size` (optional): T-shirt size (PP, P, M, G, GG)
+  - `duration` (optional): `MENSAL`, `SEMESTRAL`, or `ANUAL` (if provided, renders service contract template)
+  - `image_authorization` (optional): `true`/`false` (default: true, for service contracts)
+  - `contract_start_date` (optional): `YYYY-MM-DD` (for service contracts, default: today)
 - **Response:** Raw HTML (`Content-Type: text/html`)
 
 ### GET /api/admin/contracts/[id]
@@ -3623,9 +3626,9 @@ Poll Autentique for latest contract status.
 - **Response:** `Contract` with updated status
 
 ### POST /api/admin/contracts/batch-send
-Batch generate and send contracts for multiple students.
+Batch generate and send contracts for multiple students. Supports both matrícula and service contracts.
 - **Auth:** Admin (`canEditSchedules`) + CSRF
-- **Body:**
+- **Body (matrícula):**
 ```json
 {
   "student_ids": ["stu_abc", "stu_def"],
@@ -3635,8 +3638,34 @@ Batch generate and send contracts for multiple students.
   }
 }
 ```
+- **Body (service contract — has `duration` field):**
+```json
+{
+  "student_ids": ["stu_abc", "stu_def"],
+  "duration": "ANUAL",
+  "image_authorization": true,
+  "contract_start_date": "2026-02-01",
+  "overrides": {
+    "stu_abc": { "duration": "SEMESTRAL", "image_authorization": false }
+  }
+}
+```
 - **Response:** `{ batch_id: string, results: [{ student_id, success, contract?, error? }] }`
-- **Note:** Each student's older SENT/VIEWED contracts are auto-cancelled before sending the new one
+- **Note:** Each student's older SENT/VIEWED contracts are auto-cancelled before sending the new one. Service contracts require a signed matrícula.
+
+### GET /api/students/[id]/contract-summary
+Returns contract summary for a student (matrícula status, active service contract, days remaining, history).
+- **Auth:** Any authenticated user
+- **Response:**
+```json
+{
+  "hasMatricula": true,
+  "matriculaNumber": "Nº12260001",
+  "latestMatricula": { "id": "...", "contract_type": "MATRICULA", "status": "SIGNED", "signed_at": 1706745600 },
+  "activeServiceContract": { "id": "...", "duration": "ANUAL", "status": "SIGNED", "contract_start_date": "2026-02-01", "contract_end_date": "2027-02-01", "signed_at": 1706832000, "days_remaining": 362, "urgency_level": "green" },
+  "contractHistory": [...]
+}
+```
 
 ---
 

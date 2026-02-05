@@ -1604,7 +1604,7 @@ Tracks individual parent responses to location changes.
 
 ### 45. contracts
 
-**Purpose:** Track Autentique digital contract signing for student enrollment terms (MATRICULA / REMATRICULA).
+**Purpose:** Track Autentique digital contract signing for matrícula (registration) and service contracts (Contrato de Prestação de Serviços Educacionais).
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -1632,13 +1632,22 @@ Tracks individual parent responses to location changes.
 | rejection_reason | TEXT | Reason for rejection |
 | signed_document_url | TEXT | URL to signed PDF |
 | batch_id | TEXT | Groups batch-sent contracts |
+| is_paid | INTEGER | Payment status (0/1, default 0) |
+| duration | TEXT | Service contract duration: `MENSAL`, `SEMESTRAL`, `ANUAL` (NULL = matrícula) |
+| contract_start_date | TEXT | Service contract start date (YYYY-MM-DD) |
+| contract_end_date | TEXT | Service contract end date (YYYY-MM-DD) |
+| hourly_rate_cents | INTEGER | Hourly rate for service contract in centavos |
+| image_authorization | INTEGER | Image authorization (1=autorizo, 0=não autorizo, default 1) |
+| parent_contract_id | TEXT FK | Links service contract to parent matrícula contract |
 | created_by | TEXT | Admin user ID who created |
 | created_at | INTEGER | Unix timestamp (default unixepoch()) |
 | updated_at | INTEGER | Unix timestamp (default unixepoch()) |
 
-**Indexes:** student_id, status, autentique_document_id, batch_id, contract_year, (contract_year + student_id)
+**Indexes:** student_id, status, autentique_document_id, batch_id, contract_year, (contract_year + student_id), contract_end_date, parent_contract_id
 
-**Migration:** `086_contracts.sql`
+**Key design:** `duration IS NULL` = matrícula/rematrícula contract. `duration IS NOT NULL` = service contract. Service contracts require a signed matrícula (`parent_contract_id` links to it).
+
+**Migration:** `086_contracts.sql`, `100_service_contracts.sql`
 
 ---
 
