@@ -274,7 +274,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 
 ## Application Routes
 
-### Admin Routes (`/admin/*`) - 24 Pages
+### Admin Routes (`/admin/*`) - 25 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
@@ -289,13 +289,10 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/admin/settings` | App settings (business config, languages, cities, calendar feed, data maintenance) | - |
 | `/admin/theme-editor` | Design system customization with live preview | - |
 | `/admin/pending-cancellations` | Teacher cancellation approval workflow | FR13-14 |
-| `/admin/time-off-approvals` | Teacher vacation/sick/personal time-off requests | Extra |
-| `/admin/pausado-approvals` | Parent pausado (pause) requests approval workflow | Extra |
-| `/admin/parent-links` | Link parent OAuth emails to students | Extra |
-| `/admin/teacher-links` | Link teacher OAuth emails to teacher records | Extra |
+| `/admin/reschedule-requests` | Reschedule request history and approvals | Extra |
+| `/admin/pausas` | Pausado (pause) requests for students and teachers | Extra |
 | `/admin/account-links` | Combined parent/teacher link management | Extra |
 | `/admin/scheduling-analytics` | Hot times dashboard - demand vs supply analysis | Extra |
-| `/admin/travel-errors` | Geocoding/route calculation error resolution | Extra |
 | `/admin/re-encrypt` | Data re-encryption tool for key rotation | Extra |
 | `/admin/import-data` | Bulk student import from JSON | Extra |
 | `/admin/resolve-errors` | Error resolution and data cleanup tool | Extra |
@@ -498,9 +495,9 @@ These features were built during implementation but aren't in the original PRD. 
 | Feature | Page/API | Purpose |
 |---------|----------|---------|
 | **Time-Off System** | `/admin/time-off-approvals` | Teachers request vacation/sick days, admin approves, system auto-handles affected classes |
-| **Account Links** | `/admin/*-links` | Flexible OAuth - parents/teachers can use any Google/Microsoft email |
+| **Account Links** | `/admin/account-links` | Flexible OAuth - parents/teachers can use any Google/Microsoft email |
 | **Scheduling Analytics** | `/admin/scheduling-analytics` | Hot times dashboard - demand vs supply analysis for recruitment |
-| **Travel Error Resolution** | `/admin/travel-errors` | Diagnose/fix geocoding errors with inline editing |
+| **Error Resolution** | `/admin/resolve-errors` | Diagnose/fix geocoding, travel, and data errors with inline editing |
 | **Data Re-encryption** | `/admin/re-encrypt` | Key rotation tool for security compliance |
 | **Bulk Import** | `/admin/import-data` | Import students from JSON with progress tracking |
 
