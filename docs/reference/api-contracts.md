@@ -1849,10 +1849,10 @@ Get teacher's weekly availability slots.
 - **Auth:** Required
 
 ### PUT /api/teachers/[id]/availability
-Update teacher availability.
-- **Auth:** Admin, Teacher (own)
+Update teacher availability (admin sets slots for a teacher).
+- **Auth:** Admin (canEditTeachers)
 - **CSRF:** Required
-- **Body:** Array of availability slots
+- **Body:** `{ slots: [{ day_of_week: number, start_time: string, end_time: string }] }`
 
 ### GET /api/teachers/[id]/students
 List teacher's assigned students.
