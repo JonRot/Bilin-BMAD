@@ -398,6 +398,12 @@ ATIVO <--> PAUSADO --> CANCELADO
 | source_student_id | TEXT | FK | Original student if returning |
 | is_returning | INTEGER | NOT NULL, DEFAULT 0 | True if returning student |
 | priority_tier | INTEGER | NOT NULL, DEFAULT 2 | 1=returning (priority), 2=new |
+| **Funnel Analytics** | | | |
+| family_income | TEXT | | Income bracket from cadastro form |
+| lead_source_type | TEXT | DEFAULT 'WEB_FORM' | Channel: WEB_FORM, MANUAL, IMPORT, REFERRAL |
+| referred_by_student_id | TEXT | FK students(id) | Existing student who referred this lead |
+| status_changed_at | INTEGER | | When status last changed (for aging) |
+| http_referrer | TEXT | | document.referrer from cadastro page |
 | **Metadata** | | | |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |

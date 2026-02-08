@@ -382,6 +382,7 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 | `src/lib/services/lead-matching.ts` | Match leads to teachers |
 | `src/lib/services/lead-readiness-service.ts` | Score lead readiness + location proximity + categorization |
 | `src/lib/services/slot-offer-service.ts` | Manage slot offers |
+| `src/lib/services/funnel-service.ts` | Funnel analytics aggregation (KPIs, stages, breakdowns, aging, insights) |
 
 ### Constants
 
@@ -412,6 +413,7 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 | `POST /api/leads/[id]/mark-signed` | Mark contract signed |
 | `POST /api/webhooks/jotform` | JotForm webhook |
 | `GET/POST /api/offers` | Slot offers |
+| `GET /api/admin/funnel/stats` | Funnel analytics dashboard data |
 
 ### Client Scripts
 
@@ -443,6 +445,7 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 | Page | Purpose |
 |------|---------|
 | `/admin/leads` | Lead pipeline management |
+| `/admin/funnel` | Funnel analytics dashboard |
 | `/cadastro` | Public registration form |
 
 ### Components

@@ -1220,6 +1220,19 @@ Waitlist analytics for AI optimization panel.
 }
 ```
 
+### GET /api/admin/funnel/stats
+Aggregated funnel analytics for the enrollment funnel dashboard.
+- **Auth:** Admin only
+- **Query Params:**
+  - `period`: `30d` | `90d` | `6mo` | `1yr` | `custom` (default: 30d)
+  - `start_date` (optional): ISO date for custom period
+  - `end_date` (optional): ISO date for custom period
+  - `source` (optional): Filter by referral_source
+  - `income` (optional): Filter by family_income bracket
+  - `language` (optional): Filter by language
+  - `city` (optional): Filter by city
+- **Response:** KPIs, funnel stages with conversion rates, breakdowns by source/income/language/neighborhood/month, aging alerts, Easy Win vs Regular, Returning vs First-Time, Family Expansion, Response Time, Retention stats, Language Trend
+
 ### GET /api/admin/monthly-stats
 Monthly metrics for scheduling analytics dashboard.
 - **Auth:** Admin only

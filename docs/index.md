@@ -293,6 +293,7 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/admin/pausas` | Pausado (pause) requests for students and teachers | Extra |
 | `/admin/account-links` | Combined parent/teacher link management | Extra |
 | `/admin/scheduling-analytics` | Hot times dashboard - demand vs supply analysis | Extra |
+| `/admin/funnel` | Enrollment funnel analytics - KPIs, conversion rates, breakdowns, aging alerts | Extra |
 | `/admin/re-encrypt` | Data re-encryption tool for key rotation | Extra |
 | `/admin/import-data` | Bulk student import from JSON | Extra |
 | `/admin/resolve-errors` | Error resolution and data cleanup tool | Extra |
