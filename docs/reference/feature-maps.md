@@ -293,7 +293,8 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 
 | Component | Purpose |
 |-----------|---------|
-| `AvailabilityGrid.astro` | LIVRE/BLOCKED slot grid |
+| `AvailabilityGrid.astro` | Compact 5-period slot grid (students, leads) |
+| `HourlyAvailabilityGrid.astro` | Hourly 12-row grid + multi-city zone chips (admin teacher modal) |
 | `SmartBookingModal.astro` | Booking flow modal |
 | `WeeklyScheduleGrid.astro` | Weekly schedule display |
 
