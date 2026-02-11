@@ -2,7 +2,7 @@
 
 > **Purpose:** When modifying a feature, this document maps ALL code locations that need review. Prevents missed files during changes and helps understand how components connect.
 
-**Last Updated:** 2026-02-05 (Section 35 rewritten: complete runtime config connection map for parent pricing)
+**Last Updated:** 2026-02-11 (Added enrollment-date-utils.ts to Scheduling section; updated contract-summary response)
 
 ---
 
@@ -253,6 +253,7 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 | `src/lib/services/slot-offer-service.ts` | Manage waitlist offers |
 | `src/lib/services/schedule-generator.ts` | Generate class instances |
 | `src/lib/services/schedule-page-service.ts` | Build complete schedule views |
+| `src/lib/utils/enrollment-date-utils.ts` | Compute effective enrollment date boundaries |
 | `src/lib/services/reschedule-suggestion-service.ts` | AI-powered slot suggestions |
 
 ### Repositories

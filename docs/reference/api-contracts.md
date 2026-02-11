@@ -1,6 +1,6 @@
 # API Contracts - EduSchedule App
 
-**Last Updated:** 2026-02-01
+**Last Updated:** 2026-02-11
 **Project:** Bilin App - EduSchedule
 **API Type:** RESTful with Astro API Routes
 **Endpoints:** 164 total
@@ -3667,7 +3667,7 @@ Batch generate and send contracts for multiple students. Supports both matrícul
 - **Note:** Each student's older SENT/VIEWED contracts are auto-cancelled before sending the new one. Service contracts require a signed matrícula.
 
 ### GET /api/students/[id]/contract-summary
-Returns contract summary for a student (matrícula status, active service contract, days remaining, history).
+Returns contract summary for a student (matrícula status, active service contract, days remaining, history, enrollment dates).
 - **Auth:** Any authenticated user
 - **Response:**
 ```json
@@ -3676,6 +3676,13 @@ Returns contract summary for a student (matrícula status, active service contra
   "matriculaNumber": "Nº12260001",
   "latestMatricula": { "id": "...", "contract_type": "MATRICULA", "status": "SIGNED", "signed_at": 1706745600 },
   "activeServiceContract": { "id": "...", "duration": "ANUAL", "status": "SIGNED", "contract_start_date": "2026-02-01", "contract_end_date": "2027-02-01", "signed_at": 1706832000, "days_remaining": 362, "urgency_level": "green" },
+  "maxDurationWarning": "Contrato excede 1 ano (372 dias)",
+  "enrollmentDates": {
+    "start": "2026-02-17",
+    "effectiveEnd": "2026-12-13",
+    "academicStart": "2026-02-17",
+    "academicEnd": "2026-12-13"
+  },
   "contractHistory": [...]
 }
 ```
