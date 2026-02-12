@@ -1268,6 +1268,28 @@ Monthly metrics for scheduling analytics dashboard.
 ```
 - **Notes:** Provides monthly class counts (by format/location), new leads, cancellations, and current enrollment status counts. Includes month-over-month comparison percentages.
 
+### GET /api/admin/optimizer
+Global lead-teacher schedule optimizer. Optimizes all Easy Win leads simultaneously.
+- **Auth:** Admin only
+- **Query Params:**
+  - `language` (optional): Filter leads by language (e.g., "Inglês")
+- **Response:**
+```json
+{
+  "proposals": [{
+    "leadId": "led_xxx", "leadName": "João", "leadNeighborhood": "Trindade", "leadLanguage": "Inglês",
+    "teacherId": "t_001", "teacherName": "Maria", "dayOfWeek": 2, "startTime": "14:00",
+    "compositeScore": 85,
+    "scoreBreakdown": { "language": 30, "location": 25, "route": 20, "sequential": 5, "priority": 5 },
+    "travelFromPrev": 5, "travelToNext": 15, "routeQuality": "excellent"
+  }],
+  "unplaceable": [{ "leadId": "led_yyy", "leadName": "Ana", "reason": "Todos os slots compatíveis já foram alocados" }],
+  "conflicts": [{ "slot": "Maria Ter 14:00", "competingLeads": [{ "leadId": "led_xxx", "leadName": "João", "score": 85, "assigned": true }] }],
+  "summary": { "totalLeads": 12, "totalPlaced": 8, "totalUnplaceable": 4, "avgScore": 72, "avgTravelMinutes": 12 }
+}
+```
+- **Notes:** Uses greedy assignment with composite scoring (language 30, location 25, route 25, sequential 10, priority 10). Identifies Easy Win leads via readiness scoring + batch slot matching. Approve proposals via `POST /api/leads/[id]/convert`.
+
 ### POST /api/admin/update-lead-statuses
 Bulk update lead statuses from spreadsheet export.
 - **Auth:** Admin only
