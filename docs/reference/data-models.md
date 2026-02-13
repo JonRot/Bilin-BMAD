@@ -104,6 +104,9 @@ leads --> (converts to) students + enrollments
 | travels_by_car | INTEGER | DEFAULT 1 | 1=available for car travel |
 | travels_by_walk | INTEGER | DEFAULT 1 | 1=available for walking travel |
 | travels_by_transit | INTEGER | DEFAULT 1 | 1=available for public transit |
+| min_student_age_months | INTEGER | DEFAULT 6 | Min student age in months |
+| max_student_age_months | INTEGER | DEFAULT 168 | Max student age in months (168=14yrs) |
+| accepts_15plus_online | BOOLEAN | DEFAULT 0 | 1=accepts 15+ students online-only |
 | active | INTEGER | NOT NULL, DEFAULT 1 | Active status |
 | join_date | TEXT | | Date teacher joined |
 | contract_date | TEXT | | Contract signing date |
