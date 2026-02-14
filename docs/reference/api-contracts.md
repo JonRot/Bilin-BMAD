@@ -614,6 +614,12 @@ Get suggested teacher matches.
 - **Query Params:** `limit`, `min_score`
 - **Response:** Scored teacher matches
 
+### POST /api/leads/[id]/restore
+Restore a lead from trash (clear archived_at).
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Response:** `200 OK` with `{ success: true }`
+
 ### POST /api/leads/[id]/convert
 Convert lead to enrollment.
 - **Auth:** Admin only
