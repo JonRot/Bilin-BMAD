@@ -548,12 +548,25 @@ List leads with filtering.
 - **Response:** Leads array + pipeline stats
 
 ### POST /api/leads
-Create new lead.
+Create new lead (supports multi-student registration).
 - **Auth:** Admin only
 - **CSRF:** Required
+- **Body:** Single student (flat fields) or multi-student:
+```json
+{
+  "parent_name": "Maria",
+  "parent_email": "m@e.com",
+  "students": [
+    { "student_name": "Ana", "language": "Inglês" },
+    { "student_name": "João", "language": "Inglês" }
+  ]
+}
+```
+- **Response (multi-student):** `{ leads: [...], family_group_id: "uuid" }`
+- **Response (single):** Lead object (backward compatible)
 
 ### GET /api/leads/[id]
-Get single lead details with decrypted address and CPF.
+Get single lead details with decrypted address and CPF. Includes family siblings if part of a multi-student registration.
 - **Auth:** Admin only
 - **Response:**
 ```json
@@ -566,7 +579,11 @@ Get single lead details with decrypted address and CPF.
   "lon": -46.64,
   "availability_windows_parsed": [{"day": 1, "start": "14:00", "end": "18:00"}],
   "address_decrypted": "Rua Example, 123",
-  "parent_cpf": "123.456.789-00"
+  "parent_cpf": "123.456.789-00",
+  "family_group_id": "uuid-or-null",
+  "family_siblings": [
+    { "id": "led_xxx", "student_name": "João", "status": "AGUARDANDO" }
+  ]
 }
 ```
 - **Errors:** `404 NOT_FOUND` if lead doesn't exist
@@ -3141,10 +3158,21 @@ Handles Microsoft OAuth callback, creates session.
 ## Public APIs
 
 ### POST /api/public/register
-Public lead registration (from cadastro page).
+Public lead registration (from cadastro page). Supports multi-student registration.
 - **Auth:** None (public)
-- **Body:** Lead registration data
-- **Response:** `201 Created` with lead reference
+- **Body:** Single student (flat fields) or multi-student:
+```json
+{
+  "parent_name": "Maria",
+  "parent_email": "m@e.com",
+  "students": [
+    { "student_name": "Ana", "language": "Inglês", "student_birth_date": "2020-05-15" },
+    { "student_name": "João", "language": "Espanhol" }
+  ]
+}
+```
+- **Response:** `201 Created` with `{ success: true, lead_ids: [...], lead_id: "first_id" }`
+- **Notes:** Creates one lead per student. Leads linked by `family_group_id` UUID when >1 student. Sends ONE admin notification listing all student names.
 
 ### GET /api/public/hot-slots
 Returns available teacher time slots for a neighborhood and language.

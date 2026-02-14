@@ -365,13 +365,14 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 
 ## 5. Lead Pipeline
 
-**Flow:** JotForm → Lead (AGUARDANDO) → Match → Offer → Accept → Student + Enrollment
+**Flow:** JotForm / Cadastro → Lead (AGUARDANDO) → Match → Offer → Accept → Student + Enrollment
+**Multi-Student:** Parents can register 2-5 children → N leads linked by `family_group_id`
 
 ### Database Tables
 
 | Table | Purpose |
 |-------|---------|
-| `leads` | Pre-enrollment prospects |
+| `leads` | Pre-enrollment prospects (`family_group_id`, `lead_group_id`, `family_registration_order` for multi-student) |
 | `slot_offers` | Offers sent to leads |
 | `students` | Used for location proximity matching (comparing lead address to existing students) |
 | `enrollments` | Used to find active students for proximity matching |
@@ -402,7 +403,8 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 
 | File | Schema(s) |
 |------|-----------|
-| `src/lib/validation/lead.ts` | `CreateLeadSchema`, `UpdateLeadSchema` |
+| `src/lib/validation.ts` | `StudentEntrySchema`, `PublicRegistrationSchema` (multi-student) |
+| `src/lib/validation/lead.ts` | `CreateLeadSchema` (multi-student), `UpdateLeadSchema` |
 
 ### API Endpoints
 
@@ -413,6 +415,7 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 | `POST /api/leads/[id]/convert` | Convert to student |
 | `POST /api/leads/[id]/send-contract` | Send contract |
 | `POST /api/leads/[id]/mark-signed` | Mark contract signed |
+| `POST /api/public/register` | Public multi-student registration |
 | `POST /api/webhooks/jotform` | JotForm webhook |
 | `GET/POST /api/offers` | Slot offers |
 | `GET /api/admin/funnel/stats` | Funnel analytics dashboard data |
@@ -427,14 +430,17 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 
 | File | Purpose |
 |------|---------|
-| `src/pages/admin/leads.astro` | Lead management page with category tabs, filter chips, Easy Win wizard modal |
-| `src/styles/leads-page.css` | Category tabs, filter chips, same-building alerts, proximity badges, wizard styles |
+| `src/pages/admin/leads.astro` | Lead management page with category tabs, filter chips, Easy Win wizard modal, family badges |
+| `src/pages/cadastro.astro` | Public registration form with multi-student support |
+| `src/components/forms/LeadForm.astro` | Admin create/edit lead form with multi-student support |
+| `src/styles/leads-page.css` | Category tabs, filter chips, same-building alerts, proximity badges, wizard styles, family badges |
 
 ### Key Features
 
 - **Location Proximity Scoring:** Same Building (40pts), Same Street (25pts), Same CEP (15pts), Same Neighborhood (10pts)
 - **Smart Categorization:** 7 categories (easy_wins, need_teacher, need_lead_avail, too_far, no_language, needs_data, archived)
 - **Easy Win Wizard:** 3-step contract flow for high-potential leads (same building or 85%+ score)
+- **Multi-Student Registration:** Parents register 2-5 children → N leads linked by `family_group_id`, family badges in table + edit modal
 
 ### Client Scripts
 

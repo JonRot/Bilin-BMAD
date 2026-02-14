@@ -1,6 +1,6 @@
 # Data Models - EduSchedule App
 
-**Last Updated:** 2026-01-30
+**Last Updated:** 2026-02-14
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
 **Tables:** 50 total (11 core + 39 via migrations)
@@ -408,6 +408,10 @@ ATIVO <--> PAUSADO --> CANCELADO
 | referred_by_student_id | TEXT | FK students(id) | Existing student who referred this lead |
 | status_changed_at | INTEGER | | When status last changed (for aging) |
 | http_referrer | TEXT | | document.referrer from cadastro page |
+| **Family & Group** | | | |
+| family_group_id | TEXT | | UUID linking siblings from same multi-student registration |
+| lead_group_id | TEXT | | UUID linking leads for group classes (admin-set, Phase 2) |
+| family_registration_order | INTEGER | DEFAULT 1 | Order within family submission (1, 2, 3...) |
 | **Metadata** | | | |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
