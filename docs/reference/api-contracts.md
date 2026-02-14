@@ -630,6 +630,28 @@ Update lead status.
 - **CSRF:** Required
 - **Body:** `{ "status": "WAITLIST", "reason": "..." }`
 
+### GET /api/leads/search
+Search leads by student name or parent name.
+- **Auth:** Admin only
+- **Query Params:** `q` (required, min 2 chars) — search term
+- **Response:** `{ "results": [{ "id", "student_name", "parent_name", "status", "family_group_id" }] }`
+- **Notes:** Returns top 10 case-insensitive LIKE matches. Used by family linking UI.
+
+### POST /api/leads/[id]/family-link
+Link this lead to another lead's family.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** `{ "target_lead_id": "lea_xxx" }`
+- **Response:** `{ "family_group_id": "uuid" }`
+- **Notes:** If target has family → current joins it. If current has family → target joins it. If neither → creates new group. Updates `family_registration_order` automatically.
+
+### DELETE /api/leads/[id]/family-link
+Unlink this lead from its family.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Response:** `{ "success": true }`
+- **Notes:** Clears `family_group_id` and `family_registration_order`. If only 1 sibling remains, auto-clears that sibling's family too (no family of 1).
+
 ---
 
 ## Offers API (Story 6.9)
