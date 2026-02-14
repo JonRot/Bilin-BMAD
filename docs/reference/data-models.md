@@ -3,7 +3,7 @@
 **Last Updated:** 2026-01-30
 **Database:** Cloudflare D1 (SQLite-compatible)
 **Project:** Bilin App - EduSchedule
-**Tables:** 49 total (11 core + 38 via migrations)
+**Tables:** 50 total (11 core + 39 via migrations)
 
 ## Overview
 
@@ -32,6 +32,7 @@ The EduSchedule database uses Cloudflare D1, a serverless SQLite database. The s
 | **Admin Events** | admin_events |
 | **Business Config** | business_config, business_config_audit |
 | **Sequences** | matricula_sequence |
+| **Optimizer** | optimizer_recommendations |
 
 ## Entity Relationship Diagram
 
@@ -1778,6 +1779,23 @@ Auto-update `updated_at` on record changes:
 | `trg_enrollment_validate_rate_insert/update` | enrollments | hourly_rate between 1-500 |
 | `trg_enrollment_validate_duration_insert/update` | enrollments | duration_minutes between 15-180 |
 | `trg_exception_set_teacher_id` | enrollment_exceptions | Ensures enrollment exists |
+
+---
+
+### optimizer_recommendations
+Stores the latest optimizer proposals for Easy Win wizard pre-selection. Replaced atomically each time the global optimizer runs.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `lead_id` | TEXT PK | Lead being recommended |
+| `teacher_id` | TEXT NOT NULL | Recommended teacher |
+| `teacher_name` | TEXT NOT NULL | Denormalized teacher name |
+| `day_of_week` | INTEGER NOT NULL | Recommended day (1=Mon, 5=Fri) |
+| `start_time` | TEXT NOT NULL | Recommended time (HH:MM) |
+| `composite_score` | REAL NOT NULL | Optimizer composite score |
+| `score_breakdown` | TEXT | JSON breakdown (language, location, route, sequential, priority) |
+| `route_quality` | TEXT | 'excellent', 'good', or 'fair' |
+| `created_at` | INTEGER NOT NULL | Unix timestamp of optimizer run |
 
 ---
 

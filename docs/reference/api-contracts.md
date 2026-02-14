@@ -1288,7 +1288,28 @@ Global lead-teacher schedule optimizer. Optimizes all Easy Win leads simultaneou
   "summary": { "totalLeads": 12, "totalPlaced": 8, "totalUnplaceable": 4, "avgScore": 72, "avgTravelMinutes": 12 }
 }
 ```
-- **Notes:** Uses greedy assignment with composite scoring (language 30, location 25, route 25, sequential 10, priority 10). Identifies Easy Win leads via readiness scoring + batch slot matching. Approve proposals via `POST /api/leads/[id]/convert`.
+- **Notes:** Uses greedy assignment with composite scoring (language 30, location 25, route 25, sequential 10, priority 10). Identifies Easy Win leads via readiness scoring + batch slot matching. Approve proposals via `POST /api/leads/[id]/convert`. Also persists proposals to `optimizer_recommendations` table for wizard pre-selection.
+
+### GET /api/admin/optimizer-recommendation
+Returns the optimizer's recommended teacher + slot for a specific lead (from the last optimizer run).
+- **Auth:** Admin only
+- **Query Params:**
+  - `lead_id` (required): The lead to get a recommendation for
+- **Response:**
+```json
+{
+  "recommendation": {
+    "teacher_id": "t_001",
+    "teacher_name": "Maria",
+    "day_of_week": 2,
+    "start_time": "14:00",
+    "composite_score": 85,
+    "score_breakdown": { "language": 30, "location": 25, "route": 20, "sequential": 5, "priority": 5 },
+    "route_quality": "excellent"
+  }
+}
+```
+- **Notes:** Returns `{ "recommendation": null }` if no recommendation exists for the lead. Data comes from `optimizer_recommendations` table, populated when the global optimizer runs.
 
 ### POST /api/admin/update-lead-statuses
 Bulk update lead statuses from spreadsheet export.
