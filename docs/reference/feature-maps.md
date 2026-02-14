@@ -415,6 +415,9 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 | `POST /api/leads/[id]/convert` | Convert to student |
 | `POST /api/leads/[id]/send-contract` | Send contract |
 | `POST /api/leads/[id]/mark-signed` | Mark contract signed |
+| `POST/DELETE /api/leads/[id]/family-link` | Family linking/unlinking |
+| `POST/DELETE /api/leads/[id]/group-link` | Group linking/unlinking |
+| `GET /api/leads/search` | Search leads by name |
 | `POST /api/public/register` | Public multi-student registration |
 | `POST /api/webhooks/jotform` | JotForm webhook |
 | `GET/POST /api/offers` | Slot offers |
@@ -441,6 +444,8 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 - **Smart Categorization:** 7 categories (easy_wins, need_teacher, need_lead_avail, too_far, no_language, needs_data, archived)
 - **Easy Win Wizard:** 3-step contract flow for high-potential leads (same building or 85%+ score)
 - **Multi-Student Registration:** Parents register 2-5 children → N leads linked by `family_group_id`, family badges in table + edit modal
+- **Group Wish:** Parents can request group classes with another family via `group_request_note`; admins link leads into groups via `lead_group_id`; GR badge in table + group section in edit modal
+- **Class Format:** Individual/Grupo selection on cadastro + admin forms; stored as `class_format` column
 
 ### Client Scripts
 

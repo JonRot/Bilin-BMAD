@@ -18,7 +18,7 @@ The EduSchedule API provides endpoints for authentication, enrollment management
 | Students | 10 | CRUD, search, class history, enrollments summary, timeline, t-shirt size |
 | Teachers | 13 | CRUD, availability, time-off, day-zones, location-change |
 | Users | 6 | Management, roles |
-| Leads | 8 | Pipeline, matching, conversion, contracts |
+| Leads | 10 | Pipeline, matching, conversion, contracts, group linking |
 | Offers | 5 | Waitlist auto-match offers |
 | Schedule | 4 | Generation, views |
 | Slots | 5 | Availability grid, reservations, matches |
@@ -583,7 +583,12 @@ Get single lead details with decrypted address and CPF. Includes family siblings
   "family_group_id": "uuid-or-null",
   "family_siblings": [
     { "id": "led_xxx", "student_name": "João", "status": "AGUARDANDO" }
-  ]
+  ],
+  "lead_group_id": "uuid-or-null",
+  "group_members": [
+    { "id": "led_xxx", "student_name": "Pedro", "status": "AGUARDANDO" }
+  ],
+  "group_request_note": "Quer aula com a filha da Maria"
 }
 ```
 - **Errors:** `404 NOT_FOUND` if lead doesn't exist
@@ -651,6 +656,21 @@ Unlink this lead from its family.
 - **CSRF:** Required
 - **Response:** `{ "success": true }`
 - **Notes:** Clears `family_group_id` and `family_registration_order`. If only 1 sibling remains, auto-clears that sibling's family too (no family of 1).
+
+### POST /api/leads/[id]/group-link
+Link this lead to another lead's group (for group classes).
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Body:** `{ "target_lead_id": "lea_xxx" }`
+- **Response:** `{ "lead_group_id": "uuid" }`
+- **Notes:** If target has group → current joins it. If current has group → target joins it. If neither → creates new group UUID. Cannot link a lead to itself.
+
+### DELETE /api/leads/[id]/group-link
+Unlink this lead from its group.
+- **Auth:** Admin only
+- **CSRF:** Required
+- **Response:** `{ "success": true }`
+- **Notes:** Clears `lead_group_id`. If only 1 member remains, auto-clears that member's group too (no group of 1).
 
 ---
 

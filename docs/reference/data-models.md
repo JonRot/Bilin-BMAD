@@ -410,8 +410,9 @@ ATIVO <--> PAUSADO --> CANCELADO
 | http_referrer | TEXT | | document.referrer from cadastro page |
 | **Family & Group** | | | |
 | family_group_id | TEXT | | UUID linking siblings from same multi-student registration |
-| lead_group_id | TEXT | | UUID linking leads for group classes (admin-set, Phase 2) |
+| lead_group_id | TEXT | | UUID linking leads for group classes (admin-set) |
 | family_registration_order | INTEGER | DEFAULT 1 | Order within family submission (1, 2, 3...) |
+| group_request_note | TEXT | | Parent's note about desired group class partner (max 500 chars) |
 | **Metadata** | | | |
 | created_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
 | updated_at | INTEGER | NOT NULL, DEFAULT | Unix timestamp |
