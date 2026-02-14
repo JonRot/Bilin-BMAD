@@ -384,6 +384,7 @@ ATIVO <--> PAUSADO --> CANCELADO
 | lat | REAL | | Latitude |
 | lon | REAL | | Longitude |
 | **Preferences** | | | |
+| classes_per_week | INTEGER | NOT NULL DEFAULT 1 | 1-5 classes per week |
 | class_format | TEXT | CHECK | 'Individual' or 'Grupo' |
 | class_mode | TEXT | | @deprecated - location preference |
 | language | TEXT | | English, Spanish, etc. |

@@ -440,6 +440,8 @@ The `calculateProjectedStatus()` function in `schedule-page-service.ts` projects
 
 ### Key Features
 
+- **Classes Per Week:** `classes_per_week` (1-5) field on each lead, with pill selector UI in both cadastro and admin forms
+- **Per-Student Preferences:** Multi-student registration supports individual `classes_per_week`, `class_format`, `class_mode`, `group_request_note` per student via preference cards (cadastro) or shared fields with API-level fallback (admin)
 - **Location Proximity Scoring:** Same Building (40pts), Same Street (25pts), Same CEP (15pts), Same Neighborhood (10pts)
 - **Smart Categorization:** 7 categories (easy_wins, need_teacher, need_lead_avail, too_far, no_language, needs_data, archived)
 - **Easy Win Wizard:** 3-step contract flow for high-potential leads (same building or 85%+ score)
