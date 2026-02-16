@@ -1,14 +1,14 @@
-# EduSchedule Pro - Documentation Index
+# Ensino Bilin App - Documentation Index
 
 ## Project Overview
 
-**EduSchedule Pro** is a scheduling and enrollment management platform for BILIN Method language instruction in Florianópolis, Brazil.
+**Ensino Bilin App** (formerly EduSchedule Pro) is a scheduling and enrollment management platform for BILIN Method language instruction in Florianópolis, Brazil.
 
 **Tech Stack:** Astro 5 SSR + Cloudflare Pages + D1 (SQLite) + Google Calendar API
 
 **Status:** ✅ **MVP COMPLETE** - All 52 FRs Implemented, Data Model Hardened, Production-Ready
 
-**Latest Deployment:** <https://eduschedule-app.pages.dev>
+**Latest Deployment:** <https://app.ensinobilin.com>
 
 **Implementation Stats (as of 2026-02-01):**
 - **42 pages** (26 admin, 8 teacher, 8 parent, 1 common)
