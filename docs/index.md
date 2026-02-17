@@ -331,11 +331,12 @@ eduschedule-app/                      # APP ROOT (non-docs operational files)
 | `/parent/billing` | Subscription overview: current plan, payment methods, payment history | Epic 8 |
 | `/parent/billing/subscribe` | New subscription flow: student → class type → plan → payment | Epic 8 |
 
-### Common Routes - 1 Page
+### Common Routes - 2 Pages
 
 | Route | Purpose | PRD Ref |
 |-------|---------|---------|
 | `/notifications` | Notification center: filter by type/status, mark read, pagination | Extra |
+| `/onboarding` | Welcome page for unregistered parents - explains process, links to /cadastro | Extra |
 
 ### API Routes (`/api/*`) - 154 Endpoints
 
