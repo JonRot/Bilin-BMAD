@@ -1355,6 +1355,53 @@ Global lead-teacher schedule optimizer. Optimizes all Easy Win leads simultaneou
 ```
 - **Notes:** Uses greedy assignment with composite scoring (language 30, location 25, route 25, sequential 10, priority 10). Identifies Easy Win leads via readiness scoring + batch slot matching. Approve proposals via `POST /api/leads/[id]/convert`. Also persists proposals to `optimizer_recommendations` table for wizard pre-selection.
 
+### GET /api/admin/lead-optimizer
+Lead-centered optimizer view. Returns ALL active leads with their top 5 teacher candidates and readiness info.
+- **Auth:** Admin only
+- **Query Params:**
+  - `language` (optional): Filter leads by language (e.g., "Inglês")
+- **Response:**
+```json
+{
+  "leads": [
+    {
+      "id": "lead_001",
+      "student_name": "João Silva",
+      "language": "Inglês",
+      "neighborhood": "Coqueiros",
+      "city": "Florianópolis",
+      "status": "WAITLIST",
+      "family_group_id": null,
+      "readiness": {
+        "overallScore": 85,
+        "tier": "high",
+        "category": "easy_wins",
+        "missingData": [],
+        "actionNeeded": null
+      },
+      "candidates": [
+        {
+          "teacherId": "t_001",
+          "teacherName": "Maria",
+          "dayOfWeek": 1,
+          "startTime": "10:00",
+          "compositeScore": 85,
+          "routeQuality": "excellent"
+        }
+      ],
+      "optimizerPick": { "...same as candidates[0] for greedy winner..." }
+    }
+  ],
+  "summary": {
+    "totalLeads": 15,
+    "easyWins": 8,
+    "matched": 8,
+    "unmatched": 7
+  }
+}
+```
+- **Notes:** Runs optimizer with `topCandidatesPerLead: 5`. Easy Win leads get candidates ranked by composite score. Non-Easy-Win leads have empty candidates array but include readiness info explaining blockers.
+
 ### GET /api/admin/optimizer-recommendation
 Returns the optimizer's recommended teacher + slot for a specific lead (from the last optimizer run).
 - **Auth:** Admin only
