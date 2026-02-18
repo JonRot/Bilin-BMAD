@@ -1901,6 +1901,38 @@ Save t-shirt size to student record.
 ```
 - **Notes:** Saves immediately on dropdown change from contracts page. Empty string clears the value.
 
+### POST /api/students/[id]/photo
+Upload a cropped profile photo for a student. Stored in Cloudflare R2.
+- **Auth:** Admin or Parent (own children via parent_links)
+- **Content-Type:** `multipart/form-data`
+- **Body:** `photo` file field (JPEG/PNG/WebP, max 2MB)
+- **Response:**
+```json
+{ "success": true, "photoUrl": "https://photos.ensinobilin.com/students/{id}/photo.jpg", "photoKey": "students/{id}/photo.jpg" }
+```
+
+### DELETE /api/students/[id]/photo
+Remove a student's profile photo from R2 and clear the photo_key.
+- **Auth:** Admin only
+- **Response:** `{ "success": true }`
+
+### POST /api/leads/[id]/photo
+Upload a cropped profile photo for a lead. Same behavior as student photo.
+- **Auth:** Admin only
+- **Content-Type:** `multipart/form-data`
+- **Body:** `photo` file field (JPEG/PNG/WebP, max 2MB)
+- **Response:**
+```json
+{ "success": true, "photoUrl": "https://photos.ensinobilin.com/leads/{id}/photo.jpg", "photoKey": "leads/{id}/photo.jpg" }
+```
+
+### POST /api/public/lead-photo
+Upload a photo for a newly created lead (from cadastro form). No auth required.
+- **Security:** Only allows uploads for leads created within the last 10 minutes
+- **Content-Type:** `multipart/form-data`
+- **Body:** `lead_id` (string) + `photo` file field
+- **Response:** `{ "success": true, "photoUrl": "..." }`
+
 ### GET /api/students/[id]/exceptions
 List all exceptions for a student's enrollments.
 - **Auth:** Admin, Teacher (own students), Parent (own children)
